@@ -1,0 +1,42 @@
+@extends('layouts.master')
+
+@section('content')
+    <div class="section-header">
+        <h1>Department</h1>
+        <div class="section-header-breadcrumb">
+            <div class="breadcrumb-item active"><a href="{{ route('department.index') }}">Department</a></div>
+            <div class="breadcrumb-item">Edit</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h4>Edit Department</h4>
+        </div>
+
+        <div class="card-body p-0">
+            <form action="{{ route('department.update', $department->id) }}" method="POST">
+                @csrf
+                @method('PUT')
+
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>Nama Department</label>
+                        <input type="text" name="name" value="{{ old('name', $department->name) }}"
+                            class="form-control @error('name') is-invalid @enderror"
+                            placeholder="Masukkan nama department..">
+                        @error('name')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="card-footer text-right">
+                    <button type="submit" class="btn btn-primary">
+                        Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+@endsection
