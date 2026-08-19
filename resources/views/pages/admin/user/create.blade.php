@@ -72,6 +72,27 @@
                     @enderror
                 </div>
 
+                <div class="form-group">
+                    <label>Department</label>
+
+                    <select name="department_id" class="form-control @error('department_id') is-invalid @enderror">
+                        <option value="">-- Pilih Department (opsional) --</option>
+
+                        @foreach ($departments as $department)
+                            <option value="{{ $department->id }}"
+                                {{ old('department_id') == $department->id ? 'selected' : '' }}>
+                                {{ $department->name }}
+                            </option>
+                        @endforeach
+                    </select>
+
+                    @error('department_id')
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
+                    @enderror
+                </div>
+
                 <button type="submit" class="btn btn-primary">
                     Simpan
                 </button>

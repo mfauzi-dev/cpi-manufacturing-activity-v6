@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Department;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -110,25 +111,28 @@ class UserController extends Controller
 
     public function create()
     {
-        $roles = Role::orderBy('name')->get();
+        $roles       = Role::orderBy('name')->get();
+        $departments = Department::orderBy('name')->get();
 
-        return view('pages.admin.user.create', compact('roles'));
+        return view('pages.admin.user.create', compact('roles', 'departments'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'email', 'unique:users,email'],
-            'password' => ['required', 'min:6'],
-            'role_id'  => ['required', 'exists:roles,id'],
+            'name'          => ['required', 'string', 'max:255'],
+            'email'         => ['required', 'email', 'unique:users,email'],
+            'password'      => ['required', 'min:6'],
+            'role_id'       => ['required', 'exists:roles,id'],
+            'department_id' => ['nullable', 'exists:departments,id'],
         ]);
 
         User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => Hash::make($request->password),
-            'role_id'  => $request->role_id,
+            'name'          => $request->name,
+            'email'         => $request->email,
+            'password'      => Hash::make($request->password),
+            'role_id'       => $request->role_id,
+            'department_id' => $request->department_id,
         ]);
 
         return redirect()
