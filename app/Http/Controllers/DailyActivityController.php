@@ -736,22 +736,24 @@ class DailyActivityController extends Controller
 
             $product = Product::findOrFail($request->product_id);
 
-            $outputKg    = (float) $request->output_kg;
-            $lamaPacking = (float) $request->lama_packing;
-            $hargaPerKg  = (float) $product->harga_per_kg;
-            $rupiah      = $outputKg * $lamaPacking * $hargaPerKg;
+            $outputKg     = (float) $request->output_kg;
+            $lamaPacking  = (float) $request->lama_packing;
+            $hargaPerKg   = (float) $product->harga_per_kg;
+            $totalHarga   = $outputKg * $hargaPerKg;
+            $productivity = $lamaPacking > 0 ? $outputKg / $lamaPacking : 0;
 
             $detail->update([
                 'product_id'   => $product->id,
                 'total_kg'     => $outputKg,
                 'lama_packing' => $lamaPacking,
                 'harga_per_kg' => $hargaPerKg,
-                'total_harga'  => $rupiah,
+                'total_harga'  => $totalHarga,
+                'productivity' => $productivity,
             ]);
 
             $costCenterId = $detail->dailyActivity->cost_center_id;
             $psGroupId    = $detail->dailyActivity->ps_group_id;
-            $dateForm = $detail->dailyActivity->tanggal->format('Y-m-d');
+            $dateForm     = $detail->dailyActivity->tanggal->format('Y-m-d');
 
             DB::commit();
 
@@ -765,7 +767,6 @@ class DailyActivityController extends Controller
                 ->with('success', 'Data berhasil diupdate.');
 
         } catch (\Throwable $e) {
-
             DB::rollBack();
 
             return redirect()
