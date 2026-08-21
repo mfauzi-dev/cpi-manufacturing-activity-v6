@@ -231,7 +231,7 @@ class DailyActivityController extends Controller
                 'departments.name',
                 'cost_centers.id',
                 'cost_centers.name',
-                'ps_group_id',
+                'ps_groups.id',
                 'ps_groups.name'
             )
             ->orderBy('cost_centers.name')
