@@ -74,6 +74,31 @@
         <div class="card">
             <div class="card-body table-responsive">
 
+                <div class="mb-2">
+
+                    <a href="{{ route('daily-activity.export-excel', [
+                        'costCenterId' => $costCenter->id,
+                        'psGroupId' => $psGroup->id,
+                        'date_from' => request('date_from'),
+                        'date_to' => request('date_to'),
+                    ]) }}"
+                        class="btn btn-success">
+                        <i class="fas fa-file-excel"></i>
+                        Excel
+                    </a>
+
+                    <a href="{{ route('daily-activity.export-pdf', [
+                        'costCenterId' => $costCenter->id,
+                        'psGroupId' => $psGroup->id,
+                        'date_from' => request('date_from'),
+                        'date_to' => request('date_to'),
+                    ]) }}"
+                        class="btn btn-danger" target="_blank">
+                        <i class="fas fa-file-pdf"></i>
+                        PDF
+                    </a>
+                </div>
+
                 <table class="table table-bordered">
                     <thead>
                         <tr>
@@ -83,6 +108,7 @@
                             <th>Nama Karyawan</th>
                             <th class="text-right">Kg</th>
                             <th class="text-right">Lama Packing</th>
+                            <th class="text-right">Productivity</th>
                             <th class="text-right">Harga/kg</th>
                             <th class="text-right">Rupiah</th>
                             <th>Yang Input</th>
@@ -100,6 +126,7 @@
                                 <td>{{ $detail->employee_name }}</td>
                                 <td class="text-right">{{ number_format($detail->total_kg, 2, ',', '.') }}</td>
                                 <td class="text-right">{{ number_format($detail->lama_packing, 2, ',', '.') }}</td>
+                                <td class="text-right">{{ number_format($detail->productivity, 2, ',', '.') }}</td>
                                 <td class="text-right">Rp {{ number_format($detail->harga_per_kg, 2, ',', '.') }}</td>
                                 <td class="text-right"><strong>Rp
                                         {{ number_format($detail->total_harga, 2, ',', '.') }}</strong></td>

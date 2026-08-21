@@ -257,6 +257,9 @@ class DashboardController extends Controller
             ->take(10)
             ->get();
 
+        $departments = Department::orderBy('name')->get();
+
+
         return view('pages.dashboard.admin', compact(
             'startDate',
             'endDate',
@@ -277,6 +280,7 @@ class DashboardController extends Controller
             'dailyActivityProgress',
 
             'departmentSummary',
+            'departments',
 
             'notAttendance',
             'notInputDailyActivity',

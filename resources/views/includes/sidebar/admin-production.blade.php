@@ -82,10 +82,10 @@
                             class="nav-link" href="{{ route('admin-production.daily-activity.create') }}">Tambah
                             Daily Activity</a>
                     </li>
-                    <li class="{{ Request::is('admin-production/daily-activity/import') ? 'active' : '' }}"><a
+                    {{-- <li class="{{ Request::is('admin-production/daily-activity/import') ? 'active' : '' }}"><a
                             class="nav-link" href="{{ route('admin-production.daily-activity.import') }}">Import
                             Daily Activity</a>
-                    </li>
+                    </li> --}}
 
                 </ul>
             </li>

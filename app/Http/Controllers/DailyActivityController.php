@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\DailyActivityExport;
 use App\Imports\DailyActivityDetailImport;
 use App\Imports\DailyActivityImport;
 use App\Imports\DailyActivityRevisionImport;
@@ -13,6 +14,7 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Product;
 use App\Models\PsGroup;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -52,6 +54,7 @@ class DailyActivityController extends Controller
             ->get([
                 'id',
                 'material_name',
+                'material_code',
                 'harga_per_kg'
             ]);
 
@@ -133,7 +136,8 @@ class DailyActivityController extends Controller
             $outputKg    = (float) $detail['output_kg'];
             $lamaPacking = (float) $detail['lama_packing'];
             $hargaPerKg  = (float) $product->harga_per_kg;
-            $totalHarga  = $outputKg * $lamaPacking * $hargaPerKg;
+            $totalHarga  = $outputKg * $hargaPerKg;
+             $productivity = $lamaPacking > 0 ? $outputKg / $lamaPacking : 0;
 
             foreach ($detail['employee_id'] as $employeeId) {
 
@@ -152,6 +156,7 @@ class DailyActivityController extends Controller
                     'lama_packing' => $lamaPacking,
                     'harga_per_kg' => $hargaPerKg,
                     'total_harga'  => $totalHarga,
+                    'productivity' => $productivity,
                 ]);
             }
         }
@@ -507,9 +512,12 @@ class DailyActivityController extends Controller
                 'daily_activity_details.total_kg',
                 'daily_activity_details.lama_packing',
                 'daily_activity_details.harga_per_kg',
-                'daily_activity_details.total_harga'
+                'daily_activity_details.total_harga',
+                'daily_activity_details.productivity'
             )
             ->orderByDesc('daily_activities.tanggal')
+            ->orderByDesc('daily_activity_details.product_id')
+            ->orderByDesc('daily_activity_details.id')
             ->paginate(100)->withQueryString();
 
         return view('pages.admin_production.daily_activity.detail', compact(
@@ -550,7 +558,8 @@ class DailyActivityController extends Controller
                 'daily_activity_details.total_kg',
                 'daily_activity_details.lama_packing',
                 'daily_activity_details.harga_per_kg',
-                'daily_activity_details.total_harga'
+                'daily_activity_details.total_harga',
+                'daily_activity_details.productivity'
             )
             ->orderByDesc('daily_activities.tanggal')
             ->paginate(100)->withQueryString();
@@ -593,7 +602,8 @@ class DailyActivityController extends Controller
                 'daily_activity_details.total_kg',
                 'daily_activity_details.lama_packing',
                 'daily_activity_details.harga_per_kg',
-                'daily_activity_details.total_harga'
+                'daily_activity_details.total_harga',
+                'daily_activity_details.productivity'
             )
             ->orderByDesc('daily_activities.tanggal')
             ->paginate(100)->withQueryString();
@@ -607,61 +617,61 @@ class DailyActivityController extends Controller
         ));
     }
 
-    public function importPage()
-    {
-        $departmentId = auth()->user()->department_id;
+    // public function importPage()
+    // {
+    //     $departmentId = auth()->user()->department_id;
 
-        $department = Department::where('id', $departmentId)->firstOrFail();
+    //     $department = Department::where('id', $departmentId)->firstOrFail();
 
-        $costCenterList = CostCenter::where('department_id', $departmentId)->orderBy('name')->get();
+    //     $costCenterList = CostCenter::where('department_id', $departmentId)->orderBy('name')->get();
 
-        return view('pages.admin_production.daily_activity.import', compact(
-            'department',
-            'costCenterList',
-        ));
-    }
+    //     return view('pages.admin_production.daily_activity.import', compact(
+    //         'department',
+    //         'costCenterList',
+    //     ));
+    // }
 
-    public function upload(Request $request)
-    {
-        $request->validate([
-            'tanggal'        => 'required|date',
-            'cost_center_id' => 'required|exists:cost_centers,id',
-            'ps_group_id'    => 'required|exists:ps_groups,id',
-            'file'           => 'required|mimes:xlsx,xls',
-        ]);
+    // public function upload(Request $request)
+    // {
+    //     $request->validate([
+    //         'tanggal'        => 'required|date',
+    //         'cost_center_id' => 'required|exists:cost_centers,id',
+    //         'ps_group_id'    => 'required|exists:ps_groups,id',
+    //         'file'           => 'required|mimes:xlsx,xls',
+    //     ]);
 
-        try {
-            $costCenter = CostCenter::findOrFail($request->cost_center_id);
-            $psGroup    = PsGroup::findOrFail($request->ps_group_id);
+    //     try {
+    //         $costCenter = CostCenter::findOrFail($request->cost_center_id);
+    //         $psGroup    = PsGroup::findOrFail($request->ps_group_id);
 
-            $import = new DailyActivityDetailImport(
-                $request->tanggal,
-                $costCenter,
-                $psGroup,
-                auth()->user()->department_id,
-                auth()->id()
-            );
+    //         $import = new DailyActivityDetailImport(
+    //             $request->tanggal,
+    //             $costCenter,
+    //             $psGroup,
+    //             auth()->user()->department_id,
+    //             auth()->id()
+    //         );
 
-            Excel::import($import, $request->file('file'));
+    //         Excel::import($import, $request->file('file'));
 
-            $summary = "Karyawan baru: {$import->headersCreated}, update: {$import->headersUpdated}. "
-                    . "Detail baru: {$import->detailsCreated}, update: {$import->detailsUpdated}.";
+    //         $summary = "Karyawan baru: {$import->headersCreated}, update: {$import->headersUpdated}. "
+    //                 . "Detail baru: {$import->detailsCreated}, update: {$import->detailsUpdated}.";
 
-            if (!empty($import->errors)) {
-                return back()
-                    ->withInput()
-                    ->with('warning', "Import selesai dengan catatan. {$summary}")
-                    ->with('import_errors', $import->errors);
-            }
+    //         if (!empty($import->errors)) {
+    //             return back()
+    //                 ->withInput()
+    //                 ->with('warning', "Import selesai dengan catatan. {$summary}")
+    //                 ->with('import_errors', $import->errors);
+    //         }
 
-            return redirect()
-                ->route('admin-production.daily-activity.index')
-                ->with('success', "Daily activity berhasil diimport. {$summary}");
+    //         return redirect()
+    //             ->route('admin-production.daily-activity.index')
+    //             ->with('success', "Daily activity berhasil diimport. {$summary}");
 
-        } catch (\Throwable $e) {
-            return back()->withInput()->with('error', $e->getMessage());
-        }
-    }
+    //     } catch (\Throwable $e) {
+    //         return back()->withInput()->with('error', $e->getMessage());
+    //     }
+    // }
 
     public function destroy($id)
     {
@@ -762,5 +772,108 @@ class DailyActivityController extends Controller
                 ->back()
                 ->with('error', 'Gagal mengupdate data: ' . $e->getMessage());
         }
+    }
+
+    public function exportExcel(Request $request, $costCenterId, $psGroupId)
+    {
+        $fromDate = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
+        $toDate   = $request->date_to ?? now()->format('Y-m-d');
+
+        $fileName = "daily-activity-{$fromDate}-to-{$toDate}.xlsx";
+
+        return Excel::download(
+            new DailyActivityExport($costCenterId, $psGroupId, $fromDate, $toDate),
+            $fileName
+        );
+    }
+
+    public function exportPdf(Request $request, $costCenterId, $psGroupId)
+    {
+        $fromDate = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
+        $toDate   = $request->date_to ?? now()->format('Y-m-d');
+
+        $costCenter = CostCenter::findOrFail($costCenterId);
+        $psGroup    = PsGroup::findOrFail($psGroupId);
+
+        $data = DailyActivityDetail::with(['product', 'dailyActivity.employee', 'dailyActivity.inputBy'])
+            ->whereHas('dailyActivity', function ($q) use ($costCenterId, $psGroupId, $fromDate, $toDate) {
+                $q->where('cost_center_id', $costCenterId)
+                ->where('ps_group_id', $psGroupId)
+                ->whereBetween('tanggal', [$fromDate, $toDate]);
+            })
+            ->join('daily_activities', 'daily_activities.id', '=', 'daily_activity_details.daily_activity_id')
+            ->orderBy('daily_activities.tanggal')
+            ->select('daily_activity_details.*')
+            ->get();
+
+        $pdf = Pdf::loadView('pages.admin_production.daily_activity.pdf', [
+            'data'           => $data,
+            'fromDate'       => \Carbon\Carbon::parse($fromDate)->format('d M Y'),
+            'toDate'         => \Carbon\Carbon::parse($toDate)->format('d M Y'),
+            'costCenterName' => $costCenter->name,
+            'psGroupName'    => $psGroup->name,
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download("daily-activity-{$fromDate}-to-{$toDate}.pdf");
+    }
+
+    public function exportPdfGeneralManager(Request $request, $costCenterId, $psGroupId)
+    {
+        $fromDate = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
+        $toDate   = $request->date_to ?? now()->format('Y-m-d');
+
+        $costCenter = CostCenter::findOrFail($costCenterId);
+        $psGroup    = PsGroup::findOrFail($psGroupId);
+
+        $data = DailyActivityDetail::with(['product', 'dailyActivity.employee', 'dailyActivity.inputBy'])
+            ->whereHas('dailyActivity', function ($q) use ($costCenterId, $psGroupId, $fromDate, $toDate) {
+                $q->where('cost_center_id', $costCenterId)
+                ->where('ps_group_id', $psGroupId)
+                ->whereBetween('tanggal', [$fromDate, $toDate]);
+            })
+            ->join('daily_activities', 'daily_activities.id', '=', 'daily_activity_details.daily_activity_id')
+            ->orderBy('daily_activities.tanggal')
+            ->select('daily_activity_details.*')
+            ->get();
+
+        $pdf = Pdf::loadView('pages.general_manager.daily-activity.pdf', [
+            'data'           => $data,
+            'fromDate'       => \Carbon\Carbon::parse($fromDate)->format('d M Y'),
+            'toDate'         => \Carbon\Carbon::parse($toDate)->format('d M Y'),
+            'costCenterName' => $costCenter->name,
+            'psGroupName'    => $psGroup->name,
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download("daily-activity-{$fromDate}-to-{$toDate}.pdf");
+    }
+
+    public function exportPdfManager(Request $request, $costCenterId, $psGroupId)
+    {
+        $fromDate = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
+        $toDate   = $request->date_to ?? now()->format('Y-m-d');
+
+        $costCenter = CostCenter::findOrFail($costCenterId);
+        $psGroup    = PsGroup::findOrFail($psGroupId);
+
+        $data = DailyActivityDetail::with(['product', 'dailyActivity.employee', 'dailyActivity.inputBy'])
+            ->whereHas('dailyActivity', function ($q) use ($costCenterId, $psGroupId, $fromDate, $toDate) {
+                $q->where('cost_center_id', $costCenterId)
+                ->where('ps_group_id', $psGroupId)
+                ->whereBetween('tanggal', [$fromDate, $toDate]);
+            })
+            ->join('daily_activities', 'daily_activities.id', '=', 'daily_activity_details.daily_activity_id')
+            ->orderBy('daily_activities.tanggal')
+            ->select('daily_activity_details.*')
+            ->get();
+
+        $pdf = Pdf::loadView('pages.manager.daily-activity.pdf', [
+            'data'           => $data,
+            'fromDate'       => \Carbon\Carbon::parse($fromDate)->format('d M Y'),
+            'toDate'         => \Carbon\Carbon::parse($toDate)->format('d M Y'),
+            'costCenterName' => $costCenter->name,
+            'psGroupName'    => $psGroup->name,
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download("daily-activity-{$fromDate}-to-{$toDate}.pdf");
     }
 }

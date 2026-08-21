@@ -29,6 +29,8 @@ return new class extends Migration
             $table->decimal('total_harga', 16, 2)->default(0);
 
             $table->decimal('lama_packing', 16, 2)->default(0);
+
+            $table->decimal('productivity', 16, 2)->default(0);
  
             $table->timestamps();
  

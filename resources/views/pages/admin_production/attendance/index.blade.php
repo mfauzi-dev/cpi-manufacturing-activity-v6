@@ -29,86 +29,103 @@
 
                     <div class="row">
 
-                        {{-- DATE --}}
                         <div class="col-md-4 mb-2">
-                            <input type="date" name="date" class="form-control" value="{{ request('date', $date) }}">
+                            <div class="form-group">
+                                <label>Tanggal</label>
+                                <input type="date" name="date" class="form-control"
+                                    value="{{ request('date', $date) }}">
+                            </div>
                         </div>
 
-                        {{-- STATUS --}}
                         <div class="col-md-4 mb-2">
-                            <select name="status" class="form-control">
+                            <div class="form-group">
+                                <label>Status</label>
+                                <select name="status" class="form-control">
 
-                                <option value="">Semua Status</option>
+                                    <option value="">Semua Status</option>
 
-                                <option value="hadir" {{ request('status') == 'hadir' ? 'selected' : '' }}>
-                                    Hadir
-                                </option>
-
-                                <option value="cuti" {{ request('status') == 'cuti' ? 'selected' : '' }}>
-                                    Cuti
-                                </option>
-
-                                <option value="alfa" {{ request('status') == 'alfa' ? 'selected' : '' }}>
-                                    Alpa
-                                </option>
-
-                                <option value="izin" {{ request('status') == 'izin' ? 'selected' : '' }}>
-                                    Izin
-                                </option>
-
-                                <option value="sakit" {{ request('status') == 'sakit' ? 'selected' : '' }}>
-                                    Sakit
-                                </option>
-
-                            </select>
-                        </div>
-
-                        {{-- OUTSOURCING --}}
-                        <div class="col-md-4 mb-2">
-                            <select name="outsourcing_id" class="form-control">
-
-                                <option value="">Semua OS</option>
-
-                                @foreach ($outsourcings as $os)
-                                    <option value="{{ $os->id }}"
-                                        {{ request('outsourcing_id') == $os->id ? 'selected' : '' }}>
-                                        {{ $os->name }}
+                                    <option value="hadir" {{ request('status') == 'hadir' ? 'selected' : '' }}>
+                                        Hadir
                                     </option>
-                                @endforeach
 
-                            </select>
-                        </div>
-
-                        <div class="col-md-4 mb-2">
-                            <select name="cost_center_id" id="cost_center_id" class="form-control">
-
-                                <option value="">Semua Cost Center</option>
-
-                                @foreach ($costCenters as $cost_center)
-                                    <option value="{{ $cost_center->id }}"
-                                        {{ request('cost_center_id') == $cost_center->id ? 'selected' : '' }}>
-                                        {{ $cost_center->name }}
+                                    <option value="cuti" {{ request('status') == 'cuti' ? 'selected' : '' }}>
+                                        Cuti
                                     </option>
-                                @endforeach
 
-                            </select>
+                                    <option value="alfa" {{ request('status') == 'alfa' ? 'selected' : '' }}>
+                                        Alpa
+                                    </option>
+
+                                    <option value="izin" {{ request('status') == 'izin' ? 'selected' : '' }}>
+                                        Izin
+                                    </option>
+
+                                    <option value="sakit" {{ request('status') == 'sakit' ? 'selected' : '' }}>
+                                        Sakit
+                                    </option>
+
+                                </select>
+                            </div>
                         </div>
 
                         <div class="col-md-4 mb-2">
-                            <select name="ps_group_id" id="ps_group_id" class="form-control">
-                                <option value="">Semua PS Group</option>
-                            </select>
+                            <div class="form-group">
+                                <label>Outsourcing</label>
+                                <select name="outsourcing_id" class="form-control">
+
+                                    <option value="">Semua OS</option>
+
+                                    @foreach ($outsourcings as $os)
+                                        <option value="{{ $os->id }}"
+                                            {{ request('outsourcing_id') == $os->id ? 'selected' : '' }}>
+                                            {{ $os->name }}
+                                        </option>
+                                    @endforeach
+
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 mb-2">
+                            <div class="form-group">
+                                <label>Cost Center</label>
+                                <select name="cost_center_id" id="cost_center_id" class="form-control">
+
+                                    <option value="">Semua Cost Center</option>
+
+                                    @foreach ($costCenters as $cost_center)
+                                        <option value="{{ $cost_center->id }}"
+                                            {{ request('cost_center_id') == $cost_center->id ? 'selected' : '' }}>
+                                            {{ $cost_center->name }}
+                                        </option>
+                                    @endforeach
+
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 mb-2">
+                            <div class="form-group">
+                                <label>Group</label>
+                                <select name="ps_group_id" id="ps_group_id" class="form-control">
+                                    <option value="">Semua Group</option>
+                                </select>
+                            </div>
                         </div>
 
                         {{-- SEARCH --}}
                         <div class="col-md-4 mb-2">
-                            <input type="text" name="search" class="form-control" placeholder="Cari NIK / Nama"
-                                value="{{ request('search') }}">
+                            <div class="form-group">
+                                <label>Nama Karyawan</label>
+                                <input type="text" name="search" class="form-control" placeholder="Cari NIK / Nama"
+                                    value="{{ request('search') }}">
+                            </div>
+
                         </div>
 
                     </div>
 
-                    <div class="mt-2">
+                    <div>
 
                         <button type="submit" class="btn btn-primary">
                             Filter
@@ -245,7 +262,7 @@
             if (costCenterId == '') {
 
                 $('#ps_group_id').html(
-                    '<option value="">Semua PS Group</option>'
+                    '<option value="">Semua Group</option>'
                 );
 
                 return;
@@ -253,7 +270,7 @@
 
             $.get('/attendance/ps-groups/' + costCenterId, function(res) {
 
-                let html = '<option value="">Semua PS Group</option>';
+                let html = '<option value="">Semua Group</option>';
 
                 $.each(res, function(i, item) {
 

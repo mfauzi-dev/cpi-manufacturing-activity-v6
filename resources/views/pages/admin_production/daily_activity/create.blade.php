@@ -34,7 +34,6 @@
 
                     <div class="row">
 
-                        {{-- Tanggal --}}
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label>Tanggal</label>
@@ -44,7 +43,6 @@
                             </div>
                         </div>
 
-                        {{-- Department (readonly, dari user login) --}}
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label>Department</label>
@@ -53,7 +51,6 @@
                             </div>
                         </div>
 
-                        {{-- Cost Center --}}
                         <div class="col-md-3">
                             <div class="form-group">
 
@@ -79,16 +76,15 @@
                             </div>
                         </div>
 
-                        {{-- PS GROUP --}}
                         <div class="col-md-3">
                             <div class="form-group">
 
-                                <label>PS Group</label>
+                                <label>Group</label>
 
                                 <select id="ps_group" name="ps_group_id"
                                     class="form-control @error('ps_group_id') is-invalid @enderror">
 
-                                    <option value="">Pilih PS Group</option>
+                                    <option value="">Pilih Group</option>
 
                                 </select>
 
@@ -99,13 +95,10 @@
                             </div>
                         </div>
 
-                        {{-- EMPLOYEE (satu untuk seluruh baris material di bawah) --}}
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label>Employee</label>
+                                <label>Nama Karyawan</label>
 
-                                {{-- SENGAJA tanpa "name" -- value-nya di-copy ke tiap baris
-                                     material lewat JS pas submit, lihat handler #dailyActivityForm --}}
                                 <select id="employee_id_group" multiple class="form-control select2">
                                 </select>
 
@@ -132,16 +125,17 @@
 
                 <div class="card-body table-responsive">
 
-                    <table class="table table-bordered" id="detailTable">
+                    <table class="table table-bordered" id="detailTable" style="table-layout: fixed;">
                         <thead class="text-center">
                             <tr>
-                                <th width="60">No</th>
-                                <th>Nama Material</th>
+                                <th width="100">No</th>
+                                <th width="350">Nama Material</th>
                                 <th width="150">Output KG</th>
                                 <th width="150">Lama Packing</th>
+                                <th width="130">Productivity</th>
                                 <th width="170">Harga / KG</th>
                                 <th width="170">Rupiah</th>
-                                <th width="60">Aksi</th>
+                                <th width="100">Aksi</th>
                             </tr>
                         </thead>
 
@@ -165,6 +159,10 @@
                                 <td>
                                     <input type="number" step="0.01" name="details[0][lama_packing]"
                                         class="form-control lama-packing" min="0">
+                                </td>
+
+                                <td class="text-right align-middle">
+                                    <span class="productivity">-</span>
                                 </td>
 
                                 <td class="text-right align-middle">
@@ -214,6 +212,25 @@
     </div>
 @endsection
 
+@push('styles')
+    <style>
+        #detailTable td {
+            max-width: 0;
+            /* trik biar table-layout ngikutin width kolom, bukan konten */
+        }
+
+        #detailTable .select2-container {
+            width: 100% !important;
+        }
+
+        #detailTable .select2-container .select2-selection__rendered {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+@endpush
+
 @push('scripts')
     <script>
         $(function() {
@@ -232,7 +249,7 @@
 
             let costCenterId = $(this).val();
 
-            $('#ps_group').html('<option value="">Pilih PS Group</option>');
+            $('#ps_group').html('<option value="">Pilih Group</option>');
             resetEmployeeSelect();
 
             if (!costCenterId) {
@@ -257,7 +274,7 @@
                     $.each(res, function(i, item) {
                         options += `
                         <option value="${item.id}" data-price="${item.harga_per_kg}">
-                            ${item.material_name}
+                            ${item.material_name} - ${item.material_code}
                         </option>`;
                     });
 
@@ -266,6 +283,7 @@
                     $('#detailTable tbody tr').each(function() {
                         $(this).find('.harga-per-kg').text('-');
                         $(this).find('.rupiah').text('-');
+                        $(this).find('.productivity').text('-');
                     });
                 }
             );
@@ -275,7 +293,7 @@
                 "{{ route('daily-activity.ps-groups', ':id') }}".replace(':id', costCenterId),
                 function(data) {
 
-                    let html = '<option value="">Pilih PS Group</option>';
+                    let html = '<option value="">Pilih Group</option>';
                     let oldPsGroup = "{{ old('ps_group_id') }}";
 
                     $.each(data, function(i, item) {
@@ -367,9 +385,22 @@
             let lamaPacking = parseFloat(row.find('.lama-packing').val()) || 0;
             let harga = row.find('.product option:selected').data('price') || 0;
 
-            let total = kg * lamaPacking * harga;
+            let total = kg * harga;
 
             row.find('.rupiah').text('Rp ' + Number(total).toLocaleString('id-ID'));
+
+            // Productivity = output kg / lama packing
+            let productivityEl = row.find('.productivity');
+
+            if (lamaPacking > 0) {
+                let productivity = kg / lamaPacking;
+                productivityEl.text(productivity.toLocaleString('id-ID', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }));
+            } else {
+                productivityEl.text('-');
+            }
         }
 
         let rowIndex = 1;
@@ -403,6 +434,10 @@
                 <td>
                     <input type="number" step="0.01" min="0"
                         name="details[${rowIndex}][lama_packing]" class="form-control lama-packing">
+                </td>
+
+                <td class="text-right align-middle">
+                    <span class="productivity">-</span>
                 </td>
 
                 <td class="text-right align-middle">

@@ -94,8 +94,11 @@
                         </div>
 
                         <div class="col-md-3 mb-2">
-                            <input type="text" name="search" class="form-control" placeholder="Cari NIK / Nama"
-                                value="{{ request('search') }}">
+                            <div class="form-group">
+                                <label>Nama Karyawan</label>
+                                <input type="text" name="search" class="form-control" placeholder="Cari NIK / Nama"
+                                    value="{{ request('search') }}">
+                            </div>
                         </div>
 
                     </div>

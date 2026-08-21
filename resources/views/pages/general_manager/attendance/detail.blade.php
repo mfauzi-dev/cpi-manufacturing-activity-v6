@@ -13,7 +13,6 @@
             </a>
         </div>
 
-        {{-- INFO KARYAWAN --}}
         <div class="card mb-3">
             <div class="card-body d-flex justify-content-between align-items-center flex-wrap">
 
@@ -44,7 +43,6 @@
             </div>
         </div>
 
-        {{-- TABLE --}}
         <div class="card">
             <div class="card-body table-responsive">
 

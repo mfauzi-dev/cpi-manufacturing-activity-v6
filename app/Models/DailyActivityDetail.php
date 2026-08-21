@@ -16,6 +16,7 @@ class DailyActivityDetail extends Model
         'harga_per_kg',
         'total_harga',
         'lama_packing',
+        'productivity'
     ];
  
     protected $casts = [

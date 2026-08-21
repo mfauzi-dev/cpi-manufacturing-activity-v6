@@ -39,40 +39,49 @@
                     <div class="row">
 
                         <div class="col-md-3 mb-3">
-                            <label>Cost Center</label>
-                            <select class="form-control" id="cost_center_id" name="cost_center_id">
-                                <option value="">Semua Cost Center</option>
+                            <div class="form-group">
+                                <label>Cost Center</label>
+                                <select class="form-control" id="cost_center_id" name="cost_center_id">
+                                    <option value="">Semua Cost Center</option>
 
-                                @foreach ($costCenters as $costCenter)
-                                    <option value="{{ $costCenter->id }}" @selected(request('cost_center_id') == $costCenter->id)>
-                                        {{ $costCenter->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                                    @foreach ($costCenters as $costCenter)
+                                        <option value="{{ $costCenter->id }}" @selected(request('cost_center_id') == $costCenter->id)>
+                                            {{ $costCenter->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
 
 
                         <div class="col-md-3 mb-3">
-                            <label>PS Group</label>
-                            <select class="form-control" id="ps_group_id" name="ps_group_id">
-                                <option value="">Semua PS Group</option>
-                            </select>
+                            <div class="form-group">
+                                <label>Group</label>
+                                <select class="form-control" id="ps_group_id" name="ps_group_id">
+                                    <option value="">Semua Group</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="col-md-3 mb-3">
-                            <label>Dari Tanggal</label>
-                            <input type="date" name="start_date" class="form-control"
-                                value="{{ request('start_date') }}">
+                            <div class="form-group">
+                                <label>Dari Tanggal</label>
+                                <input type="date" name="start_date" class="form-control"
+                                    value="{{ request('start_date') }}">
+                            </div>
                         </div>
 
                         <div class="col-md-3 mb-3">
-                            <label>Sampai Tanggal</label>
-                            <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
+                            <div class="form-group">
+                                <label>Sampai Tanggal</label>
+                                <input type="date" name="end_date" class="form-control"
+                                    value="{{ request('end_date') }}">
+                            </div>
                         </div>
 
                     </div>
 
-                    <div class="mt-2">
+                    <div>
                         <button type="submit" class="btn btn-primary">Filter</button>
                         <a href="{{ route('admin-production.daily-activity.index') }}" class="btn btn-secondary">Reset</a>
                     </div>
@@ -92,7 +101,7 @@
                             <th>Cost Center</th>
                             <th>PS Group</th>
                             <th class="text-right">Total Kg</th>
-                            <th class="text-right">Rupiah per KG</th>
+                            <th class="text-right">Rupiah per KG Aktual</th>
                             <th class="text-right">Total Rupiah</th>
                             <th width="100">Action</th>
                         </tr>
@@ -126,7 +135,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center">Belum ada data</td>
+                                <td colspan="8" class="text-center">Belum ada data</td>
                             </tr>
                         @endforelse
 
@@ -172,13 +181,13 @@
             let costCenterId = $('#cost_center_id').val();
 
             if (costCenterId == '') {
-                $('#ps_group_id').html('<option value="">Semua PS Group</option>');
+                $('#ps_group_id').html('<option value="">Semua Group</option>');
                 return;
             }
 
             $.get('/daily-activity/ps-groups/' + costCenterId, function(res) {
 
-                let html = '<option value="">Semua PS Group</option>';
+                let html = '<option value="">Semua Group</option>';
 
                 $.each(res, function(i, item) {
 

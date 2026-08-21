@@ -61,58 +61,71 @@
                     <div class="row">
 
                         <div class="col-md-4 mb-3">
-                            <label>Department</label>
-                            <select class="form-control" id="department_id" name="department_id">
-                                <option value="">Semua Department</option>
-                                @foreach ($departments as $department)
-                                    <option value="{{ $department->id }}" @selected(request('department_id') == $department->id)>
+                            <div class="form-group">
+                                <label>Department</label>
+                                <select class="form-control" id="department_id" name="department_id">
+                                    <option value="">Semua Department</option>
+                                    @foreach ($departments as $department)
+                                        <option value="{{ $department->id }}" @selected(request('department_id') == $department->id)>
 
-                                        {{ $department->name }}
+                                            {{ $department->name }}
 
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-group">
+                                <label>Cost Center</label>
+                                <select class="form-control" id="cost_center_id" name="cost_center_id">
+                                    <option value="">Semua Cost Center</option>
+                                </select>
+
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <div class="form-group">
+                                <label>Group</label>
+                                <select class="form-control" id="ps_group_id" name="ps_group_id">
+                                    <option value="">Semua Group</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <div class="form-group">
+                                <label>Dari Tanggal</label>
+                                <input type="date" class="form-control" name="start_date"
+                                    value="{{ request('start_date') }}">
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <div class="form-group">
+                                <label>Sampai Tanggal</label>
+                                <input type="date" class="form-control" name="end_date"
+                                    value="{{ request('end_date') }}">
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <div class="form-group">
+                                <label>Quick Filter</label>
+                                <select name="quick_filter" class="form-control">
+                                    <option value="">Custom</option>
+                                    <option value="today" @selected(request('quick_filter') == 'today')>
+                                        Hari Ini
                                     </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label>Cost Center</label>
-                            <select class="form-control" id="cost_center_id" name="cost_center_id">
-                                <option value="">Semua Cost Center</option>
-                            </select>
-
-                        </div>
-
-                        <div class="col-md-4 mb-3">
-                            <label>PS Group</label>
-                            <select class="form-control" id="ps_group_id" name="ps_group_id">
-                                <option value="">Semua PS Group</option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-4 mb-3">
-                            <label>Dari</label>
-                            <input type="date" class="form-control" name="start_date"
-                                value="{{ request('start_date') }}">
-                        </div>
-
-                        <div class="col-md-4 mb-3">
-                            <label>Sampai</label>
-                            <input type="date" class="form-control" name="end_date" value="{{ request('end_date') }}">
-                        </div>
-
-                        <div class="col-md-4 mb-3">
-                            <label>Quick Filter</label>
-                            <select name="quick_filter" class="form-control">
-                                <option value="">Custom</option>
-                                <option value="today" @selected(request('quick_filter') == 'today')>
-                                    Hari Ini
-                                </option>
-                                <option value="week" @selected(request('quick_filter') == 'week')>
-                                    Minggu Ini
-                                </option>
-                                <option value="month" @selected(request('quick_filter') == 'month')>
-                                    Bulan Ini
-                                </option>
-                            </select>
+                                    <option value="week" @selected(request('quick_filter') == 'week')>
+                                        Minggu Ini
+                                    </option>
+                                    <option value="month" @selected(request('quick_filter') == 'month')>
+                                        Bulan Ini
+                                    </option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 

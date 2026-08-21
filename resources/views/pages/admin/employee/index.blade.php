@@ -32,69 +32,85 @@
                     <div class="row">
 
                         <div class="col-md-3 mb-2">
-                            <select name="employment_status" class="form-control">
-                                <option value="">Jenis Karyawan</option>
+                            <div class="form-group">
+                                <label>Jenis Karyawan</label>
+                                <select name="employment_status" class="form-control">
+                                    <option value="">Jenis Karyawan</option>
 
-                                <option value="permanent"
-                                    {{ request('employment_status') == 'permanent' ? 'selected' : '' }}>
-                                    Permanent
-                                </option>
-
-                                <option value="outsourcing"
-                                    {{ request('employment_status') == 'outsourcing' ? 'selected' : '' }}>
-                                    Outsourcing
-                                </option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-3 mb-2">
-                            <select name="employee_status" class="form-control">
-                                <option value="">Status</option>
-
-                                <option value="cpi" {{ request('employee_status') == 'cpi' ? 'selected' : '' }}>
-                                    CPI
-                                </option>
-
-                                <option value="borongan" {{ request('employee_status') == 'borongan' ? 'selected' : '' }}>
-                                    Borongan
-                                </option>
-
-                                <option value="harian" {{ request('employee_status') == 'harian' ? 'selected' : '' }}>
-                                    Harian
-                                </option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-3 mb-2">
-                            <select name="cost_center_id" class="form-control">
-                                <option value="">Semua Cost Center</option>
-
-                                @foreach ($costCenterList as $costCenter)
-                                    <option value="{{ $costCenter->id }}"
-                                        {{ request('cost_center_id') == $costCenter->id ? 'selected' : '' }}>
-                                        {{ $costCenter->code }} - {{ $costCenter->name }}
+                                    <option value="permanent"
+                                        {{ request('employment_status') == 'permanent' ? 'selected' : '' }}>
+                                        Permanent
                                     </option>
-                                @endforeach
-                            </select>
-                        </div>
 
-                        <div class="col-md-3 mb-2">
-                            <select name="position_id" class="form-control">
-                                <option value="">Semua Position</option>
-
-                                @foreach ($positionList as $position)
-                                    <option value="{{ $position->id }}"
-                                        {{ request('position_id') == $position->id ? 'selected' : '' }}>
-                                        {{ $position->name }}
+                                    <option value="outsourcing"
+                                        {{ request('employment_status') == 'outsourcing' ? 'selected' : '' }}>
+                                        Outsourcing
                                     </option>
-                                @endforeach
-                            </select>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 mb-2">
+                            <div class="form-group">
+                                <label>Status Karyawan</label>
+                                <select name="employee_status" class="form-control">
+                                    <option value="">Status</option>
+
+                                    <option value="cpi" {{ request('employee_status') == 'cpi' ? 'selected' : '' }}>
+                                        CPI
+                                    </option>
+
+                                    <option value="borongan"
+                                        {{ request('employee_status') == 'borongan' ? 'selected' : '' }}>
+                                        Borongan
+                                    </option>
+
+                                    <option value="harian" {{ request('employee_status') == 'harian' ? 'selected' : '' }}>
+                                        Harian
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 mb-2">
+                            <div class="form-group">
+                                <label>Cost Center</label>
+                                <select name="cost_center_id" class="form-control">
+                                    <option value="">Semua Cost Center</option>
+
+                                    @foreach ($costCenterList as $costCenter)
+                                        <option value="{{ $costCenter->id }}"
+                                            {{ request('cost_center_id') == $costCenter->id ? 'selected' : '' }}>
+                                            {{ $costCenter->code }} - {{ $costCenter->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 mb-2">
+                            <div class="form-group">
+                                <label>Position</label>
+                                <select name="position_id" class="form-control">
+                                    <option value="">Semua Position</option>
+
+                                    @foreach ($positionList as $position)
+                                        <option value="{{ $position->id }}"
+                                            {{ request('position_id') == $position->id ? 'selected' : '' }}>
+                                            {{ $position->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
 
 
                         <div class="col-md-3 mb-2">
-                            <input type="text" name="search" class="form-control" placeholder="NIK / Nama"
-                                value="{{ request('search') }}">
+                            <div class="form-group">
+                                <label>Nama Karyawan</label>
+                                <input type="text" name="search" class="form-control" placeholder="NIK / Nama"
+                                    value="{{ request('search') }}">
+                            </div>
                         </div>
 
                     </div>

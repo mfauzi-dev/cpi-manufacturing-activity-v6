@@ -15,102 +15,120 @@
 
                     <div class="row">
 
-                        {{-- BULAN --}}
-                        <div class="col-md-4 mb-2">
-                            <select name="month" class="form-control">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>
+                                    Bulan
+                                </label>
+                                <select name="month" class="form-control">
 
-                                @php
-                                    $bulanList = [
-                                        1 => 'Januari',
-                                        2 => 'Februari',
-                                        3 => 'Maret',
-                                        4 => 'April',
-                                        5 => 'Mei',
-                                        6 => 'Juni',
-                                        7 => 'Juli',
-                                        8 => 'Agustus',
-                                        9 => 'September',
-                                        10 => 'Oktober',
-                                        11 => 'November',
-                                        12 => 'Desember',
-                                    ];
-                                @endphp
+                                    @php
+                                        $bulanList = [
+                                            1 => 'Januari',
+                                            2 => 'Februari',
+                                            3 => 'Maret',
+                                            4 => 'April',
+                                            5 => 'Mei',
+                                            6 => 'Juni',
+                                            7 => 'Juli',
+                                            8 => 'Agustus',
+                                            9 => 'September',
+                                            10 => 'Oktober',
+                                            11 => 'November',
+                                            12 => 'Desember',
+                                        ];
+                                    @endphp
 
-                                @foreach ($bulanList as $value => $label)
-                                    <option value="{{ $value }}" {{ $monthNum == $value ? 'selected' : '' }}>
-                                        {{ $label }}
-                                    </option>
-                                @endforeach
+                                    @foreach ($bulanList as $value => $label)
+                                        <option value="{{ $value }}" {{ $monthNum == $value ? 'selected' : '' }}>
+                                            {{ $label }}
+                                        </option>
+                                    @endforeach
 
-                            </select>
+                                </select>
+                            </div>
                         </div>
 
-                        {{-- TAHUN --}}
-                        <div class="col-md-4 mb-2">
-                            <select name="year" class="form-control">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Tahun</label>
+                                <select name="year" class="form-control">
 
-                                @for ($y = now()->year; $y >= now()->year - 5; $y--)
-                                    <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>
-                                        {{ $y }}
-                                    </option>
-                                @endfor
+                                    @for ($y = now()->year; $y >= now()->year - 5; $y--)
+                                        <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>
+                                            {{ $y }}
+                                        </option>
+                                    @endfor
 
-                            </select>
-                        </div>
-
-
-                        {{-- OUTSOURCING --}}
-                        <div class="col-md-4 mb-2">
-                            <select name="outsourcing_id" class="form-control">
-
-                                <option value="">Semua OS</option>
-
-                                @foreach ($outsourcings as $os)
-                                    <option value="{{ $os->id }}"
-                                        {{ request('outsourcing_id') == $os->id ? 'selected' : '' }}>
-                                        {{ $os->name }}
-                                    </option>
-                                @endforeach
-
-                            </select>
-                        </div>
-
-                        {{-- DEPARTMENT --}}
-                        <div class="col-md-4 mb-2">
-                            <select name="department_id" id="department_id" class="form-control">
-                                <option value="">Semua Department</option>
-
-                                @foreach ($departments as $department)
-                                    <option value="{{ $department->id }}"
-                                        {{ request('department_id') == $department->id ? 'selected' : '' }}>
-                                        {{ $department->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="col-md-4 mb-2">
-                            <select name="cost_center_id" id="cost_center_id" class="form-control">
-                                <option value="">Semua Cost Center</option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-4 mb-2">
-                            <select name="ps_group_id" id="ps_group_id" class="form-control">
-                                <option value="">Semua PS Group</option>
-                            </select>
+                                </select>
+                            </div>
                         </div>
 
 
-                        {{-- SEARCH --}}
-                        <div class="col-md-4 mb-2">
-                            <input type="text" name="search" class="form-control" placeholder="Cari NIK / Nama"
-                                value="{{ request('search') }}">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Outsourcing</label>
+                                <select name="outsourcing_id" class="form-control">
+
+                                    <option value="">Semua OS</option>
+
+                                    @foreach ($outsourcings as $os)
+                                        <option value="{{ $os->id }}"
+                                            {{ request('outsourcing_id') == $os->id ? 'selected' : '' }}>
+                                            {{ $os->name }}
+                                        </option>
+                                    @endforeach
+
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Department</label>
+                                <select name="department_id" id="department_id" class="form-control">
+                                    <option value="">Semua Department</option>
+
+                                    @foreach ($departments as $department)
+                                        <option value="{{ $department->id }}"
+                                            {{ request('department_id') == $department->id ? 'selected' : '' }}>
+                                            {{ $department->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Cost Center</label>
+                                <select name="cost_center_id" id="cost_center_id" class="form-control">
+                                    <option value="">Semua Cost Center</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Group</label>
+                                <select name="ps_group_id" id="ps_group_id" class="form-control">
+                                    <option value="">Semua Group</option>
+                                </select>
+                            </div>
+                        </div>
+
+
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Nama Karyawan</label>
+                                <input type="text" name="search" class="form-control" placeholder="Cari NIK / Nama"
+                                    value="{{ request('search') }}">
+                            </div>
                         </div>
 
                     </div>
 
-                    <div class="mt-2">
+                    <div>
 
                         <button type="submit" class="btn btn-primary">
                             Filter
@@ -209,7 +227,7 @@
             </div>
 
             <div class="card-footer text-right">
-                {{ $employees->links() }}
+                {{ $employees->withQueryString()->links() }}
             </div>
 
         </div>
@@ -244,7 +262,7 @@
             if (departmentId == '') {
 
                 $('#cost_center_id').html('<option value="">Semua Cost Center</option>');
-                $('#ps_group_id').html('<option value="">Semua PS Group</option>');
+                $('#ps_group_id').html('<option value="">Semua Group</option>');
                 return;
 
             }
@@ -278,14 +296,14 @@
 
             if (costCenterId == '') {
 
-                $('#ps_group_id').html('<option value="">Semua PS Group</option>');
+                $('#ps_group_id').html('<option value="">Semua Group</option>');
                 return;
 
             }
 
             $.get('/attendance/ps-groups/' + costCenterId, function(res) {
 
-                let html = '<option value="">Semua PS Group</option>';
+                let html = '<option value="">Semua Group</option>';
 
                 $.each(res, function(i, item) {
 

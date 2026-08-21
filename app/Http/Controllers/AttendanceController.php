@@ -98,35 +98,23 @@ class AttendanceController extends Controller
             );
         }
 
-        // Filter OS
-        if ($outsourcingId) {
-            $query->where(
-                'outsourcing_id',
-                $outsourcingId
-            );
+               if ($request->outsourcing_id) {
+            $query->where('employees.outsourcing_id', $request->outsourcing_id);
         }
 
-        // Filter Cost Center
-        if ($costCenterId) {
-            $query->where(
-                'cost_center_id',
-                $costCenterId
-            );
+        if ($request->cost_center_id) {
+            $query->where('employees.cost_center_id', $request->cost_center_id);
         }
 
-        // Filter Group
-        if ($groupId) {
-            $query->where(
-                'ps_group_id',
-                $groupId
-            );
+        if ($request->ps_group_id) {
+            $query->where('employees.ps_group_id', $request->ps_group_id);
         }
 
         // Search
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                ->orWhere('nik', 'like', "%{$search}%");
+                $q->where('employees.name', 'like', "%{$search}%")
+                ->orWhere('employees.nik', 'like', "%{$search}%");
             });
         }
 
@@ -139,7 +127,10 @@ class AttendanceController extends Controller
         }
 
         $employees = $query
-            ->orderBy('name')
+            ->join('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
+            ->select('employees.*')
+            ->orderBy('ps_groups.name')
+            ->orderBy('employees.name')
             ->paginate($size)
             ->withQueryString();
 
@@ -186,25 +177,25 @@ class AttendanceController extends Controller
         ]);
 
         if ($request->department_id) {
-            $query->where('department_id', $request->department_id);
+            $query->where('employees.department_id', $request->department_id);
         }
 
         if ($request->outsourcing_id) {
-            $query->where('outsourcing_id', $request->outsourcing_id);
+            $query->where('employees.outsourcing_id', $request->outsourcing_id);
         }
 
         if ($request->cost_center_id) {
-            $query->where('cost_center_id', $request->cost_center_id);
+            $query->where('employees.cost_center_id', $request->cost_center_id);
         }
 
         if ($request->ps_group_id) {
-            $query->where('ps_group_id', $request->ps_group_id);
+            $query->where('employees.ps_group_id', $request->ps_group_id);
         }
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', "%{$request->search}%")
-                ->orWhere('nik', 'like', "%{$request->search}%");
+                $q->where('employees.name', 'like', "%{$request->search}%")
+                ->orWhere('employees.nik', 'like', "%{$request->search}%");
             });
         }
 
@@ -215,7 +206,10 @@ class AttendanceController extends Controller
         }
 
         $employees = $query
-            ->orderBy('name')
+            ->join('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
+            ->select('employees.*')
+            ->orderBy('ps_groups.name')
+            ->orderBy('employees.name')
             ->paginate($request->size ?? 50)
             ->withQueryString();
 
@@ -253,25 +247,25 @@ class AttendanceController extends Controller
         ]);
 
         if ($request->department_id) {
-            $query->where('department_id', $request->department_id);
+            $query->where('employees.department_id', $request->department_id);
         }
 
         if ($request->outsourcing_id) {
-            $query->where('outsourcing_id', $request->outsourcing_id);
+            $query->where('employees.outsourcing_id', $request->outsourcing_id);
         }
 
         if ($request->cost_center_id) {
-            $query->where('cost_center_id', $request->cost_center_id);
+            $query->where('employees.cost_center_id', $request->cost_center_id);
         }
 
         if ($request->ps_group_id) {
-            $query->where('ps_group_id', $request->ps_group_id);
+            $query->where('employees.ps_group_id', $request->ps_group_id);
         }
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', "%{$request->search}%")
-                ->orWhere('nik', 'like', "%{$request->search}%");
+                $q->where('employees.name', 'like', "%{$request->search}%")
+                ->orWhere('employees.nik', 'like', "%{$request->search}%");
             });
         }
 
@@ -282,7 +276,10 @@ class AttendanceController extends Controller
         }
 
         $employees = $query
-            ->orderBy('name')
+            ->join('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
+            ->select('employees.*')
+            ->orderBy('ps_groups.name')
+            ->orderBy('employees.name')
             ->paginate($request->size ?? 50)
             ->withQueryString();
 
@@ -325,34 +322,24 @@ class AttendanceController extends Controller
                 $user->department_id
             );
         }
- 
-        // Filter OS
-        if ($outsourcingId) {
-            $query->where(
-                'outsourcing_id',
-                $outsourcingId
-            );
-        }
- 
-        if ($costCenterId) {
-            $query->where(
-                'cost_center_id',
-                $costCenterId
-            );
+        
+        if ($request->outsourcing_id) {
+            $query->where('employees.outsourcing_id', $request->outsourcing_id);
         }
 
-        if ($psGroupId) {
-            $query->where(
-                'ps_group_id',
-                $psGroupId
-            );
+        if ($request->cost_center_id) {
+            $query->where('employees.cost_center_id', $request->cost_center_id);
+        }
+
+        if ($request->ps_group_id) {
+            $query->where('employees.ps_group_id', $request->ps_group_id);
         }
  
         // Search
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('nik', 'like', "%{$search}%");
+                $q->where('employees.name', 'like', "%{$search}%")
+                    ->orWhere('employees.nik', 'like', "%{$search}%");
             });
         }
  
@@ -386,7 +373,10 @@ class AttendanceController extends Controller
         ]);
  
         $employees = $query
-            ->orderBy('name')
+            ->join('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
+            ->addSelect('employees.*')
+            ->orderBy('ps_groups.name')
+            ->orderBy('employees.name')
             ->paginate($size)
             ->withQueryString();
  
@@ -468,41 +458,27 @@ class AttendanceController extends Controller
  
         $query = Employee::with(['department', 'costCenter', 'psGroup', 'outsourcing']);
  
-        // Filter Department
-        if ($departmentId) {
-            $query->where(
-                'department_id',
-                $departmentId
-            );
+        if ($request->department_id) {
+            $query->where('employees.department_id', $request->department_id);
         }
- 
-        // Filter OS
-        if ($outsourcingId) {
-            $query->where(
-                'outsourcing_id',
-                $outsourcingId
-            );
+
+        if ($request->outsourcing_id) {
+            $query->where('employees.outsourcing_id', $request->outsourcing_id);
         }
- 
-        if ($costCenterId) {
-            $query->where(
-                'cost_center_id',
-                $costCenterId
-            );
+
+        if ($request->cost_center_id) {
+            $query->where('employees.cost_center_id', $request->cost_center_id);
         }
-        
-        if ($psGroupId) {
-            $query->where(
-                'ps_group_id',
-                $psGroupId
-            );
+
+        if ($request->ps_group_id) {
+            $query->where('employees.ps_group_id', $request->ps_group_id);
         }
  
         // Search
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('nik', 'like', "%{$search}%");
+                $q->where('employees.name', 'like', "%{$search}%")
+                    ->orWhere('employees.nik', 'like', "%{$search}%");
             });
         }
  
@@ -536,7 +512,10 @@ class AttendanceController extends Controller
         ]);
  
         $employees = $query
-            ->orderBy('name')
+            ->join('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
+            ->addSelect('employees.*')
+            ->orderBy('ps_groups.name')
+            ->orderBy('employees.name')
             ->paginate($size)
             ->withQueryString();
  
@@ -584,41 +563,28 @@ class AttendanceController extends Controller
  
         $query = Employee::with(['department', 'costCenter', 'psGroup', 'outsourcing']);
  
-        // Filter Department
-        if ($departmentId) {
-            $query->where(
-                'department_id',
-                $departmentId
-            );
-        }
- 
-        // Filter OS
-        if ($outsourcingId) {
-            $query->where(
-                'outsourcing_id',
-                $outsourcingId
-            );
-        }
- 
-        if ($costCenterId) {
-            $query->where(
-                'cost_center_id',
-                $costCenterId
-            );
+        
+        if ($request->department_id) {
+            $query->where('employees.department_id', $request->department_id);
         }
 
-        if ($psGroupId) {
-            $query->where(
-                'ps_group_id',
-                $psGroupId
-            );
+        if ($request->outsourcing_id) {
+            $query->where('employees.outsourcing_id', $request->outsourcing_id);
+        }
+
+        if ($request->cost_center_id) {
+            $query->where('employees.cost_center_id', $request->cost_center_id);
+        }
+
+        if ($request->ps_group_id) {
+            $query->where('employees.ps_group_id', $request->ps_group_id);
         }
  
         // Search
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('nik', 'like', "%{$search}%");
+                $q->where('employees.name', 'like', "%{$search}%")
+                    ->orWhere('employees.nik', 'like', "%{$search}%");
             });
         }
  
@@ -652,7 +618,10 @@ class AttendanceController extends Controller
         ]);
  
         $employees = $query
-            ->orderBy('name')
+            ->join('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
+            ->addSelect('employees.*')
+            ->orderBy('ps_groups.name')
+            ->orderBy('employees.name')
             ->paginate($size)
             ->withQueryString();
  

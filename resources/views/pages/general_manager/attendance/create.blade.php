@@ -23,8 +23,10 @@
                     <div class="row">
 
                         <div class="col-md-3 mb-2">
-                            <label>Tanggal</label>
-                            <input type="date" name="date" class="form-control" value="{{ $date }}">
+                            <div class="form-group">
+                                <label>Tanggal</label>
+                                <input type="date" name="date" class="form-control" value="{{ $date }}">
+                            </div>
                         </div>
 
                         <div class="col-md-3 mb-2">
