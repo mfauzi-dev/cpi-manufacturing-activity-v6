@@ -45,7 +45,7 @@ Route::middleware(['auth'])->group(function() {
     Route::get('/daily-activity/cost-centers/{departmentId}', [DailyActivityController::class, 'getCostCenters'])->name('daily-activity.cost-centers');
     Route::get('/daily-activity/ps-groups/{costCenterId}', [DailyActivityController::class, 'getPsGroups'])->name('daily-activity.ps-groups');
     Route::get('/attendance/cost-centers/{departmentId}', [AttendanceController::class, 'getCostCenters'])->name('attendance.cost-centers');
-    Route::get('/attendance/ps-groups/{costCenterId}', [AttendanceController::class, 'getPsGroups'])->name('daily-activity.ps-groups');
+    Route::get('/attendance/ps-groups/{costCenterId}', [AttendanceController::class, 'getPsGroups'])->name('attendance.ps-groups');
     Route::get('/daily-activity/employees/{costCenterId}/{psGroupId}', [DailyActivityController::class, 'getEmployees'])->name('daily-activity.employees');
     // Route::get('/employees/search', [EmployeeController::class, 'search']);
 });
