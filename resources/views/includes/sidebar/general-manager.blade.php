@@ -93,11 +93,25 @@
             <li class="dropdown {{ Request::is('general-manager/daily-activity*') ? 'active' : '' }}">
                 <a href="#" class="nav-link has-dropdown" data-toggle="dropdown"><i
                         class="fas fa-calendar-check"></i>
-                    <span>Daily Production</span></a>
+                    <span>Daily Activity Borongan</span></a>
                 <ul class="dropdown-menu">
                     <li class="{{ Request::is('general-manager/daily-activity*') ? 'active' : '' }}"><a
                             class="nav-link" href="{{ route('general-manager.daily-activity.index') }}">Daily Summary
-                            Production</a></li>
+                            Activity</a></li>
+                </ul>
+            </li>
+            <li class="dropdown {{ Request::is('general-manager/daily-production*') ? 'active' : '' }}">
+                <a href="#" class="nav-link has-dropdown" data-toggle="dropdown">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Daily Production Harian</span>
+                </a>
+
+                <ul class="dropdown-menu">
+                    <li class="{{ Request::is('general-manager/daily-production*') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('general-manager.daily-production.index') }}">
+                            Daily Summary Production
+                        </a>
+                    </li>
                 </ul>
             </li>
 

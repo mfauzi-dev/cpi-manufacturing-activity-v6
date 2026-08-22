@@ -148,6 +148,19 @@
         {{-- TABLE --}}
         <div class="card">
             <div class="card-body table-responsive">
+                <div class="mb-2">
+                    <a href="{{ route('manager.attendance.summary.export-excel', request()->query()) }}"
+                        class="btn btn-success">
+                        <i class="fas fa-file-excel"></i>
+                        Excel
+                    </a>
+
+                    <a href="{{ route('manager.attendance.summary.export-pdf', request()->query()) }}"
+                        class="btn btn-danger" target="_blank">
+                        <i class="fas fa-file-pdf"></i>
+                        PDF
+                    </a>
+                </div>
 
                 <table class="table table-bordered table-striped">
 

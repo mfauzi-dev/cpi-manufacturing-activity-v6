@@ -12,7 +12,10 @@ use App\Models\Group;
 use App\Models\Outsourcing;
 use App\Models\PsGroup;
 use Illuminate\Http\Request;
+use App\Exports\AttendanceSummaryExport;
 use Maatwebsite\Excel\Facades\Excel;
+use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class AttendanceController extends Controller
 {
@@ -1007,5 +1010,450 @@ class AttendanceController extends Controller
                 'success',
                 'Absensi berhasil disimpan'
             );
+    }
+
+    public function exportSummaryExcel(Request $request)
+    {
+        $month = $request->month ?? now()->month;
+        $year = $request->year ?? now()->year;
+
+        $outsourcingId = $request->outsourcing_id;
+        $costCenterId = $request->cost_center_id;
+        $psGroupId = $request->ps_group_id;
+        $search = $request->search;
+
+        $fileName = 'attendance-summary-' .
+            $year . '-' .
+            str_pad($month, 2, '0', STR_PAD_LEFT) .
+            '.xlsx';
+
+        return Excel::download(
+            new AttendanceSummaryExport(
+                $month,
+                $year,
+                $outsourcingId,
+                $costCenterId,
+                $psGroupId,
+                $search
+            ),
+            $fileName
+        );
+    }
+
+    public function exportSummaryPdf(Request $request)
+    {
+        $month = $request->month ?? now()->month;
+        $year = $request->year ?? now()->year;
+
+        $outsourcingId = $request->outsourcing_id;
+        $costCenterId = $request->cost_center_id;
+        $psGroupId = $request->ps_group_id;
+        $search = $request->search;
+
+        $startDate = Carbon::create(
+            $year,
+            $month,
+            1
+        )->startOfMonth();
+
+        $endDate = Carbon::create(
+            $year,
+            $month,
+            1
+        )->endOfMonth();
+
+        $query = Employee::query()
+            ->with([
+                'department',
+                'outsourcing',
+                'psGroup',
+            ])
+
+            ->withCount([
+                'attendances as total_hadir' => function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('date', [$startDate, $endDate])
+                        ->where('status', 'hadir');
+                },
+
+                'attendances as total_izin' => function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('date', [$startDate, $endDate])
+                        ->where('status', 'izin');
+                },
+
+                'attendances as total_sakit' => function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('date', [$startDate, $endDate])
+                        ->where('status', 'sakit');
+                },
+
+                'attendances as total_cuti' => function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('date', [$startDate, $endDate])
+                        ->where('status', 'cuti');
+                },
+
+                // DATABASE KAMU: alfa
+                'attendances as total_alfa' => function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('date', [$startDate, $endDate])
+                        ->where('status', 'alfa');
+                },
+            ]);
+
+        // Filter Outsourcing
+        if ($outsourcingId) {
+            $query->where('outsourcing_id', $outsourcingId);
+        }
+
+        // Filter Cost Center
+        if ($costCenterId) {
+            $query->where('cost_center_id', $costCenterId);
+        }
+
+        // Filter PS Group
+        if ($psGroupId) {
+            $query->where('ps_group_id', $psGroupId);
+        }
+
+        // Search NIK / Nama
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nik', 'like', "%{$search}%")
+                    ->orWhere('name', 'like', "%{$search}%");
+            });
+        }
+
+        $employees = $query
+            ->orderBy('name')
+            ->get();
+
+        $monthNames = [
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember',
+        ];
+
+        // Nama filter
+        $outsourcingName = 'Semua OS';
+
+        if ($outsourcingId) {
+            $outsourcingName = Outsourcing::find($outsourcingId)?->name ?? '-';
+        }
+
+        $costCenterName = 'Semua Cost Center';
+
+        if ($costCenterId) {
+            $costCenterName = CostCenter::find($costCenterId)?->name ?? '-';
+        }
+
+        $psGroupName = 'Semua Group';
+
+        if ($psGroupId) {
+            $psGroupName = PsGroup::find($psGroupId)?->name ?? '-';
+        }
+
+        $pdf = Pdf::loadView(
+            'pages.admin_production.attendance.summary-pdf',
+            [
+                'employees' => $employees,
+                'month' => $monthNames[$month],
+                'year' => $year,
+                'outsourcingName' => $outsourcingName,
+                'costCenterName' => $costCenterName,
+                'psGroupName' => $psGroupName,
+                'search' => $search,
+            ]
+        )->setPaper('a4', 'landscape');
+
+        return $pdf->download(
+            'attendance-summary-' .
+            $year . '-' .
+            str_pad($month, 2, '0', STR_PAD_LEFT) .
+            '.pdf'
+        );
+    }
+
+    public function exportSummaryPdfGeneralManager(Request $request)
+    {
+        $month = $request->month ?? now()->month;
+        $year = $request->year ?? now()->year;
+
+        $outsourcingId = $request->outsourcing_id;
+        $costCenterId = $request->cost_center_id;
+        $psGroupId = $request->ps_group_id;
+        $search = $request->search;
+
+        $startDate = Carbon::create(
+            $year,
+            $month,
+            1
+        )->startOfMonth();
+
+        $endDate = Carbon::create(
+            $year,
+            $month,
+            1
+        )->endOfMonth();
+
+        $query = Employee::query()
+            ->with([
+                'department',
+                'outsourcing',
+                'psGroup',
+            ])
+
+            ->withCount([
+                'attendances as total_hadir' => function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('date', [$startDate, $endDate])
+                        ->where('status', 'hadir');
+                },
+
+                'attendances as total_izin' => function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('date', [$startDate, $endDate])
+                        ->where('status', 'izin');
+                },
+
+                'attendances as total_sakit' => function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('date', [$startDate, $endDate])
+                        ->where('status', 'sakit');
+                },
+
+                'attendances as total_cuti' => function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('date', [$startDate, $endDate])
+                        ->where('status', 'cuti');
+                },
+
+                // DATABASE KAMU: alfa
+                'attendances as total_alfa' => function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('date', [$startDate, $endDate])
+                        ->where('status', 'alfa');
+                },
+            ]);
+
+        // Filter Outsourcing
+        if ($outsourcingId) {
+            $query->where('outsourcing_id', $outsourcingId);
+        }
+
+        // Filter Cost Center
+        if ($costCenterId) {
+            $query->where('cost_center_id', $costCenterId);
+        }
+
+        // Filter PS Group
+        if ($psGroupId) {
+            $query->where('ps_group_id', $psGroupId);
+        }
+
+        // Search NIK / Nama
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nik', 'like', "%{$search}%")
+                    ->orWhere('name', 'like', "%{$search}%");
+            });
+        }
+
+        $employees = $query
+            ->orderBy('name')
+            ->get();
+
+        $monthNames = [
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember',
+        ];
+
+        // Nama filter
+        $outsourcingName = 'Semua OS';
+
+        if ($outsourcingId) {
+            $outsourcingName = Outsourcing::find($outsourcingId)?->name ?? '-';
+        }
+
+        $costCenterName = 'Semua Cost Center';
+
+        if ($costCenterId) {
+            $costCenterName = CostCenter::find($costCenterId)?->name ?? '-';
+        }
+
+        $psGroupName = 'Semua Group';
+
+        if ($psGroupId) {
+            $psGroupName = PsGroup::find($psGroupId)?->name ?? '-';
+        }
+
+        $pdf = Pdf::loadView(
+            'pages.general_manager.attendance.summary-pdf',
+            [
+                'employees' => $employees,
+                'month' => $monthNames[$month],
+                'year' => $year,
+                'outsourcingName' => $outsourcingName,
+                'costCenterName' => $costCenterName,
+                'psGroupName' => $psGroupName,
+                'search' => $search,
+            ]
+        )->setPaper('a4', 'landscape');
+
+        return $pdf->download(
+            'attendance-summary-' .
+            $year . '-' .
+            str_pad($month, 2, '0', STR_PAD_LEFT) .
+            '.pdf'
+        );
+    }
+
+    public function exportSummaryPdfManager(Request $request)
+    {
+        $month = $request->month ?? now()->month;
+        $year = $request->year ?? now()->year;
+
+        $outsourcingId = $request->outsourcing_id;
+        $costCenterId = $request->cost_center_id;
+        $psGroupId = $request->ps_group_id;
+        $search = $request->search;
+
+        $startDate = Carbon::create(
+            $year,
+            $month,
+            1
+        )->startOfMonth();
+
+        $endDate = Carbon::create(
+            $year,
+            $month,
+            1
+        )->endOfMonth();
+
+        $query = Employee::query()
+            ->with([
+                'department',
+                'outsourcing',
+                'psGroup',
+            ])
+
+            ->withCount([
+                'attendances as total_hadir' => function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('date', [$startDate, $endDate])
+                        ->where('status', 'hadir');
+                },
+
+                'attendances as total_izin' => function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('date', [$startDate, $endDate])
+                        ->where('status', 'izin');
+                },
+
+                'attendances as total_sakit' => function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('date', [$startDate, $endDate])
+                        ->where('status', 'sakit');
+                },
+
+                'attendances as total_cuti' => function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('date', [$startDate, $endDate])
+                        ->where('status', 'cuti');
+                },
+
+                // DATABASE KAMU: alfa
+                'attendances as total_alfa' => function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('date', [$startDate, $endDate])
+                        ->where('status', 'alfa');
+                },
+            ]);
+
+        // Filter Outsourcing
+        if ($outsourcingId) {
+            $query->where('outsourcing_id', $outsourcingId);
+        }
+
+        // Filter Cost Center
+        if ($costCenterId) {
+            $query->where('cost_center_id', $costCenterId);
+        }
+
+        // Filter PS Group
+        if ($psGroupId) {
+            $query->where('ps_group_id', $psGroupId);
+        }
+
+        // Search NIK / Nama
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nik', 'like', "%{$search}%")
+                    ->orWhere('name', 'like', "%{$search}%");
+            });
+        }
+
+        $employees = $query
+            ->orderBy('name')
+            ->get();
+
+        $monthNames = [
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember',
+        ];
+
+        // Nama filter
+        $outsourcingName = 'Semua OS';
+
+        if ($outsourcingId) {
+            $outsourcingName = Outsourcing::find($outsourcingId)?->name ?? '-';
+        }
+
+        $costCenterName = 'Semua Cost Center';
+
+        if ($costCenterId) {
+            $costCenterName = CostCenter::find($costCenterId)?->name ?? '-';
+        }
+
+        $psGroupName = 'Semua Group';
+
+        if ($psGroupId) {
+            $psGroupName = PsGroup::find($psGroupId)?->name ?? '-';
+        }
+
+        $pdf = Pdf::loadView(
+            'pages.manager.attendance.summary-pdf',
+            [
+                'employees' => $employees,
+                'month' => $monthNames[$month],
+                'year' => $year,
+                'outsourcingName' => $outsourcingName,
+                'costCenterName' => $costCenterName,
+                'psGroupName' => $psGroupName,
+                'search' => $search,
+            ]
+        )->setPaper('a4', 'landscape');
+
+        return $pdf->download(
+            'attendance-summary-' .
+            $year . '-' .
+            str_pad($month, 2, '0', STR_PAD_LEFT) .
+            '.pdf'
+        );
     }
 }
