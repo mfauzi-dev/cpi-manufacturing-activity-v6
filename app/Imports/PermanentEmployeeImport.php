@@ -18,7 +18,13 @@ use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 class PermanentEmployeeImport implements ToCollection, WithHeadingRow
 {
+    protected $employmentStatus;
 
+    public function __construct($employmentStatus)
+    {
+        $this->employmentStatus = $employmentStatus;
+    }
+    
     public function headingRow(): int
     {
         return 3;
@@ -33,13 +39,7 @@ class PermanentEmployeeImport implements ToCollection, WithHeadingRow
         $requiredHeaders = [
             'nomor_karyawan',
             'nama',
-            'employment_status',
-            'personel_area',
-            'ps_group',
-            'cost_center',
             'department',
-            'position',
-            'gender',
         ];
 
         $headers = array_keys($rows->first()->toArray());
@@ -52,38 +52,54 @@ class PermanentEmployeeImport implements ToCollection, WithHeadingRow
             }
         }
 
-        foreach ($rows as $row) {
-            $nik            = trim($row['nomor_karyawan'] ?? '');
-            $name           = trim($row['nama'] ?? '');
+         foreach ($rows as $row) {
+            $nik = trim($row['nomor_karyawan'] ?? '');
+            $name = trim($row['nama'] ?? '');
             $costCenterName = trim($row['cost_center'] ?? '');
-            $psGroupName    = trim($row['ps_group'] ?? '');
-            $positionName   = trim($row['position'] ?? '');
             $departmentName = trim($row['department'] ?? '');
+            $psGroupName = trim($row['ps_group'] ?? '');
 
-            // skip kalau nomor_karyawan DAN nama dua-duanya kosong
             if (empty($nik) && empty($name)) {
                 continue;
             }
 
-            $costCenter = CostCenter::where('name', $costCenterName)->first();
-            $psGroup    = PsGroup::where('name', $psGroupName)->first();
-            $position   = Position::where('name', $positionName)->first();
-            $department = Department::where('name', $departmentName)->first();
+            $costCenter = null;
+
+            if (!empty($costCenterName)) {
+                $costCenter = CostCenter::where('name', $costCenterName)->first();
+            }
+
+            $psGroup = null;
+
+            if (!empty($psGroupName)) {
+                $psGroup = PsGroup::where('name', $psGroupName)->first();
+            }
+
+            $department = null;
+
+            if (!empty($departmentName)) {
+                $department = Department::where('name', $departmentName)->first();
+            }
 
             $data = [
-                'nik'               => $nik ?: null,
-                'name'              => $name,
+                'nik' => $nik ?: null,
+                'name' => $name,
 
-                'cost_center_id'    => $costCenter?->id,
-                'ps_group_id'       => $psGroup?->id,
-                'position_id'       => $position?->id,
-                'department_id'     => $department?->id,
+                'cost_center_id' => $costCenter?->id,
 
-                'employment_status' => trim($row['employment_status'] ?? ''),
-                'employee_status'   => 'cpi',
-                'personel_area'     => trim($row['personel_area'] ?: null),
+                'ps_group_id' => $psGroup?->id,
 
-                'gender'            => trim($row['gender'] ?? ''),
+                'position_id' => null,
+
+                'department_id' => $department?->id,
+
+                'employment_status' => $this->employmentStatus,
+
+                'employee_status' => 'cpi',
+
+                'personel_area' => null,
+
+                'gender' => trim($row['gender'] ?? ''),
             ];
 
             if (!empty($nik)) {

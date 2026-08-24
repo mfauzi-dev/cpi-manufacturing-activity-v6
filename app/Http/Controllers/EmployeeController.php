@@ -398,7 +398,7 @@ class EmployeeController extends Controller
         try {
             if ($request->employment_status === 'permanent') {
                 Excel::import(
-                    new PermanentEmployeeImport(),
+                    new PermanentEmployeeImport($request->employment_status),
                     $request->file('file')
                 );
             } else {

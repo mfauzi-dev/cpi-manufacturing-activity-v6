@@ -56,51 +56,80 @@ class OutsourcingEmployeeImport implements ToCollection, WithHeadingRow
             $costCenterName = trim($row['cost_center'] ?? '');
             $psGroupName = trim($row['ps_group'] ?? '');
             $departmentName = trim($row['department'] ?? '');
-
+            $gender = trim($row['gender'] ?? '');
+            $nik = trim($row['nomor_karyawan'] ?? '');
         
-        $name = trim($row['nama'] ?? '');
+            $name = trim($row['nama'] ?? '');
 
-        if (empty($name)) {
-            continue;
-        }
+            if (empty($name)) {
+                continue;
+            }
 
-        $department = Department::where('name', $departmentName)->first();
+            $department = Department::where('name', $departmentName)->first();
 
-        if (!$department) {
-            throw ValidationException::withMessages([
-                'department' => "Baris \"{$name}\": Department \"{$departmentName}\" tidak ditemukan.",
-            ]);
-        }
+            if (!$department) {
+                throw ValidationException::withMessages([
+                    'department' => "Baris \"{$name}\": Department \"{$departmentName}\" tidak ditemukan.",
+                ]);
+            }
 
-        $costCenter = CostCenter::where('name', $costCenterName)
-            ->where('department_id', $department->id)
-            ->first();
+            $costCenter = CostCenter::where('name', $costCenterName)
+                ->where('department_id', $department->id)
+                ->first();
 
-        if (!$costCenter) {
-            throw ValidationException::withMessages([
-                'cost_center' => "Baris \"{$name}\": Cost Center \"{$costCenterName}\" tidak ditemukan di department \"{$departmentName}\".",
-            ]);
-        }
+            if (!$costCenter) {
+                throw ValidationException::withMessages([
+                    'cost_center' => "Baris \"{$name}\": Cost Center \"{$costCenterName}\" tidak ditemukan di department \"{$departmentName}\".",
+                ]);
+            }
 
-        $psGroup = PsGroup::where('name', $psGroupName)
-            ->where('cost_center_id', $costCenter->id)
-            ->first();
+            $psGroup = PsGroup::where('name', $psGroupName)
+                ->where('cost_center_id', $costCenter->id)
+                ->first();
 
 
 
-        Employee::updateOrCreate(
-            [
-                'name'          => $name,
-                'department_id' => $department?->id,
-                'employee_status'    => $this->employeeStatus,
-            ],
-            [
-                'outsourcing_id'     => $this->outsourcing->id,
-                'cost_center_id'     => $costCenter?->id,
-                'ps_group_id'        => $psGroup?->id,
-                'employment_status'  => 'outsourcing',
-            ]
-        );
+            $data = [
+                'outsourcing_id' => $this->outsourcing->id,
+
+                'nik' => $nik ?: null,
+
+                'name' => $name,
+
+                'department_id' => $department->id,
+
+                'cost_center_id' => $costCenter->id,
+
+                'ps_group_id' => $psGroup->id,
+
+                'employment_status' => 'outsourcing',
+
+                'employee_status' => $this->employeeStatus,
+
+                'gender' => $gender,
+            ];
+
+            if (!empty($nik)) {
+                Employee::updateOrCreate(
+                    [
+                        'name' => $name,
+                        'department_id' => $department->id,
+                        'outsourcing_id' => $this->outsourcing->id,
+                        'employee_status' => $this->employeeStatus,
+                    ],
+                    $data
+                );
+            } else {
+                Employee::updateOrCreate(
+                    [
+                        'name' => $name,
+                        'department_id' => $department->id,
+                        'outsourcing_id' => $this->outsourcing->id,
+                        'employee_status' => $this->employeeStatus,
+                    ],
+                    $data
+                );
+            }
         }
     }
 }
