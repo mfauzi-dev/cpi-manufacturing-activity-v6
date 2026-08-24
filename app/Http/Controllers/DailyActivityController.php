@@ -41,8 +41,9 @@ class DailyActivityController extends Controller
     {
         $employees = Employee::where('cost_center_id', $costCenterId)
             ->where('ps_group_id', $psGroupId)
+            ->where('employee_status', 'borongan')
             ->orderBy('name')
-            ->get(['id', 'nik', 'name']);
+            ->get(['id', 'nik', 'name', 'employee_status']);
 
         return response()->json($employees);
     }
