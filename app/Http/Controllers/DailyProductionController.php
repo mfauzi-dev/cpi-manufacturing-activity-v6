@@ -363,53 +363,14 @@ class DailyProductionController extends Controller
         }
     }
 
-    public function exportExcel(Request $request, $costCenterId, $psGroupId)
-    {
-        $fromDate = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
-        $toDate   = $request->date_to ?? now()->format('Y-m-d');
-
-        $fileName = "daily-production-{$fromDate}-to-{$toDate}.xlsx";
-
-        return Excel::download(
-            new DailyProductionExport($costCenterId, $psGroupId, $fromDate, $toDate),
-            $fileName
-        );
-    }
-
-    public function exportPdf(Request $request, $costCenterId, $psGroupId)
-    {
-        $fromDate = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
-        $toDate   = $request->date_to ?? now()->format('Y-m-d');
-
-        $costCenter = CostCenter::findOrFail($costCenterId);
-        $psGroup    = PsGroup::findOrFail($psGroupId);
-
-        $data = DailyProductionDetail::with(['product', 'dailyProduction.inputBy'])
-            ->whereHas('dailyProduction', function ($q) use ($costCenterId, $psGroupId, $fromDate, $toDate) {
-                $q->where('cost_center_id', $costCenterId)
-                ->where('ps_group_id', $psGroupId)
-                ->whereBetween('tanggal', [$fromDate, $toDate]);
-            })
-            ->join('daily_productions', 'daily_productions.id', '=', 'daily_production_details.daily_production_id')
-            ->orderBy('daily_productions.tanggal')
-            ->select('daily_production_details.*')
-            ->get();
-
-        $pdf = Pdf::loadView('pages.admin_production.daily_production.pdf', [
-            'data'           => $data,
-            'fromDate'       => Carbon::parse($fromDate)->format('d M Y'),
-            'toDate'         => Carbon::parse($toDate)->format('d M Y'),
-            'costCenterName' => $costCenter->name,
-            'psGroupName'    => $psGroup->name,
-        ])->setPaper('a4', 'landscape');
-
-        return $pdf->download("daily-production-{$fromDate}-to-{$toDate}.pdf");
-    }
-
     public function managerIndex(Request $request)
     {
         $dateFrom = $request->input('start_date');
         $dateTo   = $request->input('end_date');
+
+        $managerDepartmentId = auth()->user()->department_id;
+        abort_unless($managerDepartmentId, 403, 'Akun Anda belum terhubung ke department manapun.');
+
 
         $query = DailyProductionDetail::query()
             ->join(
@@ -435,7 +396,8 @@ class DailyProductionController extends Controller
                 'ps_groups.id',
                 '=',
                 'daily_productions.ps_group_id'
-            );
+            )
+            ->where('daily_productions.department_id', $managerDepartmentId);
 
         if ($request->filled('department_id')) {
             $query->where(
@@ -551,14 +513,14 @@ class DailyProductionController extends Controller
             ? $grandTotalRupiah / $grandTotalKg
             : 0;
 
-        $departments = Department::orderBy('name')->get();
         $costCenters = CostCenter::orderBy('name')->get();
+        $managerDepartment = Department::find($managerDepartmentId);
 
         return view(
             'pages.manager.daily-production.index',
             compact(
                 'summaries',
-                'departments',
+                'managerDepartment',
                 'costCenters',
                 'grandTotalKg',
                 'grandTotalRupiah',
@@ -570,13 +532,14 @@ class DailyProductionController extends Controller
     }
 
 
-    public function managerDetail(
-        Request $request,
-        $costCenterId,
-        $psGroupId
-    ) {
-        $costCenter = CostCenter::findOrFail($costCenterId);
-        $psGroup    = PsGroup::findOrFail($psGroupId);
+    public function managerDetail(Request $request, $costCenterId, $psGroupId) 
+    {
+
+        $managerDepartmentId = auth()->user()->department_id;
+        abort_unless($managerDepartmentId, 403, 'Akun Anda belum terhubung ke department manapun.');
+
+        $costCenter = CostCenter::where('department_id', $managerDepartmentId)->findOrFail($costCenterId);
+        $psGroup = PsGroup::where('cost_center_id', $costCenter->id)->findOrFail($psGroupId);
 
         $dateFrom = $request->input(
             'date_from',
@@ -607,6 +570,7 @@ class DailyProductionController extends Controller
                 '=',
                 'daily_productions.input_by'
             )
+            ->where('daily_productions.department_id', $managerDepartmentId)
             ->where(
                 'daily_productions.cost_center_id',
                 $costCenterId
@@ -811,11 +775,8 @@ class DailyProductionController extends Controller
     }
 
 
-    public function generalManagerDetail(
-        Request $request,
-        $costCenterId,
-        $psGroupId
-    ) {
+    public function generalManagerDetail(Request $request,$costCenterId,$psGroupId) 
+    {
         $costCenter = CostCenter::findOrFail($costCenterId);
         $psGroup    = PsGroup::findOrFail($psGroupId);
 
@@ -888,31 +849,33 @@ class DailyProductionController extends Controller
         );
     }
 
-    public function exportPdfManager(
-        Request $request,
-        $costCenterId,
-        $psGroupId
-    ) {
+    public function exportPdfManager(Request $request, $costCenterId, $psGroupId) 
+    {
+        $managerDepartmentId = auth()->user()->department_id;
+        abort_unless($managerDepartmentId, 403, 'Akun Anda belum terhubung ke department manapun.');
+
         $fromDate = $request->date_from
             ?? now()->startOfMonth()->format('Y-m-d');
 
         $toDate = $request->date_to
             ?? now()->format('Y-m-d');
 
-        $costCenter = CostCenter::findOrFail($costCenterId);
-        $psGroup    = PsGroup::findOrFail($psGroupId);
+        $costCenter = CostCenter::where('department_id', $managerDepartmentId)->findOrFail($costCenterId);
+        $psGroup = PsGroup::where('cost_center_id', $costCenter->id)->findOrFail($psGroupId);
 
         $data = DailyProductionDetail::with([
                 'product',
                 'dailyProduction.inputBy'
             ])
             ->whereHas('dailyProduction', function ($q) use (
+                $managerDepartmentId,
                 $costCenterId,
                 $psGroupId,
                 $fromDate,
-                $toDate
-            ) {
-                $q->where('cost_center_id', $costCenterId)
+                $toDate ) 
+                {
+                $q->where('department_id', $managerDepartmentId)
+                    ->where('cost_center_id', $costCenterId)
                     ->where('ps_group_id', $psGroupId)
                     ->whereBetween(
                         'tanggal',
@@ -1005,5 +968,128 @@ class DailyProductionController extends Controller
         return $pdf->download(
             "daily-production-{$fromDate}-to-{$toDate}.pdf"
         );
+    }
+
+    public function exportExcelGeneralManager(Request $request, $costCenterId, $psGroupId)
+    {
+        $fromDate = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
+        $toDate   = $request->date_to ?? now()->format('Y-m-d');
+
+        $fileName = "daily-production-{$fromDate}-to-{$toDate}.xlsx";
+
+        return Excel::download(
+            new DailyProductionExport($costCenterId, $psGroupId, $fromDate, $toDate),
+            $fileName
+        );
+    }
+
+    public function exportExcelManager(Request $request, $costCenterId, $psGroupId) 
+    {
+        $managerDepartmentId = auth()->user()->department_id;
+
+        abort_unless(
+            $managerDepartmentId,
+            403,
+            'Akun Anda belum terhubung ke department manapun.'
+        );
+
+        $costCenter = CostCenter::where(
+            'department_id',
+            $managerDepartmentId
+        )->findOrFail($costCenterId);
+
+        $psGroup = PsGroup::where(
+            'cost_center_id',
+            $costCenter->id
+        )->findOrFail($psGroupId);
+
+        $fromDate = $request->date_from
+            ?? now()->startOfMonth()->format('Y-m-d');
+
+        $toDate = $request->date_to
+            ?? now()->format('Y-m-d');
+
+        $fileName = "daily-production-{$fromDate}-to-{$toDate}.xlsx";
+
+        return Excel::download(
+            new DailyProductionExport(
+                $costCenterId,
+                $psGroupId,
+                $fromDate,
+                $toDate,
+                $managerDepartmentId
+            ),
+            $fileName
+        );
+    }
+
+    public function exportExcel(Request $request,$costCenterId,$psGroupId) 
+    {
+        $adminDepartmentId = auth()->user()->department_id;
+
+        abort_unless(
+            $adminDepartmentId,
+            403,
+            'Akun Anda belum terhubung ke department manapun.'
+        );
+
+        $costCenter = CostCenter::where(
+            'department_id',
+            $adminDepartmentId
+        )->findOrFail($costCenterId);
+
+        $psGroup = PsGroup::where(
+            'cost_center_id',
+            $costCenter->id
+        )->findOrFail($psGroupId);
+
+        $fromDate = $request->date_from
+            ?? now()->startOfMonth()->format('Y-m-d');
+
+        $toDate = $request->date_to
+            ?? now()->format('Y-m-d');
+
+        $fileName = "daily-production-{$fromDate}-to-{$toDate}.xlsx";
+
+        return Excel::download(
+            new DailyProductionExport(
+                $costCenterId,
+                $psGroupId,
+                $fromDate,
+                $toDate,
+                $adminDepartmentId
+            ),
+            $fileName
+        );
+    }
+
+    public function exportPdf(Request $request, $costCenterId, $psGroupId)
+    {
+        $fromDate = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
+        $toDate   = $request->date_to ?? now()->format('Y-m-d');
+
+        $costCenter = CostCenter::findOrFail($costCenterId);
+        $psGroup    = PsGroup::findOrFail($psGroupId);
+
+        $data = DailyProductionDetail::with(['product', 'dailyProduction.inputBy'])
+            ->whereHas('dailyProduction', function ($q) use ($costCenterId, $psGroupId, $fromDate, $toDate) {
+                $q->where('cost_center_id', $costCenterId)
+                ->where('ps_group_id', $psGroupId)
+                ->whereBetween('tanggal', [$fromDate, $toDate]);
+            })
+            ->join('daily_productions', 'daily_productions.id', '=', 'daily_production_details.daily_production_id')
+            ->orderBy('daily_productions.tanggal')
+            ->select('daily_production_details.*')
+            ->get();
+
+        $pdf = Pdf::loadView('pages.admin_production.daily_production.pdf', [
+            'data'           => $data,
+            'fromDate'       => Carbon::parse($fromDate)->format('d M Y'),
+            'toDate'         => Carbon::parse($toDate)->format('d M Y'),
+            'costCenterName' => $costCenter->name,
+            'psGroupName'    => $psGroup->name,
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download("daily-production-{$fromDate}-to-{$toDate}.pdf");
     }
 }

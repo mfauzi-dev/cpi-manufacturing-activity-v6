@@ -79,7 +79,10 @@
                             class="nav-link" href="{{ route('admin-production.daily-activity.index') }}">Summary Daily
                             Activity</a>
                     </li>
-                    {{-- <li class="{{ Request::is('admin-production/daily-activity/import') ? 'active' : '' }}"><a
+                    <li class="{{ Request::is('admin-production/daily-activity/create') ? 'active' : '' }}"><a
+                            class="nav-link" href="{{ route('admin-production.daily-activity.create') }}">Tambah
+                            Daily Activity</a>
+                        {{-- <li class="{{ Request::is('admin-production/daily-activity/import') ? 'active' : '' }}"><a
                             class="nav-link" href="{{ route('admin-production.daily-activity.import') }}">Import
                             Daily Activity</a>
                     </li> --}}
@@ -94,6 +97,10 @@
                 <ul class="dropdown-menu">
                     <li class="{{ Request::is('admin-production/daily-production') ? 'active' : '' }}"><a
                             class="nav-link" href="{{ route('admin-production.daily-production.index') }}">Summary
+                            Daily Production</a>
+                    </li>
+                    <li class="{{ Request::is('admin-production/daily-production/create') ? 'active' : '' }}"><a
+                            class="nav-link" href="{{ route('admin-production.daily-production.create') }}">Tambah
                             Daily Production</a>
                     </li>
                 </ul>

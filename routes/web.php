@@ -275,7 +275,7 @@ Route::prefix('general-manager')->middleware(['auth', 'role:General Manager'])->
         Route::get('/summary', [AttendanceController::class, 'generalManagerSummary'])->name('general-manager.attendance.summary');
         Route::get('/summary/{employee}/detail', [AttendanceController::class, 'generalManagerDetail'])->name('general-manager.attendance.summary.detail');
         Route::post('/bulk-store', [AttendanceController::class, 'generalManagerBulkStore'])->name('general-manager.attendance.bulk.store');
-        Route::get('summary/export-excel', [AttendanceController::class, 'exportSummaryExcel'])->name('general-manager.attendance.summary.export-excel');
+        Route::get('summary/export-excel', [AttendanceController::class, 'exportSummaryExcelGeneralManager'])->name('general-manager.attendance.summary.export-excel');
         Route::get('summary/export-pdf', [AttendanceController::class, 'exportSummaryPdfGeneralManager'])->name('general-manager.attendance.summary.export-pdf');
     
     });
@@ -283,49 +283,20 @@ Route::prefix('general-manager')->middleware(['auth', 'role:General Manager'])->
     Route::prefix('daily-activity')->group(function() {
         Route::get('/', [DailyActivityController::class, 'generalManagerIndex'])->name('general-manager.daily-activity.index');
         Route::get('/cost-center/{costCenter}/ps-group/{psGroup}/detail', [DailyActivityController::class, 'generalManagerDetail'])->name('general-manager.daily-activity.detail');
-        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel', [DailyActivityController::class, 'exportExcel'])->name('general-manager.daily-activity.export-excel');
+        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel', [DailyActivityController::class, 'exportExcelGeneralManager'])->name('general-manager.daily-activity.export-excel');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf', [DailyActivityController::class, 'exportPdfGeneralManager'])->name('general-manager.daily-activity.export-pdf');        
     });
 
     Route::prefix('daily-production')->group(function () {
         Route::get('/', [DailyProductionController::class, 'generalManagerIndex'])->name('general-manager.daily-production.index');
         Route::get('/cost-center/{costCenter}/ps-group/{psGroup}/detail', [DailyProductionController::class, 'generalManagerDetail'])->name('general-manager.daily-production.detail');
-        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel', [DailyProductionController::class, 'exportExcel'])->name('general-manager.daily-production.export-excel');
+        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel', [DailyProductionController::class, 'exportExcelGeneralManager'])->name('general-manager.daily-production.export-excel');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf', [DailyProductionController::class, 'exportPdfGeneralManager'])->name('general-manager.daily-production.export-pdf');
     });
 
 });
 
 Route::prefix('manager')->middleware(['auth', 'role:Manager'])->group(function() {
-    Route::prefix('outsourcings')->group(function() {
-        Route::get('/', [OutsourcingController::class, 'managerIndex'])->name('manager.outsourcing.index');
-    });
-
-    Route::prefix('departments')->group(function() {
-        Route::get('/', [DepartmentController::class, 'managerIndex'])->name('manager.department.index');
-    });
-
-    Route::prefix('users')->group(function() {
-        Route::get('/', [UserController::class, 'managerIndex'])->name('manager.user.index');
-    });
-
-    Route::prefix('cost-centers')->group(function() {
-        Route::get('/', [CostCenterController::class, 'managerIndex'])->name('manager.cost-center.index');
-    });
-
-    Route::prefix('groups')->group(function() {
-        Route::get('/', [PsGroupController::class, 'managerIndex'])->name('manager.ps-group.index');
-    });
-
-
-    Route::prefix('positions')->group(function() {
-        Route::get('/', [PositionController::class, 'managerIndex'])->name('manager.position.index');
-    });
-
-    Route::prefix('employees')->group(function() {
-        Route::get('/', [EmployeeController::class, 'managerIndex'])->name('manager.employee.index');
-    });
-
     Route::prefix('attendances')->group(function(){
         Route::get('/', [AttendanceController::class, 'managerIndex'])->name('manager.attendance.index');
         Route::get('/create', [AttendanceController::class, 'managerCreate'])->name('manager.attendance.create');
@@ -340,14 +311,14 @@ Route::prefix('manager')->middleware(['auth', 'role:Manager'])->group(function()
     Route::prefix('daily-activity')->group(function() {
         Route::get('/', [DailyActivityController::class, 'managerIndex'])->name('manager.daily-activity.index');
         Route::get('/cost-center/{costCenter}/ps-group/{psGroup}/detail', [DailyActivityController::class, 'managerDetail'])->name('manager.daily-activity.detail');
-        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel', [DailyActivityController::class, 'exportExcel'])->name('manager.daily-activity.export-excel');
+        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel', [DailyActivityController::class, 'exportExcelManager'])->name('manager.daily-activity.export-excel');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf', [DailyActivityController::class, 'exportPdfManager'])->name('manager.daily-activity.export-pdf');        
     });
 
     Route::prefix('daily-production')->group(function () {
         Route::get('/', [DailyProductionController::class, 'managerIndex'])->name('manager.daily-production.index');
         Route::get('/cost-center/{costCenter}/ps-group/{psGroup}/detail', [DailyProductionController::class, 'managerDetail'])->name('manager.daily-production.detail');
-        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel', [DailyProductionController::class, 'exportExcel'])->name('manager.daily-production.export-excel');
+        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel', [DailyProductionController::class, 'exportExcelManager'])->name('manager.daily-production.export-excel');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf', [DailyProductionController::class, 'exportPdfManager'])->name('manager.daily-production.export-pdf');
     });
 });

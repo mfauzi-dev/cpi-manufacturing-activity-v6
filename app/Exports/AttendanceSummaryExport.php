@@ -24,6 +24,7 @@ class AttendanceSummaryExport implements
     protected $costCenterId;
     protected $psGroupId;
     protected $search;
+    protected $departmentId;
 
     public function __construct(
         $month,
@@ -31,7 +32,9 @@ class AttendanceSummaryExport implements
         $outsourcingId = null,
         $costCenterId = null,
         $psGroupId = null,
-        $search = null
+        $search = null,
+        $departmentId = null
+        
     ) {
         $this->month = $month;
         $this->year = $year;
@@ -39,6 +42,7 @@ class AttendanceSummaryExport implements
         $this->costCenterId = $costCenterId;
         $this->psGroupId = $psGroupId;
         $this->search = $search;
+        $this->departmentId = $departmentId;
     }
 
     public function query()
@@ -89,6 +93,10 @@ class AttendanceSummaryExport implements
                         ->where('status', 'alfa');
                 },
             ]);
+
+        if ($this->departmentId) {
+            $query->where('department_id', $this->departmentId);
+        }
 
         // Filter Outsourcing
         if ($this->outsourcingId) {

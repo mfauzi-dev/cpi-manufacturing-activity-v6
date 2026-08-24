@@ -272,9 +272,11 @@
                     let options = '<option value="">Pilih SKU</option>';
 
                     $.each(res, function(i, item) {
+                        const codePart = item.material_code ? ` - ${item.material_code}` : '';
+
                         options += `
                         <option value="${item.id}" data-price="${item.harga_per_kg}">
-                            ${item.material_name} - ${item.material_code}
+                            ${item.material_name}${codePart}
                         </option>`;
                     });
 

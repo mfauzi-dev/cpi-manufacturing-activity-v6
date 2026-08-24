@@ -5,6 +5,11 @@
         <h1>Rekap Daily Production</h1>
     </div>
 
+    <div class="alert alert-info">
+        Department :
+        <strong>{{ $managerDepartment->name }}</strong>
+    </div>
+
     <div class="section-body">
 
         {{-- SUMMARY --}}
@@ -55,28 +60,8 @@
 
                     <div class="row">
 
-                        {{-- DEPARTMENT --}}
-                        <div class="col-md-4 mb-3">
-                            <div class="form-group">
-
-                                <label>Department</label>
-
-                                <select class="form-control" id="department_id" name="department_id">
-                                    <option value="">
-                                        Semua Department
-                                    </option>
-
-                                    @foreach ($departments as $department)
-                                        <option value="{{ $department->id }}" @selected(request('department_id') == $department->id)>
-                                            {{ $department->name }}
-                                        </option>
-                                    @endforeach
-
-                                </select>
-
-                            </div>
-                        </div>
-
+                        {{-- Dropdown Department dihapus. Manager sudah di-lock
+                             ke department-nya sendiri (lihat badge di atas). --}}
 
                         {{-- COST CENTER --}}
                         <div class="col-md-4 mb-3">
@@ -319,6 +304,8 @@
 
 @push('scripts')
     <script>
+        const managerDepartmentId = "{{ $managerDepartment->id }}";
+
         const costCentersUrlTemplate =
             "{{ route('daily-activity.cost-centers', ['departmentId' => '__ID__']) }}";
 
@@ -330,10 +317,6 @@
 
             loadCostCenters();
 
-            $('#department_id').change(function() {
-                loadCostCenters();
-            });
-
             $('#cost_center_id').change(function() {
                 loadPsGroups();
             });
@@ -343,30 +326,15 @@
 
         function loadCostCenters() {
 
-            let departmentId = $('#department_id').val();
-
             $('#cost_center_id').html(
                 '<option value="">Loading...</option>'
             );
-
-            if (departmentId == '') {
-
-                $('#cost_center_id').html(
-                    '<option value="">Semua Cost Center</option>'
-                );
-
-                $('#ps_group_id').html(
-                    '<option value="">Semua Group</option>'
-                );
-
-                return;
-            }
 
             $.ajax({
 
                 url: costCentersUrlTemplate.replace(
                     '__ID__',
-                    departmentId
+                    managerDepartmentId
                 ),
 
                 type: 'GET',

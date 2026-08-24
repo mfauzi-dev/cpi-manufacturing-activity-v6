@@ -530,10 +530,8 @@ class DashboardController extends Controller
             ? Carbon::parse($request->end_date)
             : $today;
 
-        $departmentId = $request->department_id;
-        $costCenterId = $request->cost_center_id;
-
-        $departments = Department::orderBy('name')->get();
+        // Ambil department dari user yang login
+        $departmentId = auth()->user()->department_id;
 
         /*
         |--------------------------------------------------------------------------
@@ -542,25 +540,13 @@ class DashboardController extends Controller
         */
 
         $attendanceQuery = Attendance::query()
-            ->whereBetween('date', [$startDate, $endDate]);
-
-        $employeeQuery = Employee::query();
-
-        if ($departmentId) {
-            $attendanceQuery->whereHas('employee', function ($q) use ($departmentId) {
+            ->whereBetween('date', [$startDate, $endDate])
+            ->whereHas('employee', function ($q) use ($departmentId) {
                 $q->where('department_id', $departmentId);
             });
 
-            $employeeQuery->where('department_id', $departmentId);
-        }
-
-        if ($costCenterId) {
-            $attendanceQuery->whereHas('employee', function ($q) use ($costCenterId) {
-                $q->where('cost_center_id', $costCenterId);
-            });
-
-            $employeeQuery->where('cost_center_id', $costCenterId);
-        }
+        $employeeQuery = Employee::query()
+            ->where('department_id', $departmentId);
 
         $totalEmployee = (clone $employeeQuery)->count();
 
@@ -596,20 +582,12 @@ class DashboardController extends Controller
                 'daily_activities.id',
                 '=',
                 'daily_activity_details.daily_activity_id'
-            );
-
-        if ($departmentId) {
-            $dailyActivity->where('daily_activities.department_id', $departmentId);
-        }
-
-        if ($costCenterId) {
-            $dailyActivity->where('daily_activities.cost_center_id', $costCenterId);
-        }
-
-        $dailyActivity->whereBetween('daily_activities.tanggal', [
-            $startDate,
-            $endDate
-        ]);
+            )
+            ->where('daily_activities.department_id', $departmentId)
+            ->whereBetween('daily_activities.tanggal', [
+                $startDate,
+                $endDate
+            ]);
 
         $summary = (clone $dailyActivity)
             ->selectRaw("
@@ -619,7 +597,6 @@ class DashboardController extends Controller
             ")
             ->first();
 
-        // $totalPac = $summary->total_pac ?? 0;
         $totalKg = $summary->total_kg ?? 0;
         $totalRupiah = $summary->total_rupiah ?? 0;
         $totalActivity = $summary->total_activity ?? 0;
@@ -634,17 +611,12 @@ class DashboardController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $costCenterQuery = CostCenter::query();
-
-        if ($departmentId) {
-            $costCenterQuery->where('department_id', $departmentId);
-        }
-
-        $totalCostCenter = (clone $costCenterQuery)->count();
+        $totalCostCenter = CostCenter::query()
+            ->where('department_id', $departmentId)
+            ->count();
 
         $inputCostCenter = DailyActivity::query()
-            ->when($departmentId, fn($q) => $q->where('department_id', $departmentId))
-            ->when($costCenterId, fn($q) => $q->where('cost_center_id', $costCenterId))
+            ->where('department_id', $departmentId)
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->distinct('cost_center_id')
             ->count('cost_center_id');
@@ -653,17 +625,36 @@ class DashboardController extends Controller
             ? ($inputCostCenter / $totalCostCenter) * 100
             : 0;
 
+        /*
+        |--------------------------------------------------------------------------
+        | Summary Department
+        |--------------------------------------------------------------------------
+        */
+
         $departmentSummary = DailyActivityDetail::query()
-            ->join('daily_activities', 'daily_activities.id', '=', 'daily_activity_details.daily_activity_id')
-            ->join('departments', 'departments.id', '=', 'daily_activities.department_id')
+            ->join(
+                'daily_activities',
+                'daily_activities.id',
+                '=',
+                'daily_activity_details.daily_activity_id'
+            )
+            ->join(
+                'departments',
+                'departments.id',
+                '=',
+                'daily_activities.department_id'
+            )
             ->selectRaw("
                 departments.id,
                 departments.name,
-
                 SUM(total_kg) as total_kg,
                 SUM(total_harga) as total_rupiah
             ")
-            ->whereBetween('daily_activities.tanggal', [$startDate, $endDate])
+            ->where('daily_activities.department_id', $departmentId)
+            ->whereBetween('daily_activities.tanggal', [
+                $startDate,
+                $endDate
+            ])
             ->groupBy(
                 'departments.id',
                 'departments.name'
@@ -672,7 +663,6 @@ class DashboardController extends Controller
             ->get();
 
         foreach ($departmentSummary as $department) {
-
             $department->harga_per_kg =
                 $department->total_kg > 0
                     ? $department->total_rupiah / $department->total_kg
@@ -686,11 +676,12 @@ class DashboardController extends Controller
         */
 
         $costCenterInput = DailyActivity::query()
+            ->where('department_id', $departmentId)
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->pluck('cost_center_id');
 
         $notInputDailyActivity = CostCenter::query()
-            ->when($departmentId, fn($q) => $q->where('department_id', $departmentId))
+            ->where('department_id', $departmentId)
             ->whereNotIn('id', $costCenterInput)
             ->with('department')
             ->get();
@@ -703,47 +694,53 @@ class DashboardController extends Controller
 
         $employeeAttendance = Attendance::query()
             ->whereBetween('date', [$startDate, $endDate])
+            ->whereHas('employee', function ($q) use ($departmentId) {
+                $q->where('department_id', $departmentId);
+            })
             ->pluck('employee_id');
 
         $notAttendance = Employee::query()
-            ->when($departmentId, fn($q) => $q->where('department_id', $departmentId))
-            ->when($costCenterId, fn($q) => $q->where('cost_center_id', $costCenterId))
+            ->where('department_id', $departmentId)
             ->whereNotIn('id', $employeeAttendance)
             ->get();
 
+        /*
+        |--------------------------------------------------------------------------
+        | Recent Activity
+        |--------------------------------------------------------------------------
+        */
+
         $recentActivities = DailyActivity::with([
             'costCenter',
+            'psGroup',
+            'employee',
         ])
+            ->where('department_id', $departmentId)
             ->latest()
             ->take(10)
             ->get();
 
-        return view('pages.dashboard.general-manager', compact(
+        $costCenters = CostCenter::where('department_id', $departmentId)->get();
+
+        return view('pages.dashboard.manager', compact(
             'startDate',
             'endDate',
-            'departments',
-
             'totalEmployee',
             'hadir',
             'izin',
             'sakit',
             'alpha',
-
             'attendanceProgress',
-
             'totalActivity',
             'totalKg',
             'totalRupiah',
             'averageHargaKg',
-
             'dailyActivityProgress',
-
             'departmentSummary',
-
             'notAttendance',
             'notInputDailyActivity',
-
-            'recentActivities'
+            'recentActivities',
+            'costCenters'
         ));
     }
 

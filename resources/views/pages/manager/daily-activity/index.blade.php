@@ -7,7 +7,7 @@
 
     <div class="alert alert-info">
         Department :
-        <strong>Semua Department</strong>
+        <strong>{{ $managerDepartment->name }}</strong>
     </div>
 
 
@@ -60,21 +60,10 @@
 
                     <div class="row">
 
-                        <div class="col-md-4 mb-3">
-                            <div class="form-group">
-                                <label>Department</label>
-                                <select class="form-control" id="department_id" name="department_id">
-                                    <option value="">Semua Department</option>
-                                    @foreach ($departments as $department)
-                                        <option value="{{ $department->id }}" @selected(request('department_id') == $department->id)>
+                        {{-- Dropdown Department dihapus. Manager sudah di-lock
+                             ke department-nya sendiri (lihat badge di atas),
+                             jadi tidak perlu (dan tidak boleh) pilih department lain. --}}
 
-                                            {{ $department->name }}
-
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
                         <div class="col-md-4 mb-3">
                             <div class="form-group">
                                 <label>Cost Center</label>
@@ -221,16 +210,16 @@
 
 @push('scripts')
     <script>
+        // departmentId sekarang tetap/fixed dari server (department milik manager),
+        // bukan lagi dibaca dari dropdown yang sudah dihapus.
+        const managerDepartmentId = "{{ $managerDepartment->id }}";
         const costCentersUrlTemplate = "{{ route('daily-activity.cost-centers', ['departmentId' => '__ID__']) }}";
         const psGroupsUrlTemplate = "{{ route('daily-activity.ps-groups', ['costCenterId' => '__ID__']) }}";
 
         $(function() {
-
+            // Langsung load cost center untuk department manager saat halaman dibuka,
+            // tidak perlu trigger dari pemilihan department lagi.
             loadCostCenters();
-
-            $('#department_id').change(function() {
-                loadCostCenters();
-            });
 
             $('#cost_center_id').change(function() {
                 loadPsGroups();
@@ -239,18 +228,10 @@
         });
 
         function loadCostCenters() {
-            let departmentId = $('#department_id').val();
-
             $('#cost_center_id').html('<option value="">Loading...</option>');
 
-            if (departmentId == '') {
-                $('#cost_center_id').html('<option value="">Semua Cost Center</option>');
-                $('#ps_group_id').html('<option value="">Semua PS Group</option>');
-                return;
-            }
-
             $.ajax({
-                url: costCentersUrlTemplate.replace('__ID__', departmentId),
+                url: costCentersUrlTemplate.replace('__ID__', managerDepartmentId),
                 type: 'GET',
                 success: function(res) {
                     let html = '<option value="">Semua Cost Center</option>';

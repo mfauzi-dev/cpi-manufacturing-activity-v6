@@ -16,13 +16,15 @@ class DailyProductionExport implements FromQuery, WithHeadings, WithMapping, Wit
     protected $psGroupId;
     protected $fromDate;
     protected $toDate;
+    protected $departmentId;
 
-    public function __construct($costCenterId, $psGroupId, $fromDate, $toDate)
+    public function __construct($costCenterId, $psGroupId, $fromDate, $toDate, $departmentId = null)
     {
         $this->costCenterId = $costCenterId;
         $this->psGroupId    = $psGroupId;
         $this->fromDate     = $fromDate;
         $this->toDate       = $toDate;
+        $this->departmentId = $departmentId;
     }
 
     public function query()
@@ -33,6 +35,13 @@ class DailyProductionExport implements FromQuery, WithHeadings, WithMapping, Wit
                 $q->where('cost_center_id', $this->costCenterId)
                   ->where('ps_group_id', $this->psGroupId)
                   ->whereBetween('tanggal', [$this->fromDate, $this->toDate]);
+                  
+                if ($this->departmentId) {
+                    $q->where(
+                        'department_id',
+                        $this->departmentId
+                    );
+                }
             })
             ->join('daily_productions', 'daily_productions.id', '=', 'daily_production_details.daily_production_id')
             ->orderBy('daily_productions.tanggal')

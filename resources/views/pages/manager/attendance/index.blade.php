@@ -6,7 +6,7 @@
     </div>
 
     <div class="alert alert-info">
-        Department : <strong>Semua Department</strong>
+        Department : <strong>{{ $managerDepartment->name }}</strong>
     </div>
 
     <div class="section-body">
@@ -32,21 +32,8 @@
                             </div>
                         </div>
 
-                        <div class="col-md-3 mb-2">
-                            <div class="form-group">
-                                <label>Department</label>
-                                <select name="department_id" id="department_id" class="form-control">
-                                    <option value="">Semua Department</option>
-
-                                    @foreach ($departments as $department)
-                                        <option value="{{ $department->id }}"
-                                            {{ request('department_id') == $department->id ? 'selected' : '' }}>
-                                            {{ $department->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
+                        {{-- Dropdown Department dihapus. Manager sudah di-lock
+                             ke department-nya sendiri (lihat badge di atas). --}}
 
                         <div class="col-md-3 mb-2">
                             <div class="form-group">
@@ -175,15 +162,11 @@
 
 @push('scripts')
     <script>
+        const managerDepartmentId = "{{ $managerDepartment->id }}";
+
         $(function() {
 
             loadCostCenters();
-
-            $('#department_id').change(function() {
-
-                loadCostCenters();
-
-            });
 
             $('#cost_center_id').change(function() {
 
@@ -195,17 +178,7 @@
 
         function loadCostCenters() {
 
-            let departmentId = $('#department_id').val();
-
-            if (departmentId == '') {
-
-                $('#cost_center_id').html('<option value="">Semua Cost Center</option>');
-                $('#ps_group_id').html('<option value="">Semua PS Group</option>');
-                return;
-
-            }
-
-            $.get('/attendance/cost-centers/' + departmentId, function(res) {
+            $.get('/attendance/cost-centers/' + managerDepartmentId, function(res) {
 
                 let html = '<option value="">Semua Cost Center</option>';
 

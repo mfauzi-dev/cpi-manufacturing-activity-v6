@@ -384,11 +384,16 @@ class DailyActivityController extends Controller
 
         $dateTo   = $request->input('end_date');
 
+        $managerDepartmentId = auth()->user()->department_id;
+
+        abort_unless($managerDepartmentId, 403, 'Akun Anda belum terhubung ke department manapun.');
+
         $query = DailyActivityDetail::query()
             ->join('daily_activities', 'daily_activities.id', '=', 'daily_activity_details.daily_activity_id')
             ->join('departments', 'departments.id', '=', 'daily_activities.department_id')
             ->join('cost_centers', 'cost_centers.id', '=', 'daily_activities.cost_center_id')
-            ->join('ps_groups', 'ps_groups.id', '=', 'daily_activities.ps_group_id');
+            ->join('ps_groups', 'ps_groups.id', '=', 'daily_activities.ps_group_id')
+            ->where('daily_activities.department_id', $managerDepartmentId);
 
         if ($request->filled('department_id')) {
             $query->where('daily_activities.department_id', $request->department_id);
@@ -467,14 +472,14 @@ class DailyActivityController extends Controller
             ? $grandTotalRupiah / $grandTotalKg
             : 0;
 
-        $departments = Department::orderBy('name')->get();
         $costCenters = CostCenter::orderBy('name')->get();
+        $managerDepartment = Department::find($managerDepartmentId);
 
         return view(
             'pages.manager.daily-activity.index',
             compact(
                 'summaries',
-                'departments',
+                'managerDepartment',
                 'costCenters',
                 'grandTotalKg',
                 'grandTotalRupiah',
@@ -575,8 +580,11 @@ class DailyActivityController extends Controller
 
     public function managerDetail(Request $request, $costCenterId, $psGroupId)
     {
-        $costCenter = CostCenter::findOrFail($costCenterId);
-        $psGroup  = PsGroup::findOrFail($psGroupId);
+        $managerDepartmentId = auth()->user()->department_id;
+        abort_unless($managerDepartmentId, 403, 'Akun Anda belum terhubung ke department manapun.');
+
+        $costCenter = CostCenter::where('department_id', $managerDepartmentId)->findOrFail($costCenterId);
+        $psGroup = PsGroup::where('cost_center_id', $costCenter->id)->findOrFail($psGroupId);
 
         $dateFrom  = $request->input('date_from', now()->startOfMonth()->format('Y-m-d'));
         $dateTo    = $request->input('date_to', now()->format('Y-m-d'));
@@ -590,6 +598,7 @@ class DailyActivityController extends Controller
             ->join('products', 'products.id', '=', 'daily_activity_details.product_id')
             ->join('users', 'users.id', '=', 'daily_activities.input_by')
             ->join('employees', 'employees.id', '=', 'daily_activities.employee_id')
+            ->where('daily_activities.department_id', $managerDepartmentId)
             ->where('daily_activities.cost_center_id', $costCenterId)
             ->where('daily_activities.ps_group_id', $psGroupId)
             ->whereBetween('daily_activities.tanggal', [$dateFrom, $dateTo])
@@ -775,7 +784,7 @@ class DailyActivityController extends Controller
         }
     }
 
-    public function exportExcel(Request $request, $costCenterId, $psGroupId)
+    public function exportExcelGeneralManager(Request $request, $costCenterId, $psGroupId)
     {
         $fromDate = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
         $toDate   = $request->date_to ?? now()->format('Y-m-d');
@@ -784,6 +793,78 @@ class DailyActivityController extends Controller
 
         return Excel::download(
             new DailyActivityExport($costCenterId, $psGroupId, $fromDate, $toDate),
+            $fileName
+        );
+    }
+
+    public function exportExcelManager(Request $request, $costCenterId, $psGroupId)
+    {
+        $managerDepartmentId = auth()->user()->department_id;
+
+        abort_unless(
+            $managerDepartmentId,
+            403,
+            'Akun Anda belum terhubung ke department manapun.'
+        );
+
+        $costCenter = CostCenter::where('department_id', $managerDepartmentId)
+            ->findOrFail($costCenterId);
+
+        $psGroup = PsGroup::where('cost_center_id', $costCenter->id)
+            ->findOrFail($psGroupId);
+
+        $fromDate = $request->date_from
+            ?? now()->startOfMonth()->format('Y-m-d');
+
+        $toDate = $request->date_to
+            ?? now()->format('Y-m-d');
+
+        $fileName = "daily-activity-{$fromDate}-to-{$toDate}.xlsx";
+
+        return Excel::download(
+            new DailyActivityExport(
+                $costCenterId,
+                $psGroupId,
+                $fromDate,
+                $toDate,
+                $managerDepartmentId
+            ),
+            $fileName
+        );
+    }
+
+    public function exportExcel(Request $request, $costCenterId, $psGroupId)
+    {
+        $adminDepartmentId = auth()->user()->department_id;
+
+        abort_unless(
+            $adminDepartmentId,
+            403,
+            'Akun Anda belum terhubung ke department manapun.'
+        );
+
+        $costCenter = CostCenter::where('department_id', $adminDepartmentId)
+            ->findOrFail($costCenterId);
+
+        $psGroup = PsGroup::where('cost_center_id', $costCenter->id)
+            ->findOrFail($psGroupId);
+
+        $fromDate = $request->date_from
+            ?? now()->startOfMonth()->format('Y-m-d');
+
+        $toDate = $request->date_to
+            ?? now()->format('Y-m-d');
+
+        $fileName = "daily-activity-{$fromDate}-to-{$toDate}.xlsx";
+
+        return Excel::download(
+            new DailyActivityExport(
+                $costCenterId,
+                $psGroupId,
+                $fromDate,
+                $toDate,
+                $adminDepartmentId
+            ),
             $fileName
         );
     }
@@ -850,15 +931,19 @@ class DailyActivityController extends Controller
 
     public function exportPdfManager(Request $request, $costCenterId, $psGroupId)
     {
+        $managerDepartmentId = auth()->user()->department_id;
+        abort_unless($managerDepartmentId, 403, 'Akun Anda belum terhubung ke department manapun.');
+
         $fromDate = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
         $toDate   = $request->date_to ?? now()->format('Y-m-d');
 
-        $costCenter = CostCenter::findOrFail($costCenterId);
-        $psGroup    = PsGroup::findOrFail($psGroupId);
+        $costCenter = CostCenter::where('department_id', $managerDepartmentId)->findOrFail($costCenterId);
+        $psGroup = PsGroup::where('cost_center_id', $costCenter->id)->findOrFail($psGroupId);
 
         $data = DailyActivityDetail::with(['product', 'dailyActivity.employee', 'dailyActivity.inputBy'])
-            ->whereHas('dailyActivity', function ($q) use ($costCenterId, $psGroupId, $fromDate, $toDate) {
-                $q->where('cost_center_id', $costCenterId)
+            ->whereHas('dailyActivity', function ($q) use ($managerDepartmentId, $costCenterId, $psGroupId, $fromDate, $toDate) {
+                $q->where('department_id', $managerDepartmentId)
+                ->where('cost_center_id', $costCenterId)
                 ->where('ps_group_id', $psGroupId)
                 ->whereBetween('tanggal', [$fromDate, $toDate]);
             })

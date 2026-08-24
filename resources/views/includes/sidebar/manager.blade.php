@@ -11,64 +11,10 @@
 
         <ul class="sidebar-menu">
 
-            <!-- DASHBOARD -->
             <li class="{{ Request::is('dashboard') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('dashboard') }}">
                     <i class="fas fa-home"></i>
                     <span>Dashboard</span>
-                </a>
-            </li>
-
-            <!-- MASTER DATA -->
-            <li class="menu-header">Master Data</li>
-
-            <li class="{{ Request::is('manager/departments*') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('manager.department.index') }}">
-                    <i class="fas fa-sitemap"></i>
-                    <span>Departments</span>
-                </a>
-            </li>
-
-            <li class="{{ Request::is('manager/positions*') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('manager.position.index') }}">
-                    <i class="fas fa-user-tie"></i>
-                    <span>Positions</span>
-                </a>
-            </li>
-
-            <li class="{{ Request::is('manager/outsourcings*') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('manager.outsourcing.index') }}">
-                    <i class="fas fa-building"></i>
-                    <span>Yayasan</span>
-                </a>
-            </li>
-
-
-            <li class="{{ Request::is('manager/cost-centers*') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('manager.cost-center.index') }}">
-                    <i class="fas fa-sitemap"></i>
-                    <span>Cost Center</span>
-                </a>
-            </li>
-
-            <li class="{{ Request::is('manager/groups*') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('manager.ps-group.index') }}">
-                    <i class="fas fa-layer-group"></i>
-                    <span>Group</span>
-                </a>
-            </li>
-
-            <li class="{{ Request::is('manager/users*') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('manager.user.index') }}">
-                    <i class="fas fa-user-cog"></i>
-                    <span>Users</span>
-                </a>
-            </li>
-
-            <li class="{{ Request::is('manager/employees*') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('manager.employee.index') }}">
-                    <i class="fas fa-user-cog"></i>
-                    <span>Karyawan</span>
                 </a>
             </li>
 

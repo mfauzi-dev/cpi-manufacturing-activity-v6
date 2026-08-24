@@ -101,7 +101,7 @@ class AttendanceController extends Controller
             );
         }
 
-               if ($request->outsourcing_id) {
+        if ($request->outsourcing_id) {
             $query->where('employees.outsourcing_id', $request->outsourcing_id);
         }
 
@@ -226,13 +226,15 @@ class AttendanceController extends Controller
 
     public function managerIndex(Request $request)
     {
+        $managerDepartmentId = auth()->user()->department_id;
+        abort_unless($managerDepartmentId, 403, 'Akun Anda belum terhubung ke department manapun.');
+
         $request->validate([
             'date' => ['nullable', 'date'],
             'status' => ['nullable', 'string'],
             'outsourcing_id' => ['nullable', 'integer'],
             'cost_center_id' => ['nullable', 'integer'],
             'ps_group_id' => ['nullable', 'integer'],
-            'department_id' => ['nullable', 'integer'],
             'search' => ['nullable', 'string'],
             'size' => ['nullable', 'integer'],
         ]);
@@ -247,11 +249,7 @@ class AttendanceController extends Controller
             'attendances' => function ($q) use ($date) {
                 $q->whereDate('date', $date)->with('inputBy');
             }
-        ]);
-
-        if ($request->department_id) {
-            $query->where('employees.department_id', $request->department_id);
-        }
+        ])->where('employees.department_id', $managerDepartmentId); // lock ke department manager
 
         if ($request->outsourcing_id) {
             $query->where('employees.outsourcing_id', $request->outsourcing_id);
@@ -289,7 +287,7 @@ class AttendanceController extends Controller
         return view('pages.manager.attendance.index', [
             'employees' => $employees,
             'outsourcings' => Outsourcing::orderBy('name')->get(),
-            'departments' => Department::orderBy('name')->get(),
+            'managerDepartment' => Department::find($managerDepartmentId),
             'date' => $date,
         ]);
     }
@@ -540,36 +538,29 @@ class AttendanceController extends Controller
 
     public function managerSummary(Request $request)
     {
-        $user = auth()->user();
- 
-        abort_unless($user->role->can_access_all_departments, 403);
- 
+        $managerDepartmentId = auth()->user()->department_id;
+        abort_unless($managerDepartmentId, 403, 'Akun Anda belum terhubung ke department manapun.');
+
         $request->validate([
             'month' => ['nullable', 'integer', 'min:1', 'max:12'],
             'year' => ['nullable', 'integer', 'digits:4'],
-            'department_id' => ['nullable', 'integer'],
             'outsourcing_id' => ['nullable', 'integer'],
             'cost_center_id' => ['nullable', 'integer'],
             'ps_group_id' => ['nullable', 'integer'],
             'search' => ['nullable', 'string'],
             'size' => ['nullable', 'integer'],
         ]);
- 
+
         $monthNum = $request->month ?? now()->month;
         $year = $request->year ?? now()->year;
-        $departmentId = $request->department_id;
         $outsourcingId = $request->outsourcing_id;
         $costCenterId = $request->cost_center_id;
         $psGroupId = $request->ps_group_id;
         $search = $request->search;
         $size = $request->size ?? 50;
- 
-        $query = Employee::with(['department', 'costCenter', 'psGroup', 'outsourcing']);
- 
-        
-        if ($request->department_id) {
-            $query->where('employees.department_id', $request->department_id);
-        }
+
+        $query = Employee::with(['department', 'costCenter', 'psGroup', 'outsourcing'])
+            ->where('employees.department_id', $managerDepartmentId); // lock ke department manager
 
         if ($request->outsourcing_id) {
             $query->where('employees.outsourcing_id', $request->outsourcing_id);
@@ -582,16 +573,14 @@ class AttendanceController extends Controller
         if ($request->ps_group_id) {
             $query->where('employees.ps_group_id', $request->ps_group_id);
         }
- 
-        // Search
+
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('employees.name', 'like', "%{$search}%")
                     ->orWhere('employees.nik', 'like', "%{$search}%");
             });
         }
- 
-        // Count attendance per status, untuk bulan terpilih
+
         $query->withCount([
             'attendances as total_hadir' => function ($q) use ($year, $monthNum) {
                 $q->where('status', 'hadir')
@@ -619,7 +608,7 @@ class AttendanceController extends Controller
                     ->whereMonth('date', $monthNum);
             },
         ]);
- 
+
         $employees = $query
             ->join('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
             ->addSelect('employees.*')
@@ -627,20 +616,16 @@ class AttendanceController extends Controller
             ->orderBy('employees.name')
             ->paginate($size)
             ->withQueryString();
- 
-        $departments = Department::orderBy('name')->get();
- 
+
         $outsourcings = Outsourcing::orderBy('name')->get();
- 
-        $groups = PsGroup::orderBy('name')->get();
- 
+        $managerDepartment = Department::find($managerDepartmentId);
+
         return view(
             'pages.manager.attendance.summary',
             compact(
                 'employees',
-                'departments',
+                'managerDepartment',
                 'outsourcings',
-                'groups',
                 'monthNum',
                 'year'
             )
@@ -691,9 +676,15 @@ class AttendanceController extends Controller
 
     public function managerDetail(Request $request, Employee $employee)
     {
-        $user = auth()->user();
- 
-        abort_unless($user->role->can_access_all_departments, 403);
+        $managerDepartmentId = auth()->user()->department_id;
+
+        if (!$managerDepartmentId) {
+            abort(403, 'Akun Anda belum terhubung ke department manapun.');
+        }
+
+        if ($employee->department_id !== $managerDepartmentId) {
+            abort(404);
+        }
  
         $request->validate([
             'month' => ['nullable', 'integer', 'min:1', 'max:12'],
@@ -793,22 +784,27 @@ class AttendanceController extends Controller
 
     public function managerCreate(Request $request)
     {
-        $departmentId = $request->department_id;
+        $user = auth()->user();
+
+        $departmentId = $user->department_id;
+
+        $costCenters = CostCenter::where('department_id', $departmentId)
+            ->orderBy('name')
+            ->get();
+
+        $employeeStatus = $request->employee_status;
         $costCenterId = $request->cost_center_id;
         $psGroupId = $request->ps_group_id;
-        $date = $request->date ?? now()->toDateString();
-        $employeeStatus = $request->employee_status;
         $search = $request->search;
-
-        $departments = Department::orderBy('name')->get();
+        $date = $request->date ?? now()->toDateString();
 
         $query = Employee::with([
             'outsourcing',
-            'costCenter',
-            'psGroup'
+            'psGroup',
+            'costCenter'
         ]);
 
-        if ($departmentId) {
+        if (!$user->role->can_access_all_departments) {
             $query->where('department_id', $departmentId);
         }
 
@@ -823,7 +819,7 @@ class AttendanceController extends Controller
         if ($psGroupId) {
             $query->where('ps_group_id', $psGroupId);
         }
-        
+
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -840,14 +836,16 @@ class AttendanceController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('pages.manager.attendance.create', compact([
-            'employees',
-            'departments',
-            'departmentId',
-            'costCenterId',
-            'psGroupId',
-            'date'
-        ]));
+        return view(
+            'pages.admin_production.attendance.create',
+            compact(
+                'employees',
+                'costCenters',
+                'date',
+                'costCenterId',
+                'psGroupId'
+            )
+        );
     }
     
     public function create(Request $request)
@@ -1012,7 +1010,7 @@ class AttendanceController extends Controller
             );
     }
 
-    public function exportSummaryExcel(Request $request)
+    public function exportSummaryExcelGeneralManager(Request $request)
     {
         $month = $request->month ?? now()->month;
         $year = $request->year ?? now()->year;
@@ -1040,8 +1038,89 @@ class AttendanceController extends Controller
         );
     }
 
+    public function exportSummaryExcelManager(Request $request)
+    {
+        $managerDepartmentId = auth()->user()->department_id;
+
+        abort_unless(
+            $managerDepartmentId,
+            403,
+            'Akun Anda belum terhubung ke department manapun.'
+        );
+
+        $month = $request->month ?? now()->month;
+        $year = $request->year ?? now()->year;
+
+        $outsourcingId = $request->outsourcing_id;
+        $costCenterId = $request->cost_center_id;
+        $psGroupId = $request->ps_group_id;
+        $search = $request->search;
+
+        $fileName = 'attendance-summary-' .
+            $year . '-' .
+            str_pad($month, 2, '0', STR_PAD_LEFT) .
+            '.xlsx';
+
+        return Excel::download(
+            new AttendanceSummaryExport(
+                $month,
+                $year,
+                $outsourcingId,
+                $costCenterId,
+                $psGroupId,
+                $search,
+                $managerDepartmentId
+            ),
+            $fileName
+        );
+    }
+
+   public function exportSummaryExcel(Request $request)
+    {
+        $departmentId = auth()->user()->department_id;
+
+        abort_unless(
+            $departmentId,
+            403,
+            'Akun Anda belum terhubung ke department manapun.'
+        );
+
+        $month = $request->month ?? now()->month;
+        $year = $request->year ?? now()->year;
+
+        $outsourcingId = $request->outsourcing_id;
+        $costCenterId = $request->cost_center_id;
+        $psGroupId = $request->ps_group_id;
+        $search = $request->search;
+
+        $fileName = 'attendance-summary-' .
+            $year . '-' .
+            str_pad($month, 2, '0', STR_PAD_LEFT) .
+            '.xlsx';
+
+        return Excel::download(
+            new AttendanceSummaryExport(
+                $month,
+                $year,
+                $outsourcingId,
+                $costCenterId,
+                $psGroupId,
+                $search,
+                $departmentId
+            ),
+            $fileName
+        );
+    }
+
     public function exportSummaryPdf(Request $request)
     {
+        $managerDepartmentId = auth()->user()->department_id;
+
+        abort_unless(
+            $managerDepartmentId,
+            403,
+            'Akun Anda belum terhubung ke department manapun.'
+        );
         $month = $request->month ?? now()->month;
         $year = $request->year ?? now()->year;
 
@@ -1063,6 +1142,7 @@ class AttendanceController extends Controller
         )->endOfMonth();
 
         $query = Employee::query()
+            ->where('department_id', $managerDepartmentId)
             ->with([
                 'department',
                 'outsourcing',
@@ -1320,6 +1400,9 @@ class AttendanceController extends Controller
 
     public function exportSummaryPdfManager(Request $request)
     {
+        $managerDepartmentId = auth()->user()->department_id;
+        abort_unless($managerDepartmentId, 403, 'Akun Anda belum terhubung ke department manapun.');
+
         $month = $request->month ?? now()->month;
         $year = $request->year ?? now()->year;
 
@@ -1341,6 +1424,7 @@ class AttendanceController extends Controller
         )->endOfMonth();
 
         $query = Employee::query()
+            ->where('department_id', $managerDepartmentId)
             ->with([
                 'department',
                 'outsourcing',
