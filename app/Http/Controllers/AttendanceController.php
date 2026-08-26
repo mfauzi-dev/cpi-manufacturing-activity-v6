@@ -68,6 +68,7 @@ class AttendanceController extends Controller
         $request->validate([
             'date' => ['nullable', 'date'],
             'status' => ['nullable', 'string'],
+            'employee_status' => ['nullable', 'string'],
             'outsourcing_id' => ['nullable', 'integer'],
             'cost_center_id' => ['nullable', 'integer'],
             'ps_group_id' => ['nullable', 'integer'],
@@ -77,6 +78,7 @@ class AttendanceController extends Controller
 
         $date = $request->date ?? now()->toDateString();
         $status = $request->status;
+        $employeeStatus = $request->employee_status;
         $outsourcingId = $request->outsourcing_id;
         $costCenterId = $request->cost_center_id;
         $groupId = $request->ps_group_id;
@@ -121,6 +123,10 @@ class AttendanceController extends Controller
             });
         }
 
+        if ($employeeStatus) {
+            $query->where('employees.employee_status', $employeeStatus);
+        }
+
         // Filter Status Attendance
         if ($status) {
             $query->whereHas('attendances', function ($q) use ($date, $status) {
@@ -130,7 +136,7 @@ class AttendanceController extends Controller
         }
 
         $employees = $query
-            ->join('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
+            ->leftJoin('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
             ->select('employees.*')
             ->orderBy('ps_groups.name')
             ->orderBy('employees.name')
@@ -159,6 +165,7 @@ class AttendanceController extends Controller
         $request->validate([
             'date' => ['nullable', 'date'],
             'status' => ['nullable', 'string'],
+            'employee_status' => ['nullable', 'string'],
             'outsourcing_id' => ['nullable', 'integer'],
             'cost_center_id' => ['nullable', 'integer'],
             'ps_group_id' => ['nullable', 'integer'],
@@ -168,6 +175,7 @@ class AttendanceController extends Controller
         ]);
 
         $date = $request->date ?? now()->toDateString();
+        $employeeStatus = $request->employee_status;
 
         $query = Employee::with([
             'costCenter',
@@ -202,6 +210,10 @@ class AttendanceController extends Controller
             });
         }
 
+        if ($employeeStatus) {
+            $query->where('employees.employee_status', $employeeStatus);
+        }
+
         if ($request->status) {
             $query->whereHas('attendances', function ($q) use ($date, $request) {
                 $q->whereDate('date', $date)->where('status', $request->status);
@@ -209,7 +221,7 @@ class AttendanceController extends Controller
         }
 
         $employees = $query
-            ->join('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
+            ->leftJoin('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
             ->select('employees.*')
             ->orderBy('ps_groups.name')
             ->orderBy('employees.name')
@@ -232,6 +244,7 @@ class AttendanceController extends Controller
         $request->validate([
             'date' => ['nullable', 'date'],
             'status' => ['nullable', 'string'],
+            'employee_status' => ['nullable', 'string'],
             'outsourcing_id' => ['nullable', 'integer'],
             'cost_center_id' => ['nullable', 'integer'],
             'ps_group_id' => ['nullable', 'integer'],
@@ -240,6 +253,7 @@ class AttendanceController extends Controller
         ]);
 
         $date = $request->date ?? now()->toDateString();
+        $employeeStatus = $request->employee_status; 
 
         $query = Employee::with([
             'costCenter',
@@ -270,6 +284,10 @@ class AttendanceController extends Controller
             });
         }
 
+        if ($employeeStatus) {
+            $query->where('employees.employee_status', $employeeStatus);
+        }
+
         if ($request->status) {
             $query->whereHas('attendances', function ($q) use ($date, $request) {
                 $q->whereDate('date', $date)->where('status', $request->status);
@@ -277,7 +295,7 @@ class AttendanceController extends Controller
         }
 
         $employees = $query
-            ->join('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
+            ->leftJoin('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
             ->select('employees.*')
             ->orderBy('ps_groups.name')
             ->orderBy('employees.name')
@@ -299,6 +317,7 @@ class AttendanceController extends Controller
         $request->validate([
             'month' => ['nullable', 'integer', 'min:1', 'max:12'],
             'year' => ['nullable', 'integer', 'digits:4'],
+            'employee_status' => ['nullable', 'string'],
             'outsourcing_id' => ['nullable', 'integer'],
             'cost_center_id' => ['nullable', 'integer'],
             'ps_group_id' => ['nullable', 'integer'],
@@ -308,6 +327,7 @@ class AttendanceController extends Controller
  
         $monthNum = $request->month ?? now()->month;
         $year = $request->year ?? now()->year;
+        $employeeStatus = $request->employee_status;
         $outsourcingId = $request->outsourcing_id;
         $costCenterId = $request->cost_center_id;
         $psGroupId = $request->ps_group_id;
@@ -343,6 +363,10 @@ class AttendanceController extends Controller
                     ->orWhere('employees.nik', 'like', "%{$search}%");
             });
         }
+
+        if ($employeeStatus) {
+            $query->where('employees.employee_status', $employeeStatus);
+        }
  
         // Count attendance per status, untuk bulan terpilih
         $query->withCount([
@@ -374,7 +398,7 @@ class AttendanceController extends Controller
         ]);
  
         $employees = $query
-            ->join('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
+            ->leftJoin('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
             ->addSelect('employees.*')
             ->orderBy('ps_groups.name')
             ->orderBy('employees.name')
@@ -441,6 +465,7 @@ class AttendanceController extends Controller
             'month' => ['nullable', 'integer', 'min:1', 'max:12'],
             'year' => ['nullable', 'integer', 'digits:4'],
             'department_id' => ['nullable', 'integer'],
+            'employee_status' => ['nullable', 'string'],
             'outsourcing_id' => ['nullable', 'integer'],
             'cost_center_id' => ['nullable', 'integer'],
             'ps_group_id' => ['nullable', 'integer'],
@@ -451,6 +476,7 @@ class AttendanceController extends Controller
         $monthNum = $request->month ?? now()->month;
         $year = $request->year ?? now()->year;
         $departmentId = $request->department_id;
+        $employeeStatus = $request->employee_status;
         $outsourcingId = $request->outsourcing_id;
         $costCenterId = $request->cost_center_id;
         $psGroupId = $request->ps_group_id;
@@ -482,7 +508,11 @@ class AttendanceController extends Controller
                     ->orWhere('employees.nik', 'like', "%{$search}%");
             });
         }
- 
+
+        if ($employeeStatus) {
+            $query->where('employees.employee_status', $employeeStatus);
+        }
+
         // Count attendance per status, untuk bulan terpilih
         $query->withCount([
             'attendances as total_hadir' => function ($q) use ($year, $monthNum) {
@@ -513,7 +543,7 @@ class AttendanceController extends Controller
         ]);
  
         $employees = $query
-            ->join('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
+            ->leftJoin('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
             ->addSelect('employees.*')
             ->orderBy('ps_groups.name')
             ->orderBy('employees.name')
@@ -544,6 +574,7 @@ class AttendanceController extends Controller
         $request->validate([
             'month' => ['nullable', 'integer', 'min:1', 'max:12'],
             'year' => ['nullable', 'integer', 'digits:4'],
+            'employee_status' => ['nullable', 'string'], 
             'outsourcing_id' => ['nullable', 'integer'],
             'cost_center_id' => ['nullable', 'integer'],
             'ps_group_id' => ['nullable', 'integer'],
@@ -553,6 +584,7 @@ class AttendanceController extends Controller
 
         $monthNum = $request->month ?? now()->month;
         $year = $request->year ?? now()->year;
+        $employeeStatus = $request->employee_status;
         $outsourcingId = $request->outsourcing_id;
         $costCenterId = $request->cost_center_id;
         $psGroupId = $request->ps_group_id;
@@ -579,6 +611,10 @@ class AttendanceController extends Controller
                 $q->where('employees.name', 'like', "%{$search}%")
                     ->orWhere('employees.nik', 'like', "%{$search}%");
             });
+        }
+
+        if ($employeeStatus) {
+            $query->where('employees.employee_status', $employeeStatus);
         }
 
         $query->withCount([
@@ -610,7 +646,7 @@ class AttendanceController extends Controller
         ]);
 
         $employees = $query
-            ->join('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
+            ->leftJoin('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
             ->addSelect('employees.*')
             ->orderBy('ps_groups.name')
             ->orderBy('employees.name')
@@ -1018,6 +1054,7 @@ class AttendanceController extends Controller
         $outsourcingId = $request->outsourcing_id;
         $costCenterId = $request->cost_center_id;
         $psGroupId = $request->ps_group_id;
+        $employeeStatus = $request->employee_status;
         $search = $request->search;
 
         $fileName = 'attendance-summary-' .
@@ -1032,7 +1069,9 @@ class AttendanceController extends Controller
                 $outsourcingId,
                 $costCenterId,
                 $psGroupId,
-                $search
+                $search,
+                null,
+                $employeeStatus
             ),
             $fileName
         );
@@ -1054,6 +1093,7 @@ class AttendanceController extends Controller
         $outsourcingId = $request->outsourcing_id;
         $costCenterId = $request->cost_center_id;
         $psGroupId = $request->ps_group_id;
+        $employeeStatus = $request->employee_status;
         $search = $request->search;
 
         $fileName = 'attendance-summary-' .
@@ -1069,13 +1109,14 @@ class AttendanceController extends Controller
                 $costCenterId,
                 $psGroupId,
                 $search,
-                $managerDepartmentId
+                $managerDepartmentId,
+                $employeeStatus
             ),
             $fileName
         );
     }
 
-   public function exportSummaryExcel(Request $request)
+    public function exportSummaryExcel(Request $request)
     {
         $departmentId = auth()->user()->department_id;
 
@@ -1091,6 +1132,7 @@ class AttendanceController extends Controller
         $outsourcingId = $request->outsourcing_id;
         $costCenterId = $request->cost_center_id;
         $psGroupId = $request->ps_group_id;
+        $employeeStatus = $request->employee_status;
         $search = $request->search;
 
         $fileName = 'attendance-summary-' .
@@ -1106,7 +1148,8 @@ class AttendanceController extends Controller
                 $costCenterId,
                 $psGroupId,
                 $search,
-                $departmentId
+                $departmentId,
+                $employeeStatus
             ),
             $fileName
         );
@@ -1127,6 +1170,7 @@ class AttendanceController extends Controller
         $outsourcingId = $request->outsourcing_id;
         $costCenterId = $request->cost_center_id;
         $psGroupId = $request->ps_group_id;
+        $employeeStatus = $request->employee_status;
         $search = $request->search;
 
         $startDate = Carbon::create(
@@ -1170,29 +1214,28 @@ class AttendanceController extends Controller
                         ->where('status', 'cuti');
                 },
 
-                // DATABASE KAMU: alfa
                 'attendances as total_alfa' => function ($q) use ($startDate, $endDate) {
                     $q->whereBetween('date', [$startDate, $endDate])
                         ->where('status', 'alfa');
                 },
             ]);
 
-        // Filter Outsourcing
         if ($outsourcingId) {
             $query->where('outsourcing_id', $outsourcingId);
         }
 
-        // Filter Cost Center
         if ($costCenterId) {
             $query->where('cost_center_id', $costCenterId);
         }
 
-        // Filter PS Group
         if ($psGroupId) {
             $query->where('ps_group_id', $psGroupId);
         }
 
-        // Search NIK / Nama
+        if ($employeeStatus) {
+            $query->where('employee_status', $employeeStatus);
+        }
+
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('nik', 'like', "%{$search}%")
@@ -1238,6 +1281,17 @@ class AttendanceController extends Controller
             $psGroupName = PsGroup::find($psGroupId)?->name ?? '-';
         }
 
+        $employeeStatusLabels = [
+            'cpi' => 'CPI',
+            'borongan' => 'Borongan',
+            'harian' => 'Harian',
+        ];
+
+        $employeeStatusName = $employeeStatus
+            ? ($employeeStatusLabels[$employeeStatus] ?? $employeeStatus)
+            : 'Semua Status Karyawan';
+        
+
         $pdf = Pdf::loadView(
             'pages.admin_production.attendance.summary-pdf',
             [
@@ -1247,6 +1301,7 @@ class AttendanceController extends Controller
                 'outsourcingName' => $outsourcingName,
                 'costCenterName' => $costCenterName,
                 'psGroupName' => $psGroupName,
+                'employeeStatusName' => $employeeStatusName,
                 'search' => $search,
             ]
         )->setPaper('a4', 'landscape');
@@ -1267,6 +1322,7 @@ class AttendanceController extends Controller
         $outsourcingId = $request->outsourcing_id;
         $costCenterId = $request->cost_center_id;
         $psGroupId = $request->ps_group_id;
+        $employeeStatus = $request->employee_status; 
         $search = $request->search;
 
         $startDate = Carbon::create(
@@ -1309,29 +1365,28 @@ class AttendanceController extends Controller
                         ->where('status', 'cuti');
                 },
 
-                // DATABASE KAMU: alfa
                 'attendances as total_alfa' => function ($q) use ($startDate, $endDate) {
                     $q->whereBetween('date', [$startDate, $endDate])
                         ->where('status', 'alfa');
                 },
             ]);
 
-        // Filter Outsourcing
         if ($outsourcingId) {
             $query->where('outsourcing_id', $outsourcingId);
         }
 
-        // Filter Cost Center
         if ($costCenterId) {
             $query->where('cost_center_id', $costCenterId);
         }
 
-        // Filter PS Group
         if ($psGroupId) {
             $query->where('ps_group_id', $psGroupId);
         }
 
-        // Search NIK / Nama
+        if ($employeeStatus) {
+            $query->where('employee_status', $employeeStatus);
+        }
+
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('nik', 'like', "%{$search}%")
@@ -1377,6 +1432,16 @@ class AttendanceController extends Controller
             $psGroupName = PsGroup::find($psGroupId)?->name ?? '-';
         }
 
+        $employeeStatusLabels = [
+            'cpi' => 'CPI',
+            'borongan' => 'Borongan',
+            'harian' => 'Harian',
+        ];
+
+        $employeeStatusName = $employeeStatus
+            ? ($employeeStatusLabels[$employeeStatus] ?? $employeeStatus)
+            : 'Semua Status Karyawan';
+
         $pdf = Pdf::loadView(
             'pages.general_manager.attendance.summary-pdf',
             [
@@ -1386,6 +1451,7 @@ class AttendanceController extends Controller
                 'outsourcingName' => $outsourcingName,
                 'costCenterName' => $costCenterName,
                 'psGroupName' => $psGroupName,
+                'employeeStatusName' => $employeeStatusName,
                 'search' => $search,
             ]
         )->setPaper('a4', 'landscape');
@@ -1409,6 +1475,7 @@ class AttendanceController extends Controller
         $outsourcingId = $request->outsourcing_id;
         $costCenterId = $request->cost_center_id;
         $psGroupId = $request->ps_group_id;
+        $employeeStatus = $request->employee_status; 
         $search = $request->search;
 
         $startDate = Carbon::create(
@@ -1452,29 +1519,28 @@ class AttendanceController extends Controller
                         ->where('status', 'cuti');
                 },
 
-                // DATABASE KAMU: alfa
                 'attendances as total_alfa' => function ($q) use ($startDate, $endDate) {
                     $q->whereBetween('date', [$startDate, $endDate])
                         ->where('status', 'alfa');
                 },
             ]);
 
-        // Filter Outsourcing
         if ($outsourcingId) {
             $query->where('outsourcing_id', $outsourcingId);
         }
 
-        // Filter Cost Center
         if ($costCenterId) {
             $query->where('cost_center_id', $costCenterId);
         }
 
-        // Filter PS Group
         if ($psGroupId) {
             $query->where('ps_group_id', $psGroupId);
         }
 
-        // Search NIK / Nama
+        if ($employeeStatus) {
+            $query->where('employee_status', $employeeStatus);
+        }
+
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('nik', 'like', "%{$search}%")
@@ -1520,6 +1586,16 @@ class AttendanceController extends Controller
             $psGroupName = PsGroup::find($psGroupId)?->name ?? '-';
         }
 
+        $employeeStatusLabels = [
+            'cpi' => 'CPI',
+            'borongan' => 'Borongan',
+            'harian' => 'Harian',
+        ];
+
+        $employeeStatusName = $employeeStatus
+            ? ($employeeStatusLabels[$employeeStatus] ?? $employeeStatus)
+            : 'Semua Status Karyawan';
+
         $pdf = Pdf::loadView(
             'pages.manager.attendance.summary-pdf',
             [
@@ -1529,6 +1605,7 @@ class AttendanceController extends Controller
                 'outsourcingName' => $outsourcingName,
                 'costCenterName' => $costCenterName,
                 'psGroupName' => $psGroupName,
+                'employeeStatusName' => $employeeStatusName,
                 'search' => $search,
             ]
         )->setPaper('a4', 'landscape');

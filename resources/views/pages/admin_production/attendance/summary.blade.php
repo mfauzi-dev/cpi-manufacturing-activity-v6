@@ -15,7 +15,7 @@
 
                     <div class="row">
 
-                        <div class="col-md-4 mb-2">
+                        <div class="col-md-3 mb-2">
                             <div class="form-group">
                                 <label>Bulan</label>
                                 <select name="month" class="form-control">
@@ -47,7 +47,7 @@
                             </div>
                         </div>
 
-                        <div class="col-md-4 mb-2">
+                        <div class="col-md-3 mb-2">
                             <div class="form-group">
                                 <label>Tahun</label>
                                 <select name="year" class="form-control">
@@ -62,7 +62,31 @@
                             </div>
                         </div>
 
-                        <div class="col-md-4 mb-2">
+                        <div class="col-md-3 mb-2">
+                            <div class="form-group">
+                                <label>Status Karyawan</label>
+                                <select name="employee_status" class="form-control">
+
+                                    <option value="">Semua Status Karyawan</option>
+
+                                    <option value="cpi" {{ request('employee_status') == 'cpi' ? 'selected' : '' }}>
+                                        CPI
+                                    </option>
+
+                                    <option value="borongan"
+                                        {{ request('employee_status') == 'borongan' ? 'selected' : '' }}>
+                                        Borongan
+                                    </option>
+
+                                    <option value="harian" {{ request('employee_status') == 'harian' ? 'selected' : '' }}>
+                                        Harian
+                                    </option>
+
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 mb-2">
                             <div class="form-group">
                                 <label>Outsourcing</label>
                                 <select name="outsourcing_id" class="form-control">
@@ -80,7 +104,7 @@
                             </div>
                         </div>
 
-                        <div class="col-md-4 mb-2">
+                        <div class="col-md-3 mb-2">
                             <div class="form-group">
                                 <label>Cost Center</label>
                                 <select name="cost_center_id" id="cost_center_id" class="form-control">
@@ -98,7 +122,7 @@
                             </div>
                         </div>
 
-                        <div class="col-md-4 mb-2">
+                        <div class="col-md-3 mb-2">
                             <div class="form-group">
                                 <label>Group</label>
                                 <select name="ps_group_id" id="ps_group_id" class="form-control">
@@ -107,7 +131,7 @@
                             </div>
                         </div>
 
-                        <div class="col-md-4 mb-2">
+                        <div class="col-md-3 mb-2">
                             <div class="form-group">
                                 <label>Nama Karyawan</label>
                                 <input type="text" name="search" class="form-control" placeholder="Cari NIK / Nama"

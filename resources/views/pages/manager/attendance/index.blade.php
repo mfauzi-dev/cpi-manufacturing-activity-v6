@@ -71,6 +71,30 @@
 
                         <div class="col-md-3 mb-2">
                             <div class="form-group">
+                                <label>Status Karyawan</label>
+                                <select name="employee_status" class="form-control">
+
+                                    <option value="">Semua Status Karyawan</option>
+
+                                    <option value="cpi" {{ request('employee_status') == 'cpi' ? 'selected' : '' }}>
+                                        CPI
+                                    </option>
+
+                                    <option value="borongan"
+                                        {{ request('employee_status') == 'borongan' ? 'selected' : '' }}>
+                                        Borongan
+                                    </option>
+
+                                    <option value="harian" {{ request('employee_status') == 'harian' ? 'selected' : '' }}>
+                                        Harian
+                                    </option>
+
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 mb-2">
+                            <div class="form-group">
                                 <label>Outsourcing</label>
                                 <select name="outsourcing_id" class="form-control">
                                     <option value="">Semua OS</option>

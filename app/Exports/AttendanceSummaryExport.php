@@ -25,6 +25,7 @@ class AttendanceSummaryExport implements
     protected $psGroupId;
     protected $search;
     protected $departmentId;
+    protected $employeeStatus;
 
     public function __construct(
         $month,
@@ -33,7 +34,8 @@ class AttendanceSummaryExport implements
         $costCenterId = null,
         $psGroupId = null,
         $search = null,
-        $departmentId = null
+        $departmentId = null,
+        $employeeStatus = null
         
     ) {
         $this->month = $month;
@@ -43,6 +45,7 @@ class AttendanceSummaryExport implements
         $this->psGroupId = $psGroupId;
         $this->search = $search;
         $this->departmentId = $departmentId;
+        $this->employeeStatus = $employeeStatus;
     }
 
     public function query()
@@ -98,22 +101,22 @@ class AttendanceSummaryExport implements
             $query->where('department_id', $this->departmentId);
         }
 
-        // Filter Outsourcing
         if ($this->outsourcingId) {
             $query->where('outsourcing_id', $this->outsourcingId);
         }
 
-        // Filter Cost Center
         if ($this->costCenterId) {
             $query->where('cost_center_id', $this->costCenterId);
         }
 
-        // Filter PS Group
         if ($this->psGroupId) {
             $query->where('ps_group_id', $this->psGroupId);
         }
 
-        // Search NIK / Nama
+        if ($this->employeeStatus) {
+            $query->where('employee_status', $this->employeeStatus);
+        }
+
         if ($this->search) {
             $search = $this->search;
 

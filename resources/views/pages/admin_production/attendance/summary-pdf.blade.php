@@ -108,6 +108,15 @@
                 </td>
             </tr>
 
+            <tr>
+                <td class="label">
+                    Status Karyawan
+                </td>
+                <td>
+                    : {{ $employeeStatusName }}
+                </td>
+            </tr>
+
             @if ($search)
                 <tr>
                     <td class="label">
