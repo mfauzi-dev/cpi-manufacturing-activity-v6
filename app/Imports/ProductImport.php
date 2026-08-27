@@ -62,7 +62,7 @@ class ProductImport implements ToCollection, WithHeadingRow
             $data = [
                 'material_code'    => $materialCode ?: null,
                 'material_name'    => $materialName,
-                'harga_per_kg'     => $hargaPerKg,
+                'harga_per_kg'     => $hargaPerKg ? $hargaPerKg : 0,
                 'product_group_id' => $productGroup?->id,
                 'department_id'    => auth()->user()->department_id,
                 'cost_center_id'   => $this->costCenter->id,

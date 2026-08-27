@@ -99,7 +99,7 @@
                             <th class="text-right">Productivity</th>
                             <th class="text-right">Harga/kg</th>
                             <th class="text-right">Rupiah</th>
-                            <th>Yang Input</th>
+                            <th>Diinput Oleh</th>
                         </tr>
                     </thead>
 

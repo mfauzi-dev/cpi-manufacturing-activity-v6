@@ -58,6 +58,14 @@
                 </a>
             </li>
 
+
+            <li class="{{ Request::is('admin/liness*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('admin.line.index') }}">
+                    <i class="fas fa-list"></i>
+                    <span>Line</span>
+                </a>
+            </li>
+
             <li class="{{ Request::is('admin/product-groups*') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('admin.product-group.index') }}">
                     <i class="fas fa-industry"></i>

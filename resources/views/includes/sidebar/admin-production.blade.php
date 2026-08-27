@@ -70,23 +70,26 @@
 
                 </ul>
             </li>
-            <li class="dropdown {{ Request::is('admin-production/daily-activity*') ? 'active' : '' }}">
+
+            <li class="menu-header">SAUSAGE</li>
+
+            {{-- @if (strtolower(auth()->user()->department->name) === 'sausage') --}}
+            <li
+                class="dropdown {{ Request::is('admin-production/daily-activity') || Request::is('admin-production/daily-activity/create')
+                    ? 'active'
+                    : '' }}">
                 <a href="#" class="nav-link has-dropdown" data-toggle="dropdown"><i
                         class="fas fa-calendar-check"></i>
                     <span>Daily Activity Borongan</span></a>
                 <ul class="dropdown-menu">
                     <li class="{{ Request::is('admin-production/daily-activity') ? 'active' : '' }}"><a
-                            class="nav-link" href="{{ route('admin-production.daily-activity.index') }}">Summary Daily
+                            class="nav-link" href="{{ route('admin-production.daily-activity.index') }}">Summary
+                            Daily
                             Activity</a>
                     </li>
                     <li class="{{ Request::is('admin-production/daily-activity/create') ? 'active' : '' }}"><a
                             class="nav-link" href="{{ route('admin-production.daily-activity.create') }}">Tambah
                             Daily Activity</a>
-                        {{-- <li class="{{ Request::is('admin-production/daily-activity/import') ? 'active' : '' }}"><a
-                            class="nav-link" href="{{ route('admin-production.daily-activity.import') }}">Import
-                            Daily Activity</a>
-                    </li> --}}
-
                 </ul>
             </li>
 
@@ -105,7 +108,28 @@
                     </li>
                 </ul>
             </li>
+            {{-- @endif --}}
 
+            <li class="menu-header">FURTHER</li>
+
+            {{-- @if (strtolower(auth()->user()->department->name) === 'further processing') --}}
+            <li class="dropdown {{ Request::is('admin-production/daily-activity-further*') ? 'active' : '' }}">
+                <a href="#" class="nav-link has-dropdown" data-toggle="dropdown"><i
+                        class="fas fa-calendar-check"></i>
+                    <span>Daily Production Further</span></a>
+                <ul class="dropdown-menu">
+                    <li class="{{ Request::is('admin-production/daily-activity-further') ? 'active' : '' }}"><a
+                            class="nav-link"
+                            href="{{ route('admin-production.daily-activity-further.index') }}">Summary
+                            Daily Production</a>
+                    </li>
+                    <li class="{{ Request::is('admin-production/daily-activity-further/create') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('admin-production.daily-activity-further.create') }}">Tambah
+                            Daily Production</a>
+                    </li>
+                </ul>
+            </li>
+            {{-- @endif --}}
             <!-- PRODUCTION -->
             {{-- 
             <li class="{{ Request::is('admin-production/attendances*') ? 'active' : '' }}">

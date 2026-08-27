@@ -4,10 +4,12 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CostCenterController;
 use App\Http\Controllers\DailyActivityController;
+use App\Http\Controllers\DailyActivityFurtherController;
 use App\Http\Controllers\DailyProductionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\LineController;
 use App\Http\Controllers\OutsourcingController;
 use App\Http\Controllers\PayrollBoronganController;
 use App\Http\Controllers\PositionController;
@@ -50,7 +52,12 @@ Route::middleware(['auth'])->group(function() {
     Route::get('/daily-activity/employees/{costCenterId}/{psGroupId}', [DailyActivityController::class, 'getEmployees'])->name('daily-activity.employees');
     Route::get('/daily-production/cost-centers/{departmentId}', [DailyProductionController::class, 'getCostCenters'])->name('daily-production.cost-centers');
     Route::get('/daily-production/ps-groups/{costCenterId}', [DailyProductionController::class, 'getPsGroups'])->name('daily-production.ps-groups');
-    
+    Route::get('/daily-activity-further/products/{costCenterId}', [DailyActivityFurtherController::class, 'getProducts'])->name('admin-production.daily-activity-further.products');
+
+    Route::get('/daily-activity-further/ps-groups/{costCenterId}', [DailyActivityFurtherController::class, 'getPsGroups'])->name('daily-activity-further.ps-groups');
+
+    Route::get('/daily-activity-further/employees/{costCenterId}/{psGroupId}', [DailyActivityFurtherController::class, 'getEmployees'])->name('daily-activity-further.employees');
+    Route::get('/daily-activity-further/cost-centers/{departmentId}',  [DailyActivityFurtherController::class, 'getCostCenters'])->name('daily-activity-further.cost-centers');
     // Route::get('/employees/search', [EmployeeController::class, 'search']);
 });
 
@@ -125,6 +132,27 @@ Route::prefix('admin-production')->middleware(['auth', 'role:Admin Production'])
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf', [DailyProductionController::class, 'exportPdf'])->name('daily-production.export-pdf');
     });
 
+    Route::prefix('daily-activity-further')->group(function () {
+
+            Route::get('/', [DailyActivityFurtherController::class, 'index'])->name('admin-production.daily-activity-further.index');
+
+            Route::get('/create', [DailyActivityFurtherController::class, 'create'])->name('admin-production.daily-activity-further.create');
+
+            Route::post('/store', [DailyActivityFurtherController::class, 'store'])->name('admin-production.daily-activity-further.store');
+
+            Route::get('/cost-center/{costCenter}/ps-group/{psGroup}/detail/{lineId?}', [DailyActivityFurtherController::class, 'detail'])->name('admin-production.daily-activity-further.detail');
+
+            Route::get('/{id}/edit',[DailyActivityFurtherController::class, 'edit'])->name('admin-production.daily-activity-further.edit');
+
+            Route::put('/{id}/update',[DailyActivityFurtherController::class, 'update'])->name('admin-production.daily-activity-further.update');
+
+            Route::delete('/{id}/delete', [DailyActivityFurtherController::class, 'destroy'])->name('admin-production.daily-activity-further.destroy');
+
+            Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel', [DailyActivityFurtherController::class, 'exportExcel'])->name('admin-production.daily-activity-further.export-excel');
+
+            Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf', [DailyActivityFurtherController::class, 'exportPdf'])->name('admin-production.daily-activity-further.export-pdf');
+        });
+
     
 });
 
@@ -183,6 +211,14 @@ Route::prefix('admin')->middleware(['auth', 'role:Admin'])->group(function() {
         Route::delete('{id}/delete', [PsGroupController::class, 'destroy'])->name('admin.ps-group.destroy');
     });
 
+    Route::prefix('lines')->group(function() {
+        Route::get('/', [LineController::class, 'index'])->name('admin.line.index');
+        Route::get('/create', [LineController::class, 'create'])->name('admin.line.create');
+        Route::post('/store', [LineController::class, 'store'])->name('admin.line.store');
+        Route::get('/{id}/edit', [LineController::class, 'edit'])->name('admin.line.edit');
+        Route::put('/{id}/update', [LineController::class, 'update'])->name('admin.line.update');
+        Route::delete('/{id}/delete', [LineController::class, 'destroy'])->name('admin.line.destroy');
+    });
 
     Route::prefix('positions')->group(function() {
         Route::get('/', [PositionController::class, 'index'])->name('position.index');
@@ -294,6 +330,12 @@ Route::prefix('general-manager')->middleware(['auth', 'role:General Manager'])->
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf', [DailyProductionController::class, 'exportPdfGeneralManager'])->name('general-manager.daily-production.export-pdf');
     });
 
+    Route::prefix('daily-activity-further')->group(function() {
+        Route::get('/',  [DailyActivityFurtherController::class,'generalManagerIndex'])->name('general-manager.daily-activity-further.index');
+        Route::get('/cost-center/{costCenter}/ps-group/{psGroup}/detail/{lineId}',  [DailyActivityFurtherController::class,'generalManagerDetail'])->name('general-manager.daily-activity-further.detail');
+        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel',  [DailyActivityFurtherController::class,'exportExcelGeneralManager'])->name('general-manager.daily-activity-further.export-excel');
+        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf',  [DailyActivityFurtherController::class,'exportPdfGeneralManager'])->name('general-manager.daily-activity-further.export-pdf');
+    }); 
 });
 
 Route::prefix('manager')->middleware(['auth', 'role:Manager'])->group(function() {
@@ -321,4 +363,11 @@ Route::prefix('manager')->middleware(['auth', 'role:Manager'])->group(function()
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel', [DailyProductionController::class, 'exportExcelManager'])->name('manager.daily-production.export-excel');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf', [DailyProductionController::class, 'exportPdfManager'])->name('manager.daily-production.export-pdf');
     });
+
+    Route::prefix('daily-activity-further')->group(function() {
+        Route::get('/',  [DailyActivityFurtherController::class,'managerIndex'])->name('manager.daily-activity-further.index');
+        Route::get('/cost-center/{costCenter}/ps-group/{psGroup}/detail/{lineId}',  [DailyActivityFurtherController::class,'managerDetail'])->name('manager.daily-activity-further.detail');
+        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel',  [DailyActivityFurtherController::class,'exportExcelManager'])->name('manager.daily-activity-further.export-excel');
+        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf',  [DailyActivityFurtherController::class,'exportPdfManager'])->name('manager.daily-activity-further.export-pdf');
+    }); 
 });

@@ -138,7 +138,7 @@
                             </th>
 
                             <th>
-                                Yang Input
+                                Diinput Oleh
                             </th>
 
                         </tr>
