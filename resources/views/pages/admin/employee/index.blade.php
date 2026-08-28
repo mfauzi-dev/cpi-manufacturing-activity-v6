@@ -143,6 +143,7 @@
                             <th>Status</th>
                             <th>Cost Center</th>
                             <th>PS Group</th>
+                            <th>Outsourcing</th>
                             <th>Position</th>
                             <th>Gender</th>
                             <th width="240" class="text-center">Action</th>
@@ -172,6 +173,8 @@
                                 <td>{{ $employee->costCenter->name ?? '-' }}</td>
 
                                 <td>{{ $employee->psGroup->name ?? '-' }}</td>
+
+                                <td>{{ $employee->outsourcing->name ?? '-' }}</td>
 
                                 <td>{{ $employee->position->name ?? '-' }}</td>
 
