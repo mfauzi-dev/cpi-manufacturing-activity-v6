@@ -21,23 +21,7 @@
 
             <li class="menu-header">Operational</li>
 
-            <li class="dropdown {{ Request::is('admin-production/products*') ? 'active' : '' }}">
-                <a href="#" class="nav-link has-dropdown" data-toggle="dropdown"><i
-                        class="fas fa-calendar-check"></i>
-                    <span>Products</span></a>
-                <ul class="dropdown-menu">
-                    <li class="{{ Request::is('admin-production/products') ? 'active' : '' }}"><a class="nav-link"
-                            href="{{ route('admin-production.product.index') }}">Table Product</a></li>
-                    <li class="{{ Request::is('admin-production/products/create') ? 'active' : '' }}"><a
-                            class="nav-link" href="{{ route('admin-production.product.create') }}">Tambah Product</a>
-                    </li>
-                    <li class="{{ Request::is('admin-production/products/import') ? 'active' : '' }}"><a
-                            class="nav-link" href="{{ route('admin-production.product.import') }}">Import
-                            Product</a>
-                    </li>
 
-                </ul>
-            </li>
 
             <li class="dropdown {{ Request::is('admin-production/attendances*') ? 'active' : '' }}">
                 <a href="#" class="nav-link has-dropdown" data-toggle="dropdown"><i
@@ -59,6 +43,25 @@
 
             @if (strtolower(auth()->user()->department->name) === 'sausage')
                 <li class="menu-header">SAUSAGE</li>
+
+                <li class="dropdown {{ Request::is('admin-production/products*') ? 'active' : '' }}">
+                    <a href="#" class="nav-link has-dropdown" data-toggle="dropdown"><i
+                            class="fas fa-calendar-check"></i>
+                        <span>Products</span></a>
+                    <ul class="dropdown-menu">
+                        <li class="{{ Request::is('admin-production/products') ? 'active' : '' }}"><a class="nav-link"
+                                href="{{ route('admin-production.product.index') }}">Table Product</a></li>
+                        <li class="{{ Request::is('admin-production/products/create') ? 'active' : '' }}"><a
+                                class="nav-link" href="{{ route('admin-production.product.create') }}">Tambah
+                                Product</a>
+                        </li>
+                        <li class="{{ Request::is('admin-production/products/import') ? 'active' : '' }}"><a
+                                class="nav-link" href="{{ route('admin-production.product.import') }}">Import
+                                Product</a>
+                        </li>
+
+                    </ul>
+                </li>
                 <li
                     class="dropdown {{ Request::is('admin-production/daily-activity') || Request::is('admin-production/daily-activity/create')
                         ? 'active'
@@ -97,6 +100,26 @@
 
             @if (strtolower(auth()->user()->department->name) === 'further processing')
                 <li class="menu-header">FURTHER</li>
+
+                <li class="dropdown {{ Request::is('admin-production/products-further*') ? 'active' : '' }}">
+                    <a href="#" class="nav-link has-dropdown" data-toggle="dropdown"><i
+                            class="fas fa-calendar-check"></i>
+                        <span>Products</span></a>
+                    <ul class="dropdown-menu">
+                        <li class="{{ Request::is('admin-production/products-further') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('admin-production.product-further.index') }}">Table
+                                Product</a>
+                        </li>
+                        <li class="{{ Request::is('admin-production/products-further/create') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('admin-production.product-further.create') }}">Tambah
+                                Product</a>
+                        </li>
+                        <li class="{{ Request::is('admin-production/products-further/import') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('admin-production.product-further.import') }}">Import
+                                Product</a>
+                        </li>
+                    </ul>
+                </li>
 
                 <li class="dropdown {{ Request::is('admin-production/daily-activity-further*') ? 'active' : '' }}">
                     <a href="#" class="nav-link has-dropdown" data-toggle="dropdown"><i

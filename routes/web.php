@@ -13,6 +13,7 @@ use App\Http\Controllers\LineController;
 use App\Http\Controllers\OutsourcingController;
 use App\Http\Controllers\PayrollBoronganController;
 use App\Http\Controllers\PositionController;
+use App\Http\Controllers\ProcessTypeController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductGroupController;
 use App\Http\Controllers\PsGroupController;
@@ -81,7 +82,17 @@ Route::prefix('admin-production')->middleware(['auth', 'role:Admin Production'])
         Route::delete('{id}/delete', [ProductController::class, 'destroy'])->name('admin-production.product.destroy');
         Route::get('/import', [ProductController::class, 'importPage'])->name('admin-production.product.import');
         Route::post('/upload', [ProductController::class, 'upload'])->name('admin-production.product.upload');    
-    
+    });
+
+    Route::prefix('products-further')->group(function() {
+        Route::get('/', [ProductController::class, 'indexFurther'])->name('admin-production.product-further.index');
+        Route::get('/create', [ProductController::class, 'createFurther'])->name('admin-production.product-further.create');
+        Route::post('/store', [ProductController::class, 'storeFurther'])->name('admin-production.product-further.store');
+        Route::get('{id}/edit', [ProductController::class, 'editFurther'])->name('admin-production.product-further.edit');
+        Route::put('{id}/update', [ProductController::class, 'updateFurther'])->name('admin-production.product-further.update');
+        Route::delete('{id}/delete', [ProductController::class, 'destroyFurther'])->name('admin-production.product-further.destroy');
+        Route::get('/import', [ProductController::class, 'importPageFurther'])->name('admin-production.product-further.import');
+        Route::post('/upload', [ProductController::class, 'uploadFurther'])->name('admin-production.product-further.upload');
     });
 
     Route::prefix('attendances')->group(function(){
@@ -240,6 +251,15 @@ Route::prefix('admin')->middleware(['auth', 'role:Admin'])->group(function() {
         Route::delete('{id}/delete', [EmployeeController::class, 'destroy'])->name('admin.employee.destroy');
         Route::get('/import', [EmployeeController::class, 'importPage'])->name('admin.employee.import');
         Route::post('/upload', [EmployeeController::class, 'upload'])->name('admin.employee.upload');
+    });
+
+    Route::prefix('process-types')->group(function() {
+        Route::get('/', [ProcessTypeController::class, 'index'])->name('admin.process-type.index');
+        Route::get('/create', [ProcessTypeController::class, 'create'])->name('admin.process-type.create');
+        Route::post('/store', [ProcessTypeController::class, 'store'])->name('admin.process-type.store');
+        Route::get('{id}/edit', [ProcessTypeController::class, 'edit'])->name('admin.process-type.edit');
+        Route::put('{id}/update', [ProcessTypeController::class, 'update'])->name('admin.process-type.update');
+        Route::delete('{id}/delete', [ProcessTypeController::class, 'destroy'])->name('admin.process-type.destroy');
     });
 
     // Route::prefix('payrolls')->group(function () {

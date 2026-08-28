@@ -98,6 +98,31 @@
                         <div class="col-md-3">
                             <div class="form-group">
 
+                                <label>Process Type</label>
+
+                                <select name="process_type_id" id="process_type"
+                                    class="form-control @error('process_type_id') is-invalid @enderror">
+
+                                    <option value="">Pilih Process Type</option>
+
+                                    @foreach ($processTypeList as $processType)
+                                        <option value="{{ $processType->id }}"
+                                            {{ old('process_type_id') == $processType->id ? 'selected' : '' }}>
+                                            {{ $processType->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+
+                                @error('process_type_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group">
+
                                 <label>Line</label>
 
                                 <select name="line_id" id="line_id"
@@ -255,7 +280,11 @@
             });
 
             if ($('#cost_center').val()) {
-                loadCostCenterDependents($('#cost_center').val());
+                loadPsGroup($('#cost_center').val());
+            }
+
+            if ($('#cost_center').val() && $('#process_type').val()) {
+                loadProducts($('#cost_center').val(), $('#process_type').val());
             }
 
         });
@@ -272,15 +301,34 @@
                 return;
             }
 
-            loadCostCenterDependents(costCenterId);
+            loadPsGroup(costCenterId);
+            reloadProducts();
         });
 
-        function loadCostCenterDependents(costCenterId) {
+        $('#process_type').change(function() {
+            reloadProducts();
+        });
 
-            // PRODUCT
+        function reloadProducts() {
+
+            let costCenterId = $('#cost_center').val();
+            let processTypeId = $('#process_type').val();
+
+            if (!costCenterId || !processTypeId) {
+                $('.product').html('<option value="">Pilih SKU</option>');
+                return;
+            }
+
+            loadProducts(costCenterId, processTypeId);
+        }
+
+        function loadProducts(costCenterId, processTypeId) {
+
             $.get(
                 "{{ route('admin-production.daily-activity-further.products', ':id') }}"
-                .replace(':id', costCenterId),
+                .replace(':id', costCenterId), {
+                    process_type_id: processTypeId
+                },
 
                 function(res) {
 
@@ -302,8 +350,10 @@
                     });
                 }
             );
+        }
 
-            // PS GROUP
+        function loadPsGroup(costCenterId) {
+
             $.get(
                 "{{ route('daily-activity-further.ps-groups', ':id') }}".replace(':id', costCenterId),
                 function(data) {

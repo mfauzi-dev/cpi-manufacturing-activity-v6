@@ -73,6 +73,13 @@
                 </a>
             </li>
 
+            <li class="{{ Request::is('admin/process-types*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('admin.process-type.index') }}">
+                    <i class="fas fa-cogs"></i>
+                    <span>Process Type</span>
+                </a>
+            </li>
+
             <li class="{{ Request::is('admin/users*') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('admin.user.index') }}">
                     <i class="fas fa-user-cog"></i>

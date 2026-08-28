@@ -9,6 +9,7 @@ use App\Models\DailyActivityDetailFurther;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Line;
+use App\Models\ProcessType;
 use App\Models\Product;
 use App\Models\PsGroup;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -35,6 +36,10 @@ class DailyActivityFurtherController extends Controller
             ->orderBy('name')
             ->get();
 
+        $processTypeList = ProcessType::where('department_id', $departmentId)
+            ->orderBy('name')
+            ->get();
+
         $lineList = Line::orderBy('name')
             ->get();
 
@@ -43,7 +48,8 @@ class DailyActivityFurtherController extends Controller
             compact(
                 'department',
                 'costCenterList',
-                'lineList'
+                'lineList',
+                'processTypeList'
             )
         );
     }
@@ -60,14 +66,19 @@ class DailyActivityFurtherController extends Controller
         return response()->json($costCenters);
     }
 
-    public function getProducts($costCenterId)
+    public function getProducts(Request $request, $costCenterId)
     {
+        $request->validate([
+            'process_type_id' => 'required|exists:process_types,id',
+        ]);
+
         $departmentId = auth()->user()->department_id;
 
         $costCenter = CostCenter::where('department_id', $departmentId)
             ->findOrFail($costCenterId);
 
         $products = Product::where('cost_center_id', $costCenter->id)
+            ->where('process_type_id', $request->process_type_id)
             ->orderBy('material_name')
             ->get([
                 'id',
