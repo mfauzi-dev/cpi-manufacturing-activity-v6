@@ -93,15 +93,7 @@ class AttendanceController extends Controller
                 $q->whereDate('date', $date)
                 ->with('inputBy');
             }
-        ]);
-
-        // User biasa hanya department sendiri
-        if (!$user->role->can_access_all_departments) {
-            $query->where(
-                'department_id',
-                $user->department_id
-            );
-        }
+        ])->where('department_id', $user->department_id);
 
         if ($request->outsourcing_id) {
             $query->where('employees.outsourcing_id', $request->outsourcing_id);
@@ -263,7 +255,7 @@ class AttendanceController extends Controller
             'attendances' => function ($q) use ($date) {
                 $q->whereDate('date', $date)->with('inputBy');
             }
-        ])->where('employees.department_id', $managerDepartmentId); // lock ke department manager
+        ])->where('employees.department_id', $managerDepartmentId);
 
         if ($request->outsourcing_id) {
             $query->where('employees.outsourcing_id', $request->outsourcing_id);
@@ -334,15 +326,7 @@ class AttendanceController extends Controller
         $search = $request->search;
         $size = $request->size ?? 50;
  
-        $query = Employee::with(['psGroup', 'outsourcing']);
- 
-        // User biasa hanya department sendiri
-        if (!$user->role->can_access_all_departments) {
-            $query->where(
-                'department_id',
-                $user->department_id
-            );
-        }
+        $query = Employee::with(['psGroup', 'outsourcing'])->where('department_id', $user->department_id);
         
         if ($request->outsourcing_id) {
             $query->where('employees.outsourcing_id', $request->outsourcing_id);
@@ -592,7 +576,7 @@ class AttendanceController extends Controller
         $size = $request->size ?? 50;
 
         $query = Employee::with(['department', 'costCenter', 'psGroup', 'outsourcing'])
-            ->where('employees.department_id', $managerDepartmentId); // lock ke department manager
+            ->where('employees.department_id', $managerDepartmentId);
 
         if ($request->outsourcing_id) {
             $query->where('employees.outsourcing_id', $request->outsourcing_id);
@@ -795,8 +779,8 @@ class AttendanceController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('nik', 'like', "%{$search}%");
-        });
-    }
+            });
+        }
 
         $employees = $query
             ->with([
@@ -838,11 +822,7 @@ class AttendanceController extends Controller
             'outsourcing',
             'psGroup',
             'costCenter'
-        ]);
-
-        if (!$user->role->can_access_all_departments) {
-            $query->where('department_id', $departmentId);
-        }
+        ])->where('department_id', $departmentId);
 
         if ($employeeStatus) {
             $query->where('employee_status', $employeeStatus);
@@ -904,11 +884,7 @@ class AttendanceController extends Controller
             'outsourcing',
             'psGroup',
             'costCenter'
-        ]);
-
-        if (!$user->role->can_access_all_departments) {
-            $query->where('department_id', $departmentId);
-        }
+        ])->where('department_id', $departmentId);
 
         if ($employeeStatus) {
             $query->where('employee_status', $employeeStatus);

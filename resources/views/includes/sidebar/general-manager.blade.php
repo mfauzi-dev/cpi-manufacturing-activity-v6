@@ -134,23 +134,6 @@
                     </li>
                 </ul>
             </li>
-
-            {{-- <li class="menu-header">Payroll</li>
-
-            <li class="{{ Request::is('general-manager/payrolls/borongan*') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('general-manager.payroll.borongan.index') }}">
-                    <i class="fas fa-money-bill-wave"></i>
-                    <span>Payroll Borongan</span>
-                </a>
-            </li> --}}
-
-            {{-- <li class="{{ Request::is('general-manager/payrolls/outsourcing*') ? 'active' : '' }}">
-                <a class="nav-link" href="#">
-                    <i class="fas fa-money-bill"></i>
-                    <span>Payroll Outsourcing</span>
-                </a>
-            </li> --}}
-
         </ul>
     </aside>
 </div>

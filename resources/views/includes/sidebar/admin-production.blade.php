@@ -18,20 +18,6 @@
                     <span>Dashboard</span>
                 </a>
             </li>
-            {{-- 
-            <li class="dropdown {{ Request::is('personalia/employees*') ? 'active' : '' }}">
-                <a href="#" class="nav-link has-dropdown" data-toggle="dropdown"><i class="fas fa-users"></i>
-                    <span>Karyawan</span></a>
-                <ul class="dropdown-menu">
-                    <li class="{{ Request::is('personalia/employees') ? 'active' : '' }}"><a class="nav-link"
-                            href="{{ route('personalia.employee.index') }}">Table Karyawan</a></li>
-                    <li class="{{ Request::is('personalia/employees/create') ? 'active' : '' }}"><a class="nav-link"
-                            href="{{ route('personalia.employee.create') }}">Tambah Karyawan</a></li>
-                    <li class="{{ Request::is('personalia/employees/import') ? 'active' : '' }}"><a class="nav-link"
-                            href="{{ route('personalia.employee.import') }}">Import Excel</a></li>
-
-                </ul>
-            </li> --}}
 
             <li class="menu-header">Operational</li>
 
@@ -71,115 +57,66 @@
                 </ul>
             </li>
 
-            <li class="menu-header">SAUSAGE</li>
+            @if (strtolower(auth()->user()->department->name) === 'sausage')
+                <li class="menu-header">SAUSAGE</li>
+                <li
+                    class="dropdown {{ Request::is('admin-production/daily-activity') || Request::is('admin-production/daily-activity/create')
+                        ? 'active'
+                        : '' }}">
+                    <a href="#" class="nav-link has-dropdown" data-toggle="dropdown"><i
+                            class="fas fa-calendar-check"></i>
+                        <span>Daily Activity Borongan</span></a>
+                    <ul class="dropdown-menu">
+                        <li class="{{ Request::is('admin-production/daily-activity') ? 'active' : '' }}"><a
+                                class="nav-link" href="{{ route('admin-production.daily-activity.index') }}">Summary
+                                Daily
+                                Activity</a>
+                        </li>
+                        <li class="{{ Request::is('admin-production/daily-activity/create') ? 'active' : '' }}"><a
+                                class="nav-link" href="{{ route('admin-production.daily-activity.create') }}">Tambah
+                                Daily Activity</a>
+                    </ul>
+                </li>
 
-            {{-- @if (strtolower(auth()->user()->department->name) === 'sausage') --}}
-            <li
-                class="dropdown {{ Request::is('admin-production/daily-activity') || Request::is('admin-production/daily-activity/create')
-                    ? 'active'
-                    : '' }}">
-                <a href="#" class="nav-link has-dropdown" data-toggle="dropdown"><i
-                        class="fas fa-calendar-check"></i>
-                    <span>Daily Activity Borongan</span></a>
-                <ul class="dropdown-menu">
-                    <li class="{{ Request::is('admin-production/daily-activity') ? 'active' : '' }}"><a
-                            class="nav-link" href="{{ route('admin-production.daily-activity.index') }}">Summary
-                            Daily
-                            Activity</a>
-                    </li>
-                    <li class="{{ Request::is('admin-production/daily-activity/create') ? 'active' : '' }}"><a
-                            class="nav-link" href="{{ route('admin-production.daily-activity.create') }}">Tambah
-                            Daily Activity</a>
-                </ul>
-            </li>
+                <li class="dropdown {{ Request::is('admin-production/daily-production*') ? 'active' : '' }}">
+                    <a href="#" class="nav-link has-dropdown" data-toggle="dropdown"><i
+                            class="fas fa-calendar-check"></i>
+                        <span>Daily Production Harian</span></a>
+                    <ul class="dropdown-menu">
+                        <li class="{{ Request::is('admin-production/daily-production') ? 'active' : '' }}"><a
+                                class="nav-link" href="{{ route('admin-production.daily-production.index') }}">Summary
+                                Daily Production</a>
+                        </li>
+                        <li class="{{ Request::is('admin-production/daily-production/create') ? 'active' : '' }}"><a
+                                class="nav-link" href="{{ route('admin-production.daily-production.create') }}">Tambah
+                                Daily Production</a>
+                        </li>
+                    </ul>
+                </li>
+            @endif
 
-            <li class="dropdown {{ Request::is('admin-production/daily-production*') ? 'active' : '' }}">
-                <a href="#" class="nav-link has-dropdown" data-toggle="dropdown"><i
-                        class="fas fa-calendar-check"></i>
-                    <span>Daily Production Harian</span></a>
-                <ul class="dropdown-menu">
-                    <li class="{{ Request::is('admin-production/daily-production') ? 'active' : '' }}"><a
-                            class="nav-link" href="{{ route('admin-production.daily-production.index') }}">Summary
-                            Daily Production</a>
-                    </li>
-                    <li class="{{ Request::is('admin-production/daily-production/create') ? 'active' : '' }}"><a
-                            class="nav-link" href="{{ route('admin-production.daily-production.create') }}">Tambah
-                            Daily Production</a>
-                    </li>
-                </ul>
-            </li>
-            {{-- @endif --}}
+            @if (strtolower(auth()->user()->department->name) === 'further processing')
+                <li class="menu-header">FURTHER</li>
 
-            <li class="menu-header">FURTHER</li>
-
-            {{-- @if (strtolower(auth()->user()->department->name) === 'further processing') --}}
-            <li class="dropdown {{ Request::is('admin-production/daily-activity-further*') ? 'active' : '' }}">
-                <a href="#" class="nav-link has-dropdown" data-toggle="dropdown"><i
-                        class="fas fa-calendar-check"></i>
-                    <span>Daily Production Further</span></a>
-                <ul class="dropdown-menu">
-                    <li class="{{ Request::is('admin-production/daily-activity-further') ? 'active' : '' }}"><a
-                            class="nav-link"
-                            href="{{ route('admin-production.daily-activity-further.index') }}">Summary
-                            Daily Production</a>
-                    </li>
-                    <li class="{{ Request::is('admin-production/daily-activity-further/create') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('admin-production.daily-activity-further.create') }}">Tambah
-                            Daily Production</a>
-                    </li>
-                </ul>
-            </li>
-            {{-- @endif --}}
-            <!-- PRODUCTION -->
-            {{-- 
-            <li class="{{ Request::is('admin-production/attendances*') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('admin-production.attendance.index') }}">
-                    <i class="fas fa-clock"></i>
-                    <span>Absensi</span>
-                </a>
-            </li> --}}
-
-            <!-- COMPENSATION -->
-            {{-- <li class="menu-header">Compensation</li> --}}
-
-            {{-- 
-            <li class="{{ Request::is('deductions*') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('deduction.index') }}">
-                    <i class="fas fa-minus-circle"></i>
-                    <span>Deduction</span>
-                </a>
-            </li> --}}
-
-            <!-- PAYROLL -->
-            {{-- <li class="menu-header">Payroll</li> --}}
-            {{-- 
-            <li class="{{ Request::is('payrolls/generate*') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('payroll.generate') }}">
-                    <i class="fas fa-cogs"></i>
-                    <span>Generate Payroll</span>
-                </a>
-            </li> --}}
-
-            {{-- <li class="{{ Request::is('admin/payrolls/harian*') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('admin.payroll.harian.index') }}">
-                    <i class="fas fa-money-bill-wave"></i>
-                    <span>Payroll Harian</span>
-                </a>
-            </li>
-
-            <li class="{{ Request::is('admin/payrolls/bulanan*') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('admin.payroll.bulanan.index') }}">
-                    <i class="fas fa-money-bill"></i>
-                    <span>Payroll Bulanan</span>
-                </a>
-            </li>
-
-            <li class="{{ Request::is('payroll-reports*') ? 'active' : '' }}">
-                <a class="nav-link" href="#">
-                    <i class="fas fa-file-excel"></i>
-                    <span>Reports</span>
-                </a>
-            </li> --}}
+                <li class="dropdown {{ Request::is('admin-production/daily-activity-further*') ? 'active' : '' }}">
+                    <a href="#" class="nav-link has-dropdown" data-toggle="dropdown"><i
+                            class="fas fa-calendar-check"></i>
+                        <span>Daily Production Further</span></a>
+                    <ul class="dropdown-menu">
+                        <li class="{{ Request::is('admin-production/daily-activity-further') ? 'active' : '' }}"><a
+                                class="nav-link"
+                                href="{{ route('admin-production.daily-activity-further.index') }}">Summary
+                                Daily Production</a>
+                        </li>
+                        <li
+                            class="{{ Request::is('admin-production/daily-activity-further/create') ? 'active' : '' }}">
+                            <a class="nav-link"
+                                href="{{ route('admin-production.daily-activity-further.create') }}">Tambah
+                                Daily Production</a>
+                        </li>
+                    </ul>
+                </li>
+            @endif
         </ul>
     </aside>
 </div>
