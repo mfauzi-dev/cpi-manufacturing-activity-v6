@@ -146,7 +146,7 @@
                             <th>Outsourcing</th>
                             <th>Position</th>
                             <th>Gender</th>
-                            <th width="240" class="text-center">Action</th>
+                            <th width="280" class="text-center">Action</th>
                         </tr>
                     </thead>
 
@@ -181,22 +181,27 @@
                                 <td>{{ $employee->gender ?? '-' }}</td>
 
                                 <td class="text-center">
-                                    <a href="{{ route('admin.employee.detail', $employee->id) }}"
-                                        class="btn btn-success btn-sm">
-                                        Detail
-                                    </a>
-                                    <a href="{{ route('admin.employee.edit', $employee->id) }}"
-                                        class="btn btn-warning btn-sm">
-                                        Edit
-                                    </a>
-                                    <form action="{{ route('admin.employee.destroy', $employee->id) }}" method="POST"
-                                        style="display:inline;">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="btn btn-danger btn-sm" onclick="return confirm('Yakin hapus data?')">
-                                            Hapus
-                                        </button>
-                                    </form>
+                                    <div class="d-flex justify-content-center align-items-center"
+                                        style="gap: 5px; flex-wrap: nowrap;">
+                                        <a href="{{ route('admin.employee.detail', $employee->id) }}"
+                                            class="btn btn-success btn-sm">
+                                            Detail
+                                        </a>
+                                        <a href="{{ route('admin.employee.edit', $employee->id) }}"
+                                            class="btn btn-warning btn-sm">
+                                            Edit
+                                        </a>
+                                        <form action="{{ route('admin.employee.destroy', $employee->id) }}" method="POST"
+                                            style="display:inline;">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn btn-danger btn-sm"
+                                                onclick="return confirm('Yakin hapus data?')">
+                                                Hapus
+                                            </button>
+                                        </form>
+
+                                    </div>
                                 </td>
                             </tr>
                         @empty
