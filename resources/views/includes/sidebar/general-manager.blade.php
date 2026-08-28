@@ -72,6 +72,8 @@
                 </a>
             </li>
 
+
+
             <li class="menu-header">Operational</li>
             <li class="dropdown {{ Request::is('general-manager/attendances*') ? 'active' : '' }}">
                 <a href="#" class="nav-link has-dropdown" data-toggle="dropdown"><i
@@ -89,6 +91,13 @@
                     </li>
 
                 </ul>
+            </li>
+
+            <li class="{{ Request::is('general-manager/penggajian-harian*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('general-manager.penggajian-harian.index') }}">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>Penggajian Harian</span>
+                </a>
             </li>
 
             <li class="menu-header">SAUSAGE</li>
@@ -116,6 +125,13 @@
                         </a>
                     </li>
                 </ul>
+            </li>
+
+            <li class="{{ Request::is('general-manager/penggajian-borongan*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('general-manager.penggajian-borongan.index') }}">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>Penggajian Borongan</span>
+                </a>
             </li>
 
             <li class="menu-header">FURTHER</li>

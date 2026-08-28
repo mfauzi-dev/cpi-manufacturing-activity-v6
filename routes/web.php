@@ -11,13 +11,15 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\LineController;
 use App\Http\Controllers\OutsourcingController;
-use App\Http\Controllers\PayrollBoronganController;
+use App\Http\Controllers\PenggajianBoronganController;
+use App\Http\Controllers\PenggajianHarianController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProcessTypeController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductGroupController;
 use App\Http\Controllers\PsGroupController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WageConfigController;
 use Illuminate\Support\Facades\Route;
 use PhpOffice\PhpSpreadsheet\Calculation\Statistical\Distributions\F;
 
@@ -145,26 +147,34 @@ Route::prefix('admin-production')->middleware(['auth', 'role:Admin Production'])
 
     Route::prefix('daily-activity-further')->group(function () {
 
-            Route::get('/', [DailyActivityFurtherController::class, 'index'])->name('admin-production.daily-activity-further.index');
+        Route::get('/', [DailyActivityFurtherController::class, 'index'])->name('admin-production.daily-activity-further.index');
 
-            Route::get('/create', [DailyActivityFurtherController::class, 'create'])->name('admin-production.daily-activity-further.create');
+        Route::get('/create', [DailyActivityFurtherController::class, 'create'])->name('admin-production.daily-activity-further.create');
 
-            Route::post('/store', [DailyActivityFurtherController::class, 'store'])->name('admin-production.daily-activity-further.store');
+        Route::post('/store', [DailyActivityFurtherController::class, 'store'])->name('admin-production.daily-activity-further.store');
 
-            Route::get('/cost-center/{costCenter}/ps-group/{psGroup}/detail/{lineId?}', [DailyActivityFurtherController::class, 'detail'])->name('admin-production.daily-activity-further.detail');
+        Route::get('/cost-center/{costCenter}/ps-group/{psGroup}/detail/{lineId?}', [DailyActivityFurtherController::class, 'detail'])->name('admin-production.daily-activity-further.detail');
 
-            Route::get('/{id}/edit',[DailyActivityFurtherController::class, 'edit'])->name('admin-production.daily-activity-further.edit');
+        Route::get('/{id}/edit',[DailyActivityFurtherController::class, 'edit'])->name('admin-production.daily-activity-further.edit');
 
-            Route::put('/{id}/update',[DailyActivityFurtherController::class, 'update'])->name('admin-production.daily-activity-further.update');
+        Route::put('/{id}/update',[DailyActivityFurtherController::class, 'update'])->name('admin-production.daily-activity-further.update');
 
-            Route::delete('/{id}/delete', [DailyActivityFurtherController::class, 'destroy'])->name('admin-production.daily-activity-further.destroy');
+        Route::delete('/{id}/delete', [DailyActivityFurtherController::class, 'destroy'])->name('admin-production.daily-activity-further.destroy');
 
-            Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel', [DailyActivityFurtherController::class, 'exportExcel'])->name('admin-production.daily-activity-further.export-excel');
+        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel', [DailyActivityFurtherController::class, 'exportExcel'])->name('admin-production.daily-activity-further.export-excel');
 
-            Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf', [DailyActivityFurtherController::class, 'exportPdf'])->name('admin-production.daily-activity-further.export-pdf');
-        });
+        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf', [DailyActivityFurtherController::class, 'exportPdf'])->name('admin-production.daily-activity-further.export-pdf');
+    });
 
-    
+    Route::prefix('penggajian-harian')->group(function () {
+        Route::get('/', [PenggajianHarianController::class, 'index'])->name('admin-production.penggajian-harian.index');
+        Route::get('/export-pdf', [PenggajianHarianController::class, 'exportPdf'])->name('admin-production.penggajian-harian.export-pdf');
+    });
+
+    Route::prefix('penggajian-borongan')->group(function () {
+        Route::get('/', [PenggajianBoronganController::class, 'index'])->name('admin-production.penggajian-borongan.index');
+        Route::get('/export-pdf', [PenggajianBoronganController::class, 'exportPdf'])->name('admin-production.penggajian-borongan.export-pdf');
+    });
 });
 
 Route::prefix('admin')->middleware(['auth', 'role:Admin'])->group(function() {
@@ -262,6 +272,15 @@ Route::prefix('admin')->middleware(['auth', 'role:Admin'])->group(function() {
         Route::delete('{id}/delete', [ProcessTypeController::class, 'destroy'])->name('admin.process-type.destroy');
     });
 
+    Route::prefix('wage-config')->group(function () {
+        Route::get('/', [WageConfigController::class, 'index'])->name('admin.wage-config.index');
+        Route::get('/create', [WageConfigController::class, 'create'])->name('admin.wage-config.create');
+        Route::post('/store', [WageConfigController::class, 'store'])->name('admin.wage-config.store');
+        Route::get('/{id}/edit', [WageConfigController::class, 'edit'])->name('admin.wage-config.edit');
+        Route::put('/{id}/update', [WageConfigController::class, 'update'])->name('admin.wage-config.update');
+        Route::delete('/{id}/delete', [WageConfigController::class, 'destroy'])->name('admin.wage-config.destroy');
+    });
+
     // Route::prefix('payrolls')->group(function () {
         // Route::prefix('harian')->group(function () {
         //     Route::get('/', [PayrollHarianController::class, 'getAllByAdmin'])->name('admin.payroll.harian.index');
@@ -355,7 +374,17 @@ Route::prefix('general-manager')->middleware(['auth', 'role:General Manager'])->
         Route::get('/cost-center/{costCenter}/ps-group/{psGroup}/detail/{lineId}',  [DailyActivityFurtherController::class,'generalManagerDetail'])->name('general-manager.daily-activity-further.detail');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel',  [DailyActivityFurtherController::class,'exportExcelGeneralManager'])->name('general-manager.daily-activity-further.export-excel');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf',  [DailyActivityFurtherController::class,'exportPdfGeneralManager'])->name('general-manager.daily-activity-further.export-pdf');
-    }); 
+    });
+    
+    Route::prefix('penggajian-harian')->group(function () {
+        Route::get('/', [PenggajianHarianController::class, 'generalManagerIndex'])->name('general-manager.penggajian-harian.index');
+        Route::get('/export-pdf', [PenggajianHarianController::class, 'exportPdfGeneralManager'])->name('general-manager.penggajian-harian.export-pdf');
+    });
+
+    Route::prefix('penggajian-borongan')->group(function () {
+        Route::get('/', [PenggajianBoronganController::class, 'generalManagerIndex'])->name('general-manager.penggajian-borongan.index');
+        Route::get('/export-pdf', [PenggajianBoronganController::class, 'exportPdfGeneralManager'])->name('general-manager.penggajian-borongan.export-pdf');
+    });
 });
 
 Route::prefix('manager')->middleware(['auth', 'role:Manager'])->group(function() {
@@ -390,4 +419,14 @@ Route::prefix('manager')->middleware(['auth', 'role:Manager'])->group(function()
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel',  [DailyActivityFurtherController::class,'exportExcelManager'])->name('manager.daily-activity-further.export-excel');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf',  [DailyActivityFurtherController::class,'exportPdfManager'])->name('manager.daily-activity-further.export-pdf');
     }); 
+
+    Route::prefix('penggajian-harian')->group(function () {
+        Route::get('/', [PenggajianHarianController::class, 'ManagerIndex'])->name('manager.penggajian-harian.index');
+        Route::get('/export-pdf', [PenggajianHarianController::class, 'exportPdfManager'])->name('manager.penggajian-harian.export-pdf');
+    });
+
+    Route::prefix('penggajian-borongan')->group(function () {
+        Route::get('/', [PenggajianBoronganController::class, 'managerIndex'])->name('manager.penggajian-borongan.index');
+        Route::get('/export-pdf', [PenggajianBoronganController::class, 'exportPdfManager'])->name('manager.penggajian-borongan.export-pdf');
+    });
 });

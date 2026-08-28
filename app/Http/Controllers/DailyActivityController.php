@@ -12,6 +12,7 @@ use App\Models\DailyActivity;
 use App\Models\DailyActivityDetail;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\PenggajianBorongan;
 use App\Models\Product;
 use App\Models\PsGroup;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -138,7 +139,7 @@ class DailyActivityController extends Controller
             $lamaPacking = (float) $detail['lama_packing'];
             $hargaPerKg  = (float) $product->harga_per_kg;
             $totalHarga  = $outputKg * $hargaPerKg;
-             $productivity = $lamaPacking > 0 ? $outputKg / $lamaPacking : 0;
+            $productivity = $lamaPacking > 0 ? $outputKg / $lamaPacking : 0;
 
             foreach ($detail['employee_id'] as $employeeId) {
 
@@ -159,6 +160,25 @@ class DailyActivityController extends Controller
                     'total_harga'  => $totalHarga,
                     'productivity' => $productivity,
                 ]);
+
+                $tanggal = Carbon::parse($request->tanggal);
+
+                $payrollBorongan = PenggajianBorongan::firstOrCreate(
+                    [
+                        'employee_id' => $employeeId,
+                        'period_month' => $tanggal->month,
+                        'period_year' => $tanggal->year,
+                    ],
+                    [
+                        'total_kg' => 0,
+                        'total_upah' => 0,
+                    ]
+                );
+
+                $payrollBorongan->total_kg += $outputKg;
+                $payrollBorongan->total_upah += $totalHarga;
+
+                $payrollBorongan->save();
             }
         }
 

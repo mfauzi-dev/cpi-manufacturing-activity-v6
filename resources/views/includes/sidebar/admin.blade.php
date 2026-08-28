@@ -80,6 +80,13 @@
                 </a>
             </li>
 
+            <li class="{{ Request::is('admin/wage-config*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('admin.wage-config.index') }}">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>Konfigurasi UMP</span>
+                </a>
+            </li>
+
             <li class="{{ Request::is('admin/users*') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('admin.user.index') }}">
                     <i class="fas fa-user-cog"></i>

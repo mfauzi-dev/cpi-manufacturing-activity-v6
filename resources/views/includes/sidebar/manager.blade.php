@@ -37,6 +37,13 @@
                 </ul>
             </li>
 
+            <li class="{{ Request::is('manager/penggajian-harian*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('manager.penggajian-harian.index') }}">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>Penggajian Harian</span>
+                </a>
+            </li>
+
             @if (strtolower(auth()->user()->department->name) === 'sausage')
                 <li class="menu-header">SAUSAGE</li>
 
@@ -64,6 +71,13 @@
                             </a>
                         </li>
                     </ul>
+                </li>
+
+                <li class="{{ Request::is('manager/penggajian-borongan*') ? 'active' : '' }}">
+                    <a class="nav-link" href="{{ route('manager.penggajian-borongan.index') }}">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <span>Penggajian Borongan</span>
+                    </a>
                 </li>
             @endif
 

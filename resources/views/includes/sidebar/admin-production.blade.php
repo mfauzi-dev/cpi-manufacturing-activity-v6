@@ -21,8 +21,6 @@
 
             <li class="menu-header">Operational</li>
 
-
-
             <li class="dropdown {{ Request::is('admin-production/attendances*') ? 'active' : '' }}">
                 <a href="#" class="nav-link has-dropdown" data-toggle="dropdown"><i
                         class="fas fa-calendar-check"></i>
@@ -39,6 +37,13 @@
                     </li>
 
                 </ul>
+            </li>
+
+            <li class="{{ Request::is('admin-production/penggajian-harian*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('admin-production.penggajian-harian.index') }}">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>Penggajian Harian</span>
+                </a>
             </li>
 
             @if (strtolower(auth()->user()->department->name) === 'sausage')
@@ -95,6 +100,13 @@
                                 Daily Production</a>
                         </li>
                     </ul>
+                </li>
+
+                <li class="{{ Request::is('admin-production/penggajian-borongan*') ? 'active' : '' }}">
+                    <a class="nav-link" href="{{ route('admin-production.penggajian-borongan.index') }}">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <span>Penggajian Borongan</span>
+                    </a>
                 </li>
             @endif
 
