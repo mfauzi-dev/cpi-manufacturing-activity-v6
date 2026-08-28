@@ -162,7 +162,6 @@ class PsGroupController extends Controller
             ],
             'name' => [
                 'required',
-                Rule::unique('ps_groups', 'name')->ignore($id),
             ],
         ]);
 
