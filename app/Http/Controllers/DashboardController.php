@@ -7,6 +7,8 @@ use App\Models\Bonus;
 use App\Models\CostCenter;
 use App\Models\DailyActivity;
 use App\Models\DailyActivityDetail;
+use App\Models\DailyActivityDetailFurther;
+use App\Models\DailyActivityFurther;
 use App\Models\Deduction;
 use App\Models\Department;
 use App\Models\Employee;
@@ -295,7 +297,7 @@ class DashboardController extends Controller
 
         $startDate = $request->start_date
             ? Carbon::parse($request->start_date)
-            : $today;
+            : $today->copy()->startOfMonth();
 
         $endDate = $request->end_date
             ? Carbon::parse($request->end_date)
@@ -303,12 +305,6 @@ class DashboardController extends Controller
 
         $departmentId = $request->department_id;
         $costCenterId = $request->cost_center_id;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Attendance
-        |--------------------------------------------------------------------------
-        */
 
         $attendanceQuery = Attendance::query()
             ->whereBetween('date', [$startDate, $endDate]);
@@ -333,54 +329,18 @@ class DashboardController extends Controller
 
         $totalEmployee = (clone $employeeQuery)->count();
 
-        $hadir = (clone $attendanceQuery)
-            ->where('status', 'Hadir')
-            ->count();
-
-        $izin = (clone $attendanceQuery)
-            ->where('status', 'Izin')
-            ->count();
-
-        $sakit = (clone $attendanceQuery)
-            ->where('status', 'Sakit')
-            ->count();
-
-        $alpha = (clone $attendanceQuery)
-            ->where('status', 'Alpha')
-            ->count();
+        $hadir = (clone $attendanceQuery)->where('status', 'Hadir')->count();
+        $izin  = (clone $attendanceQuery)->where('status', 'Izin')->count();
+        $sakit = (clone $attendanceQuery)->where('status', 'Sakit')->count();
+        $alpha = (clone $attendanceQuery)->where('status', 'Alpha')->count();
 
         $attendanceProgress = $totalEmployee > 0
             ? (($hadir + $izin + $sakit + $alpha) / $totalEmployee) * 100
             : 0;
 
-        /*
-        |--------------------------------------------------------------------------
-        | Daily Activity
-        |--------------------------------------------------------------------------
-        */
-
-        $dailyActivity = DailyActivityDetail::query()
-            ->join(
-                'daily_activities',
-                'daily_activities.id',
-                '=',
-                'daily_activity_details.daily_activity_id'
-            );
-
-        if ($departmentId) {
-            $dailyActivity->where('daily_activities.department_id', $departmentId);
-        }
-
-        if ($costCenterId) {
-            $dailyActivity->where('daily_activities.cost_center_id', $costCenterId);
-        }
-
-        $dailyActivity->whereBetween('daily_activities.tanggal', [
-            $startDate,
-            $endDate
-        ]);
-
-        $summary = (clone $dailyActivity)
+        $summarySosis = DailyActivityDetail::query()
+            ->join('daily_activities', 'daily_activities.id', '=', 'daily_activity_details.daily_activity_id')
+            ->whereBetween('daily_activities.tanggal', [$startDate, $endDate])
             ->selectRaw("
                 SUM(total_kg) as total_kg,
                 SUM(total_harga) as total_rupiah,
@@ -388,133 +348,199 @@ class DashboardController extends Controller
             ")
             ->first();
 
-        // $totalPac = $summary->total_pac ?? 0;
-        $totalKg = $summary->total_kg ?? 0;
-        $totalRupiah = $summary->total_rupiah ?? 0;
-        $totalActivity = $summary->total_activity ?? 0;
+        $totalKgSosis     = $summarySosis->total_kg ?? 0;
+        $totalRupiahSosis = $summarySosis->total_rupiah ?? 0;
+        $totalActivity    = $summarySosis->total_activity ?? 0;
 
-        $averageHargaKg = $totalKg > 0
-            ? $totalRupiah / $totalKg
+        $summaryFurther = DailyActivityDetailFurther::query()
+            ->join('daily_activity_furthers', 'daily_activity_furthers.id', '=', 'daily_activity_detail_furthers.daily_activity_further_id')
+            ->whereBetween('daily_activity_furthers.tanggal', [$startDate, $endDate])
+            ->selectRaw("SUM(total_kg) as total_kg")
+            ->first();
+
+        $totalKgFurther = $summaryFurther->total_kg ?? 0;
+
+        $totalKg     = $totalKgSosis + $totalKgFurther;
+        $totalRupiah = $totalRupiahSosis;
+
+        $averageHargaKg = $totalKgSosis > 0
+            ? $totalRupiahSosis / $totalKgSosis
             : 0;
 
-        /*
-        |--------------------------------------------------------------------------
-        | Progress Daily Activity
-        |--------------------------------------------------------------------------
-        */
+        $totalCostCenter = CostCenter::query()->count();
 
-        $costCenterQuery = CostCenter::query();
-
-        if ($departmentId) {
-            $costCenterQuery->where('department_id', $departmentId);
-        }
-
-        $totalCostCenter = (clone $costCenterQuery)->count();
-
-        $inputCostCenter = DailyActivity::query()
-            ->when($departmentId, fn($q) => $q->where('department_id', $departmentId))
-            ->when($costCenterId, fn($q) => $q->where('cost_center_id', $costCenterId))
+        $inputCostCenterSosis = DailyActivity::query()
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->distinct('cost_center_id')
             ->count('cost_center_id');
+
+        $inputCostCenterFurther = DailyActivityFurther::query()
+            ->whereBetween('tanggal', [$startDate, $endDate])
+            ->distinct('cost_center_id')
+            ->count('cost_center_id');
+
+        $inputCostCenter = $inputCostCenterSosis + $inputCostCenterFurther;
 
         $dailyActivityProgress = $totalCostCenter > 0
             ? ($inputCostCenter / $totalCostCenter) * 100
             : 0;
 
-        $departmentSummary = DailyActivityDetail::query()
+        $departmentSummarySosis = DailyActivityDetail::query()
             ->join('daily_activities', 'daily_activities.id', '=', 'daily_activity_details.daily_activity_id')
             ->join('departments', 'departments.id', '=', 'daily_activities.department_id')
             ->selectRaw("
                 departments.id,
                 departments.name,
-
                 SUM(total_kg) as total_kg,
                 SUM(total_harga) as total_rupiah
             ")
             ->whereBetween('daily_activities.tanggal', [$startDate, $endDate])
-            ->groupBy(
-                'departments.id',
-                'departments.name'
-            )
-            ->orderBy('departments.name')
+            ->groupBy('departments.id', 'departments.name')
             ->get();
 
-        foreach ($departmentSummary as $department) {
-
-            $department->harga_per_kg =
-                $department->total_kg > 0
-                    ? $department->total_rupiah / $department->total_kg
-                    : 0;
+        foreach ($departmentSummarySosis as $department) {
+            $department->harga_per_kg = $department->total_kg > 0
+                ? $department->total_rupiah / $department->total_kg
+                : 0;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Belum Input Daily Activity
-        |--------------------------------------------------------------------------
-        */
+        $departmentSummaryFurther = DailyActivityDetailFurther::query()
+            ->join('daily_activity_furthers', 'daily_activity_furthers.id', '=', 'daily_activity_detail_furthers.daily_activity_further_id')
+            ->join('departments', 'departments.id', '=', 'daily_activity_furthers.department_id')
+            ->selectRaw("
+                departments.id,
+                departments.name,
+                SUM(total_kg) as total_kg
+            ")
+            ->whereBetween('daily_activity_furthers.tanggal', [$startDate, $endDate])
+            ->groupBy('departments.id', 'departments.name')
+            ->get();
 
-        $costCenterInput = DailyActivity::query()
+        foreach ($departmentSummaryFurther as $department) {
+            $department->total_rupiah = null;
+            $department->harga_per_kg = null;
+        }
+
+        $departmentSummary = $departmentSummarySosis
+            ->concat($departmentSummaryFurther)
+            ->sortBy('name')
+            ->values();
+
+        $costCenterInputSosis = DailyActivity::query()
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->pluck('cost_center_id');
 
+        $costCenterInputFurther = DailyActivityFurther::query()
+            ->whereBetween('tanggal', [$startDate, $endDate])
+            ->pluck('cost_center_id');
+
+        $costCenterInput = $costCenterInputSosis->merge($costCenterInputFurther);
+
         $notInputDailyActivity = CostCenter::query()
-            ->when($departmentId, fn($q) => $q->where('department_id', $departmentId))
             ->whereNotIn('id', $costCenterInput)
             ->with('department')
             ->get();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Belum Absen
-        |--------------------------------------------------------------------------
-        */
 
         $employeeAttendance = Attendance::query()
             ->whereBetween('date', [$startDate, $endDate])
             ->pluck('employee_id');
 
         $notAttendance = Employee::query()
-            ->when($departmentId, fn($q) => $q->where('department_id', $departmentId))
-            ->when($costCenterId, fn($q) => $q->where('cost_center_id', $costCenterId))
+            ->when($departmentId, function ($q) use ($departmentId) {
+                $q->where('department_id', $departmentId);
+            })
+            ->when($costCenterId, function ($q) use ($costCenterId) {
+                $q->where('cost_center_id', $costCenterId);
+            })
             ->whereNotIn('id', $employeeAttendance)
             ->get();
 
         $departments = Department::orderBy('name')->get();
 
-        $recentActivities = DailyActivity::with([
-            'costCenter',
-        ])
+        $recentActivitiesSosis = DailyActivity::with(['costCenter'])
             ->latest()
             ->take(10)
             ->get();
 
+        $recentActivitiesFurther = DailyActivityFurther::with(['costCenter'])
+            ->latest()
+            ->take(10)
+            ->get();
+
+        $recentActivities = $recentActivitiesSosis
+            ->concat($recentActivitiesFurther)
+            ->sortByDesc('created_at')
+            ->take(10)
+            ->values();
+
+        $outputTrendSosis = DailyActivityDetail::query()
+            ->join('daily_activities', 'daily_activities.id', '=', 'daily_activity_details.daily_activity_id')
+            ->whereBetween('daily_activities.tanggal', [$startDate, $endDate])
+            ->selectRaw("
+                daily_activities.tanggal as tanggal,
+                SUM(daily_activity_details.total_kg) as total_kg
+            ")
+            ->groupBy('daily_activities.tanggal')
+            ->orderBy('daily_activities.tanggal')
+            ->get()
+            ->keyBy(function ($row) {
+                return Carbon::parse($row->tanggal)->format('Y-m-d');
+            });
+
+
+        $outputTrendFurther = DailyActivityDetailFurther::query()
+            ->join('daily_activity_furthers', 'daily_activity_furthers.id', '=', 'daily_activity_detail_furthers.daily_activity_further_id')
+            ->whereBetween('daily_activity_furthers.tanggal', [$startDate, $endDate])
+            ->selectRaw("
+                daily_activity_furthers.tanggal as tanggal,
+                SUM(daily_activity_detail_furthers.total_kg) as total_kg
+            ")
+            ->groupBy('daily_activity_furthers.tanggal')
+            ->orderBy('daily_activity_furthers.tanggal')
+            ->get()
+            ->keyBy(function ($row) {
+                return Carbon::parse($row->tanggal)->format('Y-m-d');
+            });
+
+
+        $trendLabels        = [];
+        $trendOutputKgSosis   = [];
+        $trendOutputKgFurther = [];
+
+        $periodCursor = $startDate->copy();
+
+        while ($periodCursor->lte($endDate)) {
+            $key = $periodCursor->format('Y-m-d');
+
+            $trendLabels[]          = $periodCursor->translatedFormat('d M');
+            $trendOutputKgSosis[]   = (float) ($outputTrendSosis[$key]->total_kg ?? 0);
+            $trendOutputKgFurther[] = (float) ($outputTrendFurther[$key]->total_kg ?? 0);
+
+            $periodCursor->addDay();
+        }
+
         return view('pages.dashboard.general-manager', compact(
             'startDate',
             'endDate',
-
             'totalEmployee',
             'hadir',
             'izin',
             'sakit',
             'alpha',
-
             'attendanceProgress',
-
             'totalActivity',
             'totalKg',
             'totalRupiah',
             'averageHargaKg',
-
             'dailyActivityProgress',
-
             'departmentSummary',
-
             'notAttendance',
             'notInputDailyActivity',
-
             'recentActivities',
-            'departments'
+            'departments',
+            'trendLabels',
+            'trendOutputKgSosis',
+            'trendOutputKgFurther',
         ));
     }
 
@@ -524,18 +550,17 @@ class DashboardController extends Controller
 
         $startDate = $request->start_date
             ? Carbon::parse($request->start_date)
-            : $today;
+            : $today->copy()->startOfMonth();
 
         $endDate = $request->end_date
             ? Carbon::parse($request->end_date)
             : $today;
 
-        // Ambil department dari user yang login
         $departmentId = auth()->user()->department_id;
 
         /*
         |--------------------------------------------------------------------------
-        | Attendance
+        | Attendance (sama, gak kena branch)
         |--------------------------------------------------------------------------
         */
 
@@ -550,21 +575,10 @@ class DashboardController extends Controller
 
         $totalEmployee = (clone $employeeQuery)->count();
 
-        $hadir = (clone $attendanceQuery)
-            ->where('status', 'Hadir')
-            ->count();
-
-        $izin = (clone $attendanceQuery)
-            ->where('status', 'Izin')
-            ->count();
-
-        $sakit = (clone $attendanceQuery)
-            ->where('status', 'Sakit')
-            ->count();
-
-        $alpha = (clone $attendanceQuery)
-            ->where('status', 'Alpha')
-            ->count();
+        $hadir = (clone $attendanceQuery)->where('status', 'Hadir')->count();
+        $izin  = (clone $attendanceQuery)->where('status', 'Izin')->count();
+        $sakit = (clone $attendanceQuery)->where('status', 'Sakit')->count();
+        $alpha = (clone $attendanceQuery)->where('status', 'Alpha')->count();
 
         $attendanceProgress = $totalEmployee > 0
             ? (($hadir + $izin + $sakit + $alpha) / $totalEmployee) * 100
@@ -572,24 +586,16 @@ class DashboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Daily Activity
+        | Daily Activity — Sosis
         |--------------------------------------------------------------------------
         */
 
-        $dailyActivity = DailyActivityDetail::query()
-            ->join(
-                'daily_activities',
-                'daily_activities.id',
-                '=',
-                'daily_activity_details.daily_activity_id'
-            )
+        $dailyActivitySosis = DailyActivityDetail::query()
+            ->join('daily_activities', 'daily_activities.id', '=', 'daily_activity_details.daily_activity_id')
             ->where('daily_activities.department_id', $departmentId)
-            ->whereBetween('daily_activities.tanggal', [
-                $startDate,
-                $endDate
-            ]);
+            ->whereBetween('daily_activities.tanggal', [$startDate, $endDate]);
 
-        $summary = (clone $dailyActivity)
+        $summarySosis = (clone $dailyActivitySosis)
             ->selectRaw("
                 SUM(total_kg) as total_kg,
                 SUM(total_harga) as total_rupiah,
@@ -597,17 +603,39 @@ class DashboardController extends Controller
             ")
             ->first();
 
-        $totalKg = $summary->total_kg ?? 0;
-        $totalRupiah = $summary->total_rupiah ?? 0;
-        $totalActivity = $summary->total_activity ?? 0;
+        $totalKgSosis      = $summarySosis->total_kg ?? 0;
+        $totalRupiahSosis  = $summarySosis->total_rupiah ?? 0;
+        $totalActivitySosis = $summarySosis->total_activity ?? 0;
 
-        $averageHargaKg = $totalKg > 0
-            ? $totalRupiah / $totalKg
+        $averageHargaKgSosis = $totalKgSosis > 0
+            ? $totalRupiahSosis / $totalKgSosis
             : 0;
 
         /*
         |--------------------------------------------------------------------------
-        | Progress Daily Activity
+        | Daily Activity — Further
+        |--------------------------------------------------------------------------
+        */
+
+        $dailyActivityFurther = DailyActivityDetailFurther::query()
+            ->join('daily_activity_furthers', 'daily_activity_furthers.id', '=', 'daily_activity_detail_furthers.daily_activity_further_id')
+            ->where('daily_activity_furthers.department_id', $departmentId)
+            ->whereBetween('daily_activity_furthers.tanggal', [$startDate, $endDate]);
+
+        $summaryFurther = (clone $dailyActivityFurther)
+            ->selectRaw("
+                SUM(total_kg) as total_kg,
+                COUNT(DISTINCT daily_activity_further_id) as total_activity
+            ")
+            ->first();
+
+        $totalKgFurther      = $summaryFurther->total_kg ?? 0;
+        $totalActivityFurther = $summaryFurther->total_activity ?? 0;
+        // further gak punya total_harga, jadi gak ada total_rupiah / averageHargaKg
+
+        /*
+        |--------------------------------------------------------------------------
+        | Progress Daily Activity — Sosis
         |--------------------------------------------------------------------------
         */
 
@@ -615,35 +643,29 @@ class DashboardController extends Controller
             ->where('department_id', $departmentId)
             ->count();
 
-        $inputCostCenter = DailyActivity::query()
+        $inputCostCenterSosis = DailyActivity::query()
             ->where('department_id', $departmentId)
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->distinct('cost_center_id')
             ->count('cost_center_id');
 
-        $dailyActivityProgress = $totalCostCenter > 0
-            ? ($inputCostCenter / $totalCostCenter) * 100
+        $dailyActivityProgressSosis = $totalCostCenter > 0
+            ? ($inputCostCenterSosis / $totalCostCenter) * 100
             : 0;
 
-        /*
-        |--------------------------------------------------------------------------
-        | Summary Department
-        |--------------------------------------------------------------------------
-        */
+        $inputCostCenterFurther = DailyActivityFurther::query()
+            ->where('department_id', $departmentId)
+            ->whereBetween('tanggal', [$startDate, $endDate])
+            ->distinct('cost_center_id')
+            ->count('cost_center_id');
 
-        $departmentSummary = DailyActivityDetail::query()
-            ->join(
-                'daily_activities',
-                'daily_activities.id',
-                '=',
-                'daily_activity_details.daily_activity_id'
-            )
-            ->join(
-                'departments',
-                'departments.id',
-                '=',
-                'daily_activities.department_id'
-            )
+        $dailyActivityProgressFurther = $totalCostCenter > 0
+            ? ($inputCostCenterFurther / $totalCostCenter) * 100
+            : 0;
+
+        $departmentSummarySosis = DailyActivityDetail::query()
+            ->join('daily_activities', 'daily_activities.id', '=', 'daily_activity_details.daily_activity_id')
+            ->join('departments', 'departments.id', '=', 'daily_activities.department_id')
             ->selectRaw("
                 departments.id,
                 departments.name,
@@ -651,46 +673,54 @@ class DashboardController extends Controller
                 SUM(total_harga) as total_rupiah
             ")
             ->where('daily_activities.department_id', $departmentId)
-            ->whereBetween('daily_activities.tanggal', [
-                $startDate,
-                $endDate
-            ])
-            ->groupBy(
-                'departments.id',
-                'departments.name'
-            )
+            ->whereBetween('daily_activities.tanggal', [$startDate, $endDate])
+            ->groupBy('departments.id', 'departments.name')
             ->orderBy('departments.name')
             ->get();
 
-        foreach ($departmentSummary as $department) {
-            $department->harga_per_kg =
-                $department->total_kg > 0
-                    ? $department->total_rupiah / $department->total_kg
-                    : 0;
+        foreach ($departmentSummarySosis as $department) {
+            $department->harga_per_kg = $department->total_kg > 0
+                ? $department->total_rupiah / $department->total_kg
+                : 0;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Belum Input Daily Activity
-        |--------------------------------------------------------------------------
-        */
+      
 
-        $costCenterInput = DailyActivity::query()
+        $departmentSummaryFurther = DailyActivityDetailFurther::query()
+            ->join('daily_activity_furthers', 'daily_activity_furthers.id', '=', 'daily_activity_detail_furthers.daily_activity_further_id')
+            ->join('departments', 'departments.id', '=', 'daily_activity_furthers.department_id')
+            ->selectRaw("
+                departments.id,
+                departments.name,
+                SUM(total_kg) as total_kg
+            ")
+            ->where('daily_activity_furthers.department_id', $departmentId)
+            ->whereBetween('daily_activity_furthers.tanggal', [$startDate, $endDate])
+            ->groupBy('departments.id', 'departments.name')
+            ->orderBy('departments.name')
+            ->get();
+
+        $costCenterInputSosis = DailyActivity::query()
             ->where('department_id', $departmentId)
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->pluck('cost_center_id');
 
-        $notInputDailyActivity = CostCenter::query()
+        $notInputDailyActivitySosis = CostCenter::query()
             ->where('department_id', $departmentId)
-            ->whereNotIn('id', $costCenterInput)
+            ->whereNotIn('id', $costCenterInputSosis)
             ->with('department')
             ->get();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Belum Absen
-        |--------------------------------------------------------------------------
-        */
+        $costCenterInputFurther = DailyActivityFurther::query()
+            ->where('department_id', $departmentId)
+            ->whereBetween('tanggal', [$startDate, $endDate])
+            ->pluck('cost_center_id');
+
+        $notInputDailyActivityFurther = CostCenter::query()
+            ->where('department_id', $departmentId)
+            ->whereNotIn('id', $costCenterInputFurther)
+            ->with('department')
+            ->get();
 
         $employeeAttendance = Attendance::query()
             ->whereBetween('date', [$startDate, $endDate])
@@ -704,23 +734,67 @@ class DashboardController extends Controller
             ->whereNotIn('id', $employeeAttendance)
             ->get();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Recent Activity
-        |--------------------------------------------------------------------------
-        */
+        $recentActivitiesSosis = DailyActivity::with(['costCenter', 'psGroup', 'employee'])
+            ->where('department_id', $departmentId)
+            ->latest()
+            ->take(10)
+            ->get();
 
-        $recentActivities = DailyActivity::with([
-            'costCenter',
-            'psGroup',
-            'employee',
-        ])
+        $recentActivitiesFurther = DailyActivityFurther::with(['costCenter', 'psGroup', 'employee', 'line'])
             ->where('department_id', $departmentId)
             ->latest()
             ->take(10)
             ->get();
 
         $costCenters = CostCenter::where('department_id', $departmentId)->get();
+
+        $outputTrendSosis = DailyActivityDetail::query()
+            ->join('daily_activities', 'daily_activities.id', '=', 'daily_activity_details.daily_activity_id')
+            ->where('daily_activities.department_id', $departmentId)
+            ->whereBetween('daily_activities.tanggal', [$startDate, $endDate])
+            ->selectRaw("
+                daily_activities.tanggal as tanggal,
+                SUM(daily_activity_details.total_kg) as total_kg
+            ")
+            ->groupBy('daily_activities.tanggal')
+            ->orderBy('daily_activities.tanggal')
+            ->get()
+            ->keyBy(function ($row) {
+                return Carbon::parse($row->tanggal)->format('Y-m-d');
+            });
+
+
+        $outputTrendFurther = DailyActivityDetailFurther::query()
+            ->join('daily_activity_furthers', 'daily_activity_furthers.id', '=', 'daily_activity_detail_furthers.daily_activity_further_id')
+            ->where('daily_activity_furthers.department_id', $departmentId)
+            ->whereBetween('daily_activity_furthers.tanggal', [$startDate, $endDate])
+            ->selectRaw("
+                daily_activity_furthers.tanggal as tanggal,
+                SUM(daily_activity_detail_furthers.total_kg) as total_kg
+            ")
+            ->groupBy('daily_activity_furthers.tanggal')
+            ->orderBy('daily_activity_furthers.tanggal')
+            ->get()
+            ->keyBy(function ($row) {
+                return Carbon::parse($row->tanggal)->format('Y-m-d');
+            });
+
+
+        $trendLabels        = [];
+        $trendOutputKgSosis   = [];
+        $trendOutputKgFurther = [];
+
+        $periodCursor = $startDate->copy();
+
+        while ($periodCursor->lte($endDate)) {
+            $key = $periodCursor->format('Y-m-d');
+
+            $trendLabels[]          = $periodCursor->translatedFormat('d M');
+            $trendOutputKgSosis[]   = (float) ($outputTrendSosis[$key]->total_kg ?? 0);
+            $trendOutputKgFurther[] = (float) ($outputTrendFurther[$key]->total_kg ?? 0);
+
+            $periodCursor->addDay();
+        }
 
         return view('pages.dashboard.manager', compact(
             'startDate',
@@ -731,16 +805,25 @@ class DashboardController extends Controller
             'sakit',
             'alpha',
             'attendanceProgress',
-            'totalActivity',
-            'totalKg',
-            'totalRupiah',
-            'averageHargaKg',
-            'dailyActivityProgress',
-            'departmentSummary',
+            'totalActivitySosis',
+            'totalKgSosis',
+            'totalRupiahSosis',
+            'averageHargaKgSosis',
+            'totalActivityFurther',
+            'totalKgFurther',
+            'dailyActivityProgressSosis',
+            'dailyActivityProgressFurther',
+            'departmentSummarySosis',
+            'departmentSummaryFurther',
             'notAttendance',
-            'notInputDailyActivity',
-            'recentActivities',
-            'costCenters'
+            'notInputDailyActivitySosis',
+            'notInputDailyActivityFurther',
+            'recentActivitiesSosis',
+            'recentActivitiesFurther',
+            'costCenters',
+            'trendLabels',
+            'trendOutputKgSosis',
+            'trendOutputKgFurther',
         ));
     }
 
@@ -768,11 +851,17 @@ class DashboardController extends Controller
             ")
             ->first();
 
-        $outputHariIni = DailyActivityDetail::query()
+        $outputHariIniSosis   = DailyActivityDetail::query()
             ->join('daily_activities', 'daily_activities.id', '=', 'daily_activity_details.daily_activity_id')
             ->where('daily_activities.department_id', $departmentId)
             ->whereDate('daily_activities.tanggal', $today)
             ->sum('daily_activity_details.total_kg');
+
+        $outputHariIniFurther = DailyActivityDetailFurther::query()
+            ->join('daily_activity_furthers', 'daily_activity_furthers.id', '=', 'daily_activity_detail_furthers.daily_activity_further_id')
+            ->where('daily_activity_furthers.department_id', $departmentId)
+            ->whereDate('daily_activity_furthers.tanggal', $today)
+            ->sum('daily_activity_detail_furthers.total_kg');
 
         // ===== 2. Tren 7 hari (kehadiran & output) =====
         $startTrend = $today->copy()->subDays(6);
@@ -791,7 +880,7 @@ class DashboardController extends Controller
             ->get()
             ->keyBy(fn ($row) => Carbon::parse($row->tanggal)->format('Y-m-d'));
 
-        $outputTrend = DailyActivityDetail::query()
+        $outputTrendSosis = DailyActivityDetail::query()
             ->join('daily_activities', 'daily_activities.id', '=', 'daily_activity_details.daily_activity_id')
             ->where('daily_activities.department_id', $departmentId)
             ->whereBetween('daily_activities.tanggal', [$startTrend, $today])
@@ -802,21 +891,40 @@ class DashboardController extends Controller
             ->groupBy('daily_activities.tanggal')
             ->orderBy('daily_activities.tanggal')
             ->get()
-            ->keyBy(fn ($row) => Carbon::parse($row->tanggal)->format('Y-m-d'));
+            ->keyBy(function ($row) {
+                return Carbon::parse($row->tanggal)->format('Y-m-d');
+            });
 
-        $trendLabels   = [];
-        $trendHadir    = [];
-        $trendAlfa     = [];
-        $trendOutputKg = [];
+        $outputTrendFurther = DailyActivityDetailFurther::query()
+            ->join('daily_activity_furthers', 'daily_activity_furthers.id', '=', 'daily_activity_detail_furthers.daily_activity_further_id')
+            ->where('daily_activity_furthers.department_id', $departmentId)
+            ->whereBetween('daily_activity_furthers.tanggal', [$startTrend, $today])
+            ->selectRaw("
+                daily_activity_furthers.tanggal as tanggal,
+                SUM(daily_activity_detail_furthers.total_kg) as total_kg
+            ")
+            ->groupBy('daily_activity_furthers.tanggal')
+            ->orderBy('daily_activity_furthers.tanggal')
+            ->get()
+            ->keyBy(function ($row) {
+                return Carbon::parse($row->tanggal)->format('Y-m-d');
+            });
+
+        $trendLabels        = [];
+        $trendHadir         = [];
+        $trendAlfa          = [];
+        $trendOutputKgSosis   = [];
+        $trendOutputKgFurther = [];
 
         for ($i = 0; $i < 7; $i++) {
             $date = $startTrend->copy()->addDays($i);
             $key  = $date->format('Y-m-d');
 
-            $trendLabels[]   = $date->translatedFormat('D');
-            $trendHadir[]    = (int) ($attendanceTrend[$key]->hadir ?? 0);
-            $trendAlfa[]     = (int) ($attendanceTrend[$key]->alfa ?? 0);
-            $trendOutputKg[] = (float) ($outputTrend[$key]->total_kg ?? 0);
+            $trendLabels[]          = $date->translatedFormat('D');
+            $trendHadir[]           = (int) ($attendanceTrend[$key]->hadir ?? 0);
+            $trendAlfa[]            = (int) ($attendanceTrend[$key]->alfa ?? 0);
+            $trendOutputKgSosis[]   = (float) ($outputTrendSosis[$key]->total_kg ?? 0);
+            $trendOutputKgFurther[] = (float) ($outputTrendFurther[$key]->total_kg ?? 0);
         }
 
         // ===== 3. Perlu perhatian: karyawan alfa hari ini =====
@@ -857,18 +965,35 @@ class DashboardController extends Controller
 
                 return $row;
             });
+            
+            $costCenterSummaryFurther = DailyActivityDetailFurther::query()
+                ->join('daily_activity_furthers', 'daily_activity_furthers.id', '=', 'daily_activity_detail_furthers.daily_activity_further_id')
+                ->join('cost_centers', 'cost_centers.id', '=', 'daily_activity_furthers.cost_center_id')
+                ->where('daily_activity_furthers.department_id', $departmentId)
+                ->whereDate('daily_activity_furthers.tanggal', $today)
+                ->selectRaw("
+                    cost_centers.id as cost_center_id,
+                    cost_centers.name as cost_center_name,
+                    SUM(daily_activity_detail_furthers.total_kg) as total_kg
+                ")
+                ->groupBy('cost_centers.id', 'cost_centers.name')
+                ->orderBy('cost_centers.name')
+                ->get();
 
         return view('pages.dashboard.admin-production', compact(
             'totalKaryawan',
             'attendanceToday',
-            'outputHariIni',
+            'outputHariIniSosis',
+            'outputHariIniFurther',
             'trendLabels',
             'trendHadir',
             'trendAlfa',
-            'trendOutputKg',
+            'trendOutputKgSosis',
+            'trendOutputKgFurther',
             'alfaHariIni',
             'belumDiabsen',
             'costCenterSummary',
+            'costCenterSummaryFurther',
         ));
     }
 

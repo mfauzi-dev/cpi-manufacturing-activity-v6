@@ -53,14 +53,28 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-2-4 col-sm-6 col-12 mb-4" style="flex:0 0 20%; max-width:20%;">
-            <div class="card">
-                <div class="card-body">
-                    <small class="text-muted">Output hari ini</small>
-                    <h3 class="mb-0">{{ number_format($outputHariIni, 0, ',', '.') }} kg</h3>
+
+        @if (strtolower(auth()->user()->department->name) === 'sausage')
+            <div class="col-md-2-4 col-sm-6 col-12 mb-4" style="flex:0 0 20%; max-width:20%;">
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Output hari ini</small>
+                        <h3 class="mb-0">{{ number_format($outputHariIniSosis, 0, ',', '.') }} kg</h3>
+                    </div>
                 </div>
             </div>
-        </div>
+        @endif
+
+        @if (strtolower(auth()->user()->department->name) === 'further processing')
+            <div class="col-md-2-4 col-sm-6 col-12 mb-4" style="flex:0 0 20%; max-width:20%;">
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Output hari ini</small>
+                        <h3 class="mb-0">{{ number_format($outputHariIniFurther, 0, ',', '.') }} kg</h3>
+                    </div>
+                </div>
+            </div>
+        @endif
     </div>
 
     {{-- ===== Chart tren ===== --}}
@@ -163,17 +177,37 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse ($costCenterSummary as $cc)
-                                <tr>
-                                    <td>{{ $cc->cost_center_name }}</td>
-                                    <td class="text-right">{{ number_format($cc->total_kg, 0, ',', '.') }}</td>
-                                    <td class="text-right">Rp {{ number_format($cc->harga_per_kg, 0, ',', '.') }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="3" class="text-muted">Belum ada data daily activity hari ini.</td>
-                                </tr>
-                            @endforelse
+                            @if (strtolower(auth()->user()->department->name) === 'sausage')
+
+                                @forelse ($costCenterSummary as $cc)
+                                    <tr>
+                                        <td>{{ $cc->cost_center_name }}</td>
+                                        <td class="text-right">{{ number_format($cc->total_kg, 0, ',', '.') }}</td>
+                                        <td class="text-right">Rp {{ number_format($cc->harga_per_kg, 0, ',', '.') }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3" class="text-muted">Belum ada data daily activity hari ini.</td>
+                                    </tr>
+                                @endforelse
+
+                            @endif
+
+                            @if (strtolower(auth()->user()->department->name) === 'further processing')
+
+                                @forelse ($costCenterSummaryFurther as $cc)
+                                    <tr>
+                                        <td>{{ $cc->cost_center_name }}</td>
+                                        <td class="text-right">{{ number_format($cc->total_kg, 0, ',', '.') }}</td>
+                                        <td class="text-right">Rp {{ number_format($cc->harga_per_kg, 0, ',', '.') }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3" class="text-muted">Belum ada data daily activity hari ini.</td>
+                                    </tr>
+                                @endforelse
+
+                            @endif
                         </tbody>
                     </table>
                 </div>
@@ -189,7 +223,13 @@
         const trendLabels = @json($trendLabels);
         const trendHadir = @json($trendHadir);
         const trendAlfa = @json($trendAlfa);
-        const trendOutputKg = @json($trendOutputKg);
+        @if (strtolower(auth()->user()->department->name) === 'further processing')
+            const trendOutputKg = @json($trendOutputKgFurther);
+        @endif
+
+        @if (strtolower(auth()->user()->department->name) === 'sausage')
+            const trendOutputKg = @json($trendOutputKgSosis);
+        @endif
 
         new Chart(document.getElementById('attendanceChart'), {
             type: 'line',
