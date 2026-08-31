@@ -27,7 +27,7 @@
                     </div>
 
                     <div class="card-body">
-                        {{ $payrolls->count() }} orang
+                        {{ $payrolls->total() }} orang
                     </div>
                 </div>
             </div>
@@ -77,9 +77,7 @@
     <div class="card">
 
         <div class="card-header">
-            <h4>
-                {{ $periodLabel }}
-            </h4>
+            <h4>{{ $periodLabel }}</h4>
         </div>
 
         <div class="card-body">
@@ -169,8 +167,23 @@
 
         <div class="card-body">
 
-            {{-- EXPORT PDF --}}
+            {{-- EXPORT --}}
             <div class="mb-3">
+
+                {{-- EXCEL --}}
+                <a href="{{ route('general-manager.penggajian-borongan.export-excel', [
+                    'month' => $month,
+                    'year' => $year,
+                    'department_id' => $departmentId,
+                ]) }}"
+                    class="btn btn-success">
+
+                    <i class="fas fa-file-excel"></i>
+                    Excel
+
+                </a>
+
+                {{-- PDF --}}
                 <a href="{{ route('general-manager.penggajian-borongan.export-pdf', [
                     'month' => $month,
                     'year' => $year,
@@ -182,19 +195,70 @@
                     PDF
 
                 </a>
+
             </div>
 
             <div class="table-responsive">
 
-                <table class="table table-striped mb-0">
+                <table class="table table-striped table-bordered mb-0">
 
                     <thead>
                         <tr>
-                            <th width="40">No.</th>
-                            <th>Nama</th>
-                            <th>Department</th>
-                            <th class="text-center">Total Kg</th>
-                            <th class="text-center">Total Upah</th>
+
+                            <th class="text-center" width="50">
+                                No.
+                            </th>
+
+                            <th>
+                                No. KTP
+                            </th>
+
+                            <th>
+                                NIK
+                            </th>
+
+                            <th>
+                                Nama
+                            </th>
+
+                            <th>
+                                Department
+                            </th>
+
+                            <th class="text-center">
+                                Hasil Proses (Kg)/Jam
+                            </th>
+
+                            <th class="text-center">
+                                Total Hari
+                            </th>
+
+                            <th class="text-center">
+                                Total Upah yang Diterima
+                            </th>
+
+                            <th class="text-center">
+                                Jamsostek (4.89%)
+                            </th>
+
+                            <th class="text-center">
+                                BPJS Kesehatan (4%)
+                            </th>
+
+                            <th class="text-center">
+                                BPJS Pensiun (2%)
+                            </th>
+
+                            <th class="text-center">
+                                Managemen Fee
+                                <br>
+                                (6800 × per Hari Kerja)
+                            </th>
+
+                            <th class="text-center">
+                                Grand Total Upah Diterima
+                            </th>
+
                         </tr>
                     </thead>
 
@@ -203,24 +267,69 @@
                         @forelse ($payrolls as $i => $payroll)
                             <tr>
 
-                                <td>
+                                {{-- NO --}}
+                                <td class="text-center">
                                     {{ $payrolls->firstItem() + $i }}
                                 </td>
 
+                                {{-- NO KTP --}}
+                                <td>
+                                    {{ $payroll->employee->ktp_number ?? '-' }}
+                                </td>
+
+                                {{-- NIK --}}
+                                <td>
+                                    {{ $payroll->employee->nik ?? '-' }}
+                                </td>
+
+                                {{-- NAMA --}}
                                 <td>
                                     {{ $payroll->employee->name ?? '-' }}
                                 </td>
 
+                                {{-- DEPARTMENT --}}
                                 <td>
                                     {{ $payroll->employee->department->name ?? '-' }}
                                 </td>
 
+                                {{-- HASIL PROSES KG/JAM --}}
                                 <td class="text-center">
-                                    {{ number_format($payroll->total_kg, 2, ',', '.') }} Kg
+                                    {{ number_format($payroll->total_kg ?? 0, 2, ',', '.') }}
                                 </td>
 
-                                <td class="text-center font-weight-bold text-success">
-                                    Rp {{ number_format($payroll->total_upah, 0, ',', '.') }}
+                                {{-- TOTAL HARI --}}
+                                <td class="text-center">
+                                    {{ $payroll->total_hari_kerja ?? 0 }}
+                                </td>
+
+                                {{-- TOTAL UPAH --}}
+                                <td class="text-right">
+                                    Rp {{ number_format($payroll->total_upah ?? 0, 0, ',', '.') }}
+                                </td>
+
+                                {{-- JAMSOSTEK --}}
+                                <td class="text-right">
+                                    Rp {{ number_format($payroll->jamsostek ?? 0, 0, ',', '.') }}
+                                </td>
+
+                                {{-- BPJS KESEHATAN --}}
+                                <td class="text-right">
+                                    Rp {{ number_format($payroll->bpjs_kesehatan ?? 0, 0, ',', '.') }}
+                                </td>
+
+                                {{-- BPJS PENSIUN --}}
+                                <td class="text-right">
+                                    Rp {{ number_format($payroll->bpjs_pensiun ?? 0, 0, ',', '.') }}
+                                </td>
+
+                                {{-- MANAGEMENT FEE --}}
+                                <td class="text-right">
+                                    Rp {{ number_format($payroll->managemen_fee ?? 0, 0, ',', '.') }}
+                                </td>
+
+                                {{-- GRAND TOTAL --}}
+                                <td class="text-right font-weight-bold text-success">
+                                    Rp {{ number_format($payroll->grand_total_upah ?? 0, 0, ',', '.') }}
                                 </td>
 
                             </tr>
@@ -228,8 +337,10 @@
                         @empty
 
                             <tr>
-                                <td colspan="5" class="text-center py-4 text-muted">
+                                <td colspan="13" class="text-center py-4 text-muted">
+
                                     Belum ada penggajian borongan untuk periode ini.
+
                                 </td>
                             </tr>
                         @endforelse

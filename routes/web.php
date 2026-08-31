@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CostCenterController;
 use App\Http\Controllers\DailyActivityController;
 use App\Http\Controllers\DailyActivityFurtherController;
+use App\Http\Controllers\DailyActivitySlaughterHouseController;
 use App\Http\Controllers\DailyProductionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
@@ -62,6 +63,11 @@ Route::middleware(['auth'])->group(function() {
     Route::get('/daily-activity-further/employees/{costCenterId}/{psGroupId}', [DailyActivityFurtherController::class, 'getEmployees'])->name('daily-activity-further.employees');
     Route::get('/daily-activity-further/cost-centers/{departmentId}',  [DailyActivityFurtherController::class, 'getCostCenters'])->name('daily-activity-further.cost-centers');
     // Route::get('/employees/search', [EmployeeController::class, 'search']);
+
+    Route::get('/daily-activity-slaughter-house/cost-centers/{departmentId}', [DailyActivitySlaughterHouseController::class, 'getCostCenters'])->name('daily-activity-slaughter-house.cost-centers');
+    Route::get('/daily-activity-slaughter-house/ps-groups/{costCenterId}', [DailyActivitySlaughterHouseController::class, 'getPsGroups'])->name('daily-activity-slaughter-house.ps-groups');
+    Route::get('/daily-activity-slaughter-house/products/{departmentIdId}', [DailyActivitySlaughterHouseController::class, 'getProducts'])->name('daily-activity-slaughter-house.products');
+    Route::get('/daily-activity-slaughter-house/lines/{departmentId}', [DailyActivitySlaughterHouseController::class, 'getLines'])->name('daily-activity-slaughter-house.lines');
 });
 
 
@@ -166,6 +172,19 @@ Route::prefix('admin-production')->middleware(['auth', 'role:Admin Production'])
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf', [DailyActivityFurtherController::class, 'exportPdf'])->name('admin-production.daily-activity-further.export-pdf');
     });
 
+    Route::prefix('daily-activity-slaughter-house')->group(function () {
+        Route::get('/', [DailyActivitySlaughterHouseController::class, 'index'])->name('admin-production.daily-activity-slaughter-house.index');
+        Route::get('/create', [DailyActivitySlaughterHouseController::class, 'create'])->name('admin-production.daily-activity-slaughter-house.create');
+        Route::post('/store', [DailyActivitySlaughterHouseController::class, 'store'])->name('admin-production.daily-activity-slaughter-house.store');
+        Route::get('/cost-center/{costCenter}/ps-group/{psGroup}/detail/{lineId}',[DailyActivitySlaughterHouseController::class, 'detail'])->name('admin-production.daily-activity-slaughter-house.detail');
+        Route::get('/{id}/edit', [DailyActivitySlaughterHouseController::class, 'edit'])->name('admin-production.daily-activity-slaughter-house.edit');
+        Route::put('/{id}/update', [DailyActivitySlaughterHouseController::class, 'update'])->name('admin-production.daily-activity-slaughter-house.update');
+        Route::delete('/{id}/delete', [DailyActivitySlaughterHouseController::class, 'destroy'])->name('admin-production.daily-activity-slaughter-house.destroy');
+        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel', [DailyActivitySlaughterHouseController::class, 'exportExcel'])->name('admin-production.daily-activity-slaughter-house.export-excel');
+        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf',[DailyActivitySlaughterHouseController::class, 'exportPdf'])->name('admin-production.daily-activity-slaughter-house.export-pdf');
+
+    });
+
     Route::prefix('penggajian-harian')->group(function () {
         Route::get('/', [PenggajianHarianController::class, 'index'])->name('admin-production.penggajian-harian.index');
         Route::get('/export-pdf', [PenggajianHarianController::class, 'exportPdf'])->name('admin-production.penggajian-harian.export-pdf');
@@ -174,6 +193,7 @@ Route::prefix('admin-production')->middleware(['auth', 'role:Admin Production'])
     Route::prefix('penggajian-borongan')->group(function () {
         Route::get('/', [PenggajianBoronganController::class, 'index'])->name('admin-production.penggajian-borongan.index');
         Route::get('/export-pdf', [PenggajianBoronganController::class, 'exportPdf'])->name('admin-production.penggajian-borongan.export-pdf');
+        Route::get('/export-excel', [PenggajianBoronganController::class, 'exportExcel'])->name('admin-production.penggajian-borongan.export-excel');    
     });
 });
 
@@ -375,6 +395,14 @@ Route::prefix('general-manager')->middleware(['auth', 'role:General Manager'])->
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel',  [DailyActivityFurtherController::class,'exportExcelGeneralManager'])->name('general-manager.daily-activity-further.export-excel');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf',  [DailyActivityFurtherController::class,'exportPdfGeneralManager'])->name('general-manager.daily-activity-further.export-pdf');
     });
+
+    Route::prefix('daily-activity-slaughter-house')->group(function () {
+        Route::get('/', [DailyActivitySlaughterHouseController::class, 'generalManagerIndex'])->name('general-manager.daily-activity-slaughter-house.index');
+        Route::get('/cost-center/{costCenter}/ps-group/{psGroup}/detail', [DailyActivitySlaughterHouseController::class, 'generalManagerDetail'])->name('general-manager.daily-activity-slaughter-house.detail');
+        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel', [DailyActivitySlaughterHouseController::class, 'exportExcelGeneralManager'])->name('general-manager.daily-activity-slaughter-house.export-excel');
+        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf', [DailyActivitySlaughterHouseController::class, 'exportPdfGeneralManager'])->name('general-manager.daily-activity-slaughter-house.export-pdf');
+
+    });
     
     Route::prefix('penggajian-harian')->group(function () {
         Route::get('/', [PenggajianHarianController::class, 'generalManagerIndex'])->name('general-manager.penggajian-harian.index');
@@ -384,6 +412,7 @@ Route::prefix('general-manager')->middleware(['auth', 'role:General Manager'])->
     Route::prefix('penggajian-borongan')->group(function () {
         Route::get('/', [PenggajianBoronganController::class, 'generalManagerIndex'])->name('general-manager.penggajian-borongan.index');
         Route::get('/export-pdf', [PenggajianBoronganController::class, 'exportPdfGeneralManager'])->name('general-manager.penggajian-borongan.export-pdf');
+        Route::get('/export-excel', [PenggajianBoronganController::class, 'exportExcelGeneralManager'])->name('general-manager.penggajian-borongan.export-excel');    
     });
 });
 
@@ -418,7 +447,14 @@ Route::prefix('manager')->middleware(['auth', 'role:Manager'])->group(function()
         Route::get('/cost-center/{costCenter}/ps-group/{psGroup}/detail/{lineId}',  [DailyActivityFurtherController::class,'managerDetail'])->name('manager.daily-activity-further.detail');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel',  [DailyActivityFurtherController::class,'exportExcelManager'])->name('manager.daily-activity-further.export-excel');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf',  [DailyActivityFurtherController::class,'exportPdfManager'])->name('manager.daily-activity-further.export-pdf');
-    }); 
+    });
+    
+    Route::prefix('daily-activity-slaughter-house')->group(function () {
+        Route::get('/', [DailyActivitySlaughterHouseController::class, 'managerIndex'])->name('manager.daily-activity-slaughter-house.index');
+        Route::get('/cost-center/{costCenter}/ps-group/{psGroup}/detail', [DailyActivitySlaughterHouseController::class, 'managerDetail'])->name('manager.daily-activity-slaughter-house.detail');
+        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel', [DailyActivitySlaughterHouseController::class, 'exportExcelManager'])->name('manager.daily-activity-slaughter-house.export-excel');
+        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf', [DailyActivitySlaughterHouseController::class, 'exportPdfManager'])->name('manager.daily-activity-slaughter-house.export-pdf');
+    });
 
     Route::prefix('penggajian-harian')->group(function () {
         Route::get('/', [PenggajianHarianController::class, 'ManagerIndex'])->name('manager.penggajian-harian.index');
@@ -428,5 +464,6 @@ Route::prefix('manager')->middleware(['auth', 'role:Manager'])->group(function()
     Route::prefix('penggajian-borongan')->group(function () {
         Route::get('/', [PenggajianBoronganController::class, 'managerIndex'])->name('manager.penggajian-borongan.index');
         Route::get('/export-pdf', [PenggajianBoronganController::class, 'exportPdfManager'])->name('manager.penggajian-borongan.export-pdf');
+        Route::get('/export-excel', [PenggajianBoronganController::class, 'exportExcelManager'])->name('manager.penggajian-borongan.export-excel');    
     });
 });

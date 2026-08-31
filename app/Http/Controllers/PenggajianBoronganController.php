@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\PenggajianBoronganExport;
 use App\Models\Department;
 use App\Models\PenggajianBorongan;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PenggajianBoronganController extends Controller
 {
@@ -315,6 +317,78 @@ class PenggajianBoronganController extends Controller
 
         return $pdf->download(
             'Penggajian-Borongan-' . $periodLabel . '.pdf'
+        );
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $month = (int) $request->input('month', now()->month);
+        $year = (int) $request->input('year', now()->year);
+
+        $departmentId = Auth::user()->department_id;
+
+        abort_unless(
+            $departmentId,
+            403,
+            'Akun Anda belum terhubung ke department manapun.'
+        );
+
+        $periodLabel = Carbon::create($year, $month, 1)
+            ->translatedFormat('F-Y');
+
+        return Excel::download(
+            new PenggajianBoronganExport(
+                $month,
+                $year,
+                $departmentId
+            ),
+            'Penggajian-Borongan-' . $periodLabel . '.xlsx'
+        );
+    }
+
+    public function exportExcelManager(Request $request)
+    {
+        $month = (int) $request->input('month', now()->month);
+        $year = (int) $request->input('year', now()->year);
+
+        $departmentId = Auth::user()->department_id;
+
+        abort_unless(
+            $departmentId,
+            403,
+            'Akun Anda belum terhubung ke department manapun.'
+        );
+
+        $periodLabel = Carbon::create($year, $month, 1)
+            ->translatedFormat('F-Y');
+
+        return Excel::download(
+            new PenggajianBoronganExport(
+                $month,
+                $year,
+                $departmentId
+            ),
+            'Penggajian-Borongan-' . $periodLabel . '.xlsx'
+        );
+    }
+
+    public function exportExcelGeneralManager(Request $request)
+    {
+        $month = (int) $request->input('month', now()->month);
+        $year = (int) $request->input('year', now()->year);
+
+        $departmentId = $request->input('department_id');
+
+        $periodLabel = Carbon::create($year, $month, 1)
+            ->translatedFormat('F-Y');
+
+        return Excel::download(
+            new PenggajianBoronganExport(
+                $month,
+                $year,
+                $departmentId ? (int) $departmentId : null
+            ),
+            'Penggajian-Borongan-' . $periodLabel . '.xlsx'
         );
     }
 }

@@ -37,6 +37,16 @@
                 </ul>
             </li>
 
+            @if (strtolower(auth()->user()->department->name) === 'sausage' ||
+                    strtolower(auth()->user()->department->name) === 'slaughter house')
+                <li class="{{ Request::is('manager/penggajian-borongan*') ? 'active' : '' }}">
+                    <a class="nav-link" href="{{ route('manager.penggajian-borongan.index') }}">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <span>Penggajian Borongan</span>
+                    </a>
+                </li>
+            @endif
+
             <li class="{{ Request::is('manager/penggajian-harian*') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('manager.penggajian-harian.index') }}">
                     <i class="fas fa-money-bill-wave"></i>
@@ -72,13 +82,6 @@
                         </li>
                     </ul>
                 </li>
-
-                <li class="{{ Request::is('manager/penggajian-borongan*') ? 'active' : '' }}">
-                    <a class="nav-link" href="{{ route('manager.penggajian-borongan.index') }}">
-                        <i class="fas fa-money-bill-wave"></i>
-                        <span>Penggajian Borongan</span>
-                    </a>
-                </li>
             @endif
 
             @if (strtolower(auth()->user()->department->name) === 'further processing')
@@ -96,6 +99,19 @@
                                 Daily Summary Production
                             </a>
                         </li>
+                    </ul>
+                </li>
+            @endif
+
+            @if (strtolower(auth()->user()->department->name) === 'slaughter house')
+                <li class="menu-header">SLAUGHTER HOUSE</li>
+                <li class="dropdown {{ Request::is('manager/daily-activity-slaughter-house*') ? 'active' : '' }}"> <a
+                        href="#" class="nav-link has-dropdown" data-toggle="dropdown"> <i
+                            class="fas fa-calendar-check"></i> <span>Daily Production Slaughter House</span> </a>
+                    <ul class="dropdown-menu">
+                        <li class="{{ Request::is('manager/daily-activity-slaughter-house*') ? 'active' : '' }}"> <a
+                                class="nav-link" href="{{ route('manager.daily-activity-slaughter-house.index') }}">
+                                Daily Summary Production </a> </li>
                     </ul>
                 </li>
             @endif

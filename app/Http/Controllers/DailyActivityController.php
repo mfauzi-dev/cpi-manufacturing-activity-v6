@@ -117,12 +117,10 @@ class DailyActivityController extends Controller
 
     public function store(Request $request)
     {
-
         $request->validate([
             'tanggal' => ['required', 'date'],
             'cost_center_id' => ['required', 'exists:cost_centers,id'],
             'ps_group_id' => ['required', 'exists:ps_groups,id'],
-
             'details' => ['required', 'array', 'min:1'],
             'details.*.employee_id' => ['required', 'array', 'min:1'],
             'details.*.employee_id.*' => ['exists:employees,id'],
@@ -131,61 +129,124 @@ class DailyActivityController extends Controller
             'details.*.lama_packing' => ['required', 'numeric', 'min:0'],
         ]);
 
-        foreach ($request->details as $detail) {
+        DB::beginTransaction();
 
-            $product = Product::findOrFail($detail['product_id']);
+        try {
+            $tanggal = Carbon::parse($request->tanggal);
+            $departmentId = auth()->user()->department_id;
+            $userId = auth()->user()->id;
 
-            $outputKg    = (float) $detail['output_kg'];
-            $lamaPacking = (float) $detail['lama_packing'];
-            $hargaPerKg  = (float) $product->harga_per_kg;
-            $totalHarga  = $outputKg * $hargaPerKg;
-            $productivity = $lamaPacking > 0 ? $outputKg / $lamaPacking : 0;
+            foreach ($request->details as $detail) {
+                $product = Product::findOrFail($detail['product_id']);
 
-            foreach ($detail['employee_id'] as $employeeId) {
+                $outputKg = (float) $detail['output_kg'];
+                $lamaPacking = (float) $detail['lama_packing'];
+                $hargaPerKg = (float) $product->harga_per_kg;
 
-                $dailyActivity = DailyActivity::firstOrCreate([
-                    'employee_id' => $employeeId,
-                    'tanggal' => $request->tanggal,
-                    'cost_center_id' => $request->cost_center_id,
-                    'ps_group_id' => $request->ps_group_id,
-                    'department_id' => auth()->user()->department_id,
-                    'input_by' => auth()->user()->id,
-                ]);
+                $totalHarga = $outputKg * $hargaPerKg;
 
-                $dailyActivity->details()->create([
-                    'product_id'   => $product->id,
-                    'total_kg'     => $outputKg,
-                    'lama_packing' => $lamaPacking,
-                    'harga_per_kg' => $hargaPerKg,
-                    'total_harga'  => $totalHarga,
-                    'productivity' => $productivity,
-                ]);
+                $productivity = $lamaPacking > 0
+                    ? $outputKg / $lamaPacking
+                    : 0;
 
-                $tanggal = Carbon::parse($request->tanggal);
-
-                $payrollBorongan = PenggajianBorongan::firstOrCreate(
-                    [
+                foreach ($detail['employee_id'] as $employeeId) {
+                    $dailyActivity = DailyActivity::firstOrCreate([
                         'employee_id' => $employeeId,
-                        'period_month' => $tanggal->month,
-                        'period_year' => $tanggal->year,
-                    ],
-                    [
-                        'total_kg' => 0,
-                        'total_upah' => 0,
-                    ]
+                        'tanggal' => $request->tanggal,
+                        'cost_center_id' => $request->cost_center_id,
+                        'ps_group_id' => $request->ps_group_id,
+                        'department_id' => $departmentId,
+                        'input_by' => $userId,
+                    ]);
+
+                    $dailyActivity->details()->create([
+                        'product_id' => $product->id,
+                        'total_kg' => $outputKg,
+                        'lama_packing' => $lamaPacking,
+                        'harga_per_kg' => $hargaPerKg,
+                        'total_harga' => $totalHarga,
+                        'productivity' => $productivity,
+                    ]);
+
+                    $payroll = PenggajianBorongan::firstOrCreate(
+                        [
+                            'employee_id' => $employeeId,
+                            'period_month' => $tanggal->month,
+                            'period_year' => $tanggal->year,
+                        ],
+                        [
+                            'total_kg' => 0,
+                            'total_hari_kerja' => 0,
+                            'total_upah' => 0,
+                            'jamsostek' => 0,
+                            'bpjs_kesehatan' => 0,
+                            'bpjs_pensiun' => 0,
+                            'managemen_fee' => 0,
+                            'grand_total_upah' => 0,
+                        ]
+                    );
+
+                    $payroll->total_kg += $outputKg;
+                    $payroll->total_upah += $totalHarga;
+
+                    $payroll->total_hari_kerja = DailyActivity::where(
+                        'employee_id',
+                        $employeeId
+                    )
+                        ->whereMonth('tanggal', $tanggal->month)
+                        ->whereYear('tanggal', $tanggal->year)
+                        ->distinct()
+                        ->count('tanggal');
+
+                    $payroll->jamsostek = round(
+                        $payroll->total_upah * 0.0489,
+                        2
+                    );
+
+                    $payroll->bpjs_kesehatan = round(
+                        $payroll->total_upah * 0.04,
+                        2
+                    );
+
+                    $payroll->bpjs_pensiun = round(
+                        $payroll->total_upah * 0.02,
+                        2
+                    );
+
+                    $payroll->managemen_fee =
+                        $payroll->total_hari_kerja * 6800;
+
+                    $payroll->grand_total_upah =
+                        $payroll->total_upah
+                        - $payroll->jamsostek
+                        - $payroll->bpjs_kesehatan
+                        - $payroll->bpjs_pensiun
+                        + $payroll->managemen_fee;
+
+                    $payroll->save();
+                }
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('admin-production.daily-activity.index')
+                ->with(
+                    'success',
+                    'Daily Activity berhasil disimpan.'
                 );
 
-                $payrollBorongan->total_kg += $outputKg;
-                $payrollBorongan->total_upah += $totalHarga;
+        } catch (\Throwable $e) {
+            DB::rollBack();
 
-                $payrollBorongan->save();
-            }
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with(
+                    'error',
+                    'Gagal menyimpan data: ' . $e->getMessage()
+                );
         }
-
-        return redirect()
-            ->route('admin-production.daily-activity.index')
-            ->with('success', 'Daily Activity berhasil disimpan.');
-
     }
 
     public function index(Request $request)

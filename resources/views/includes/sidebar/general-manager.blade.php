@@ -93,6 +93,13 @@
                 </ul>
             </li>
 
+            <li class="{{ Request::is('general-manager/penggajian-borongan*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('general-manager.penggajian-borongan.index') }}">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>Penggajian Borongan</span>
+                </a>
+            </li>
+
             <li class="{{ Request::is('general-manager/penggajian-harian*') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('general-manager.penggajian-harian.index') }}">
                     <i class="fas fa-money-bill-wave"></i>
@@ -127,12 +134,6 @@
                 </ul>
             </li>
 
-            <li class="{{ Request::is('general-manager/penggajian-borongan*') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('general-manager.penggajian-borongan.index') }}">
-                    <i class="fas fa-money-bill-wave"></i>
-                    <span>Penggajian Borongan</span>
-                </a>
-            </li>
 
             <li class="menu-header">FURTHER</li>
 
@@ -147,6 +148,19 @@
                         <a class="nav-link" href="{{ route('general-manager.daily-activity-further.index') }}">
                             Daily Summary Production
                         </a>
+                    </li>
+                </ul>
+            </li>
+
+            <li class="menu-header">SLAUGHTER HOUSE</li>
+            <li class="dropdown {{ Request::is('general-manager/daily-activity-slaughter-house*') ? 'active' : '' }}">
+                <a href="#" class="nav-link has-dropdown" data-toggle="dropdown"> <i
+                        class="fas fa-calendar-check"></i> <span>Daily Production Slaughter House</span> </a>
+                <ul class="dropdown-menu">
+                    <li class="{{ Request::is('general-manager/daily-activity-slaughter-house*') ? 'active' : '' }}">
+                        <a class="nav-link"
+                            href="{{ route('general-manager.daily-activity-slaughter-house.index') }}"> Daily Summary
+                            Production </a>
                     </li>
                 </ul>
             </li>

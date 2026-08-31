@@ -39,6 +39,16 @@
                 </ul>
             </li>
 
+            @if (strtolower(auth()->user()->department->name) === 'sausage' ||
+                    strtolower(auth()->user()->department->name) === 'slaughter house')
+                <li class="{{ Request::is('admin-production/penggajian-borongan*') ? 'active' : '' }}">
+                    <a class="nav-link" href="{{ route('admin-production.penggajian-borongan.index') }}">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <span>Penggajian Borongan</span>
+                    </a>
+                </li>
+            @endif
+
             <li class="{{ Request::is('admin-production/penggajian-harian*') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('admin-production.penggajian-harian.index') }}">
                     <i class="fas fa-money-bill-wave"></i>
@@ -101,13 +111,6 @@
                         </li>
                     </ul>
                 </li>
-
-                <li class="{{ Request::is('admin-production/penggajian-borongan*') ? 'active' : '' }}">
-                    <a class="nav-link" href="{{ route('admin-production.penggajian-borongan.index') }}">
-                        <i class="fas fa-money-bill-wave"></i>
-                        <span>Penggajian Borongan</span>
-                    </a>
-                </li>
             @endif
 
             @if (strtolower(auth()->user()->department->name) === 'further processing')
@@ -150,6 +153,75 @@
                                 Daily Production</a>
                         </li>
                     </ul>
+                </li>
+            @endif
+
+            @if (strtolower(auth()->user()->department->name) === 'slaughter house')
+                <li class="menu-header">SLAUGHTER HOUSE</li>
+
+                <!-- PRODUCTS -->
+
+                <li class="dropdown {{ Request::is('admin-production/products*') ? 'active' : '' }}">
+
+                    <a href="#" class="nav-link has-dropdown" data-toggle="dropdown">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Products</span>
+                    </a>
+
+                    <ul class="dropdown-menu">
+
+                        <li class="{{ Request::is('admin-production/products') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('admin-production.product.index') }}">
+                                Table Product
+                            </a>
+                        </li>
+
+                        <li class="{{ Request::is('admin-production/products/create') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('admin-production.product.create') }}">
+                                Tambah Product
+                            </a>
+                        </li>
+
+                        <li class="{{ Request::is('admin-production/products/import') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('admin-production.product.import') }}">
+                                Import Product
+                            </a>
+                        </li>
+
+                    </ul>
+
+                </li>
+
+                <!-- DAILY ACTIVITY SLAUGHTER HOUSE -->
+
+                <li
+                    class="dropdown {{ Request::is('admin-production/daily-activity-slaughter-house*') ? 'active' : '' }}">
+
+                    <a href="#" class="nav-link has-dropdown" data-toggle="dropdown">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Daily Production Slaughter House</span>
+                    </a>
+
+                    <ul class="dropdown-menu">
+
+                        <li
+                            class="{{ Request::is('admin-production/daily-activity-slaughter-house') ? 'active' : '' }}">
+                            <a class="nav-link"
+                                href="{{ route('admin-production.daily-activity-slaughter-house.index') }}">
+                                Summary Daily Production
+                            </a>
+                        </li>
+
+                        <li
+                            class="{{ Request::is('admin-production/daily-activity-slaughter-house/create') ? 'active' : '' }}">
+                            <a class="nav-link"
+                                href="{{ route('admin-production.daily-activity-slaughter-house.create') }}">
+                                Tambah Daily Production
+                            </a>
+                        </li>
+
+                    </ul>
+
                 </li>
             @endif
         </ul>
