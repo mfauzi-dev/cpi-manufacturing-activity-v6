@@ -206,6 +206,7 @@
             </div>
 
 
+
             <div class="table-responsive">
 
                 <table class="table table-striped table-bordered mb-0">
@@ -389,6 +390,7 @@
                 </table>
 
             </div>
+
 
         </div>
 

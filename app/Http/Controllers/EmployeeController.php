@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Imports\EmployeeImport;
 use App\Imports\OutsourcingEmployeeImport;
 use App\Imports\PermanentEmployeeImport;
 use App\Models\CostCenter;
@@ -42,15 +41,16 @@ class EmployeeController extends Controller
             'size' => ['nullable', 'integer'],
             'employment_status' => ['nullable', 'in:permanent,outsourcing'],
             'employee_status' => ['nullable', 'in:cpi,borongan,harian'],
+            'is_active' => ['nullable', 'in:0,1'],
             'cost_center_id' => ['nullable', 'exists:cost_centers,id'],
             'position_id' => ['nullable', 'exists:positions,id'],
         ]);
 
         $search = $request->input('search');
         $size = $request->input('size', 50);
-
         $employmentStatus = $request->employment_status;
         $employeeStatus = $request->employee_status;
+        $isActive = $request->is_active;
         $costCenterId = $request->cost_center_id;
         $positionId = $request->position_id;
 
@@ -74,6 +74,10 @@ class EmployeeController extends Controller
 
         if ($employeeStatus) {
             $query->where('employee_status', $employeeStatus);
+        }
+
+        if ($isActive !== null) {
+            $query->where('is_active', $isActive);
         }
 
         if ($costCenterId) {
@@ -99,6 +103,7 @@ class EmployeeController extends Controller
                 'search',
                 'employmentStatus',
                 'employeeStatus',
+                'isActive',
                 'costCenterId',
                 'positionId',
                 'costCenterList',
@@ -114,15 +119,16 @@ class EmployeeController extends Controller
             'size' => ['nullable', 'integer'],
             'employment_status' => ['nullable', 'in:permanent,outsourcing'],
             'employee_status' => ['nullable', 'in:cpi,borongan,harian'],
+            'is_active' => ['nullable', 'in:0,1'],
             'cost_center_id' => ['nullable', 'exists:cost_centers,id'],
             'position_id' => ['nullable', 'exists:positions,id'],
         ]);
 
         $search = $request->input('search');
         $size = $request->input('size', 50);
-
         $employmentStatus = $request->employment_status;
         $employeeStatus = $request->employee_status;
+        $isActive = $request->is_active;
         $costCenterId = $request->cost_center_id;
         $positionId = $request->position_id;
 
@@ -146,6 +152,10 @@ class EmployeeController extends Controller
 
         if ($employeeStatus) {
             $query->where('employee_status', $employeeStatus);
+        }
+
+        if ($isActive !== null) {
+            $query->where('is_active', $isActive);
         }
 
         if ($costCenterId) {
@@ -171,6 +181,7 @@ class EmployeeController extends Controller
                 'search',
                 'employmentStatus',
                 'employeeStatus',
+                'isActive',
                 'costCenterId',
                 'positionId',
                 'costCenterList',
@@ -181,20 +192,24 @@ class EmployeeController extends Controller
 
     public function managerIndex(Request $request)
     {
+
+        $managerDepartmentId = auth()->user()->department_id;
+
         $request->validate([
             'search' => ['nullable', 'string'],
             'size' => ['nullable', 'integer'],
             'employment_status' => ['nullable', 'in:permanent,outsourcing'],
             'employee_status' => ['nullable', 'in:cpi,borongan,harian'],
+            'is_active' => ['nullable', 'in:0,1'],
             'cost_center_id' => ['nullable', 'exists:cost_centers,id'],
             'position_id' => ['nullable', 'exists:positions,id'],
         ]);
 
         $search = $request->input('search');
         $size = $request->input('size', 50);
-
         $employmentStatus = $request->employment_status;
         $employeeStatus = $request->employee_status;
+        $isActive = $request->is_active;
         $costCenterId = $request->cost_center_id;
         $positionId = $request->position_id;
 
@@ -203,7 +218,7 @@ class EmployeeController extends Controller
             'costCenter',
             'psGroup',
             'position',
-        ]);
+        ])->where('department_id', $managerDepartmentId);
 
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -220,6 +235,10 @@ class EmployeeController extends Controller
             $query->where('employee_status', $employeeStatus);
         }
 
+        if ($isActive !== null) {
+            $query->where('is_active', $isActive);
+        }
+
         if ($costCenterId) {
             $query->where('cost_center_id', $costCenterId);
         }
@@ -233,7 +252,7 @@ class EmployeeController extends Controller
             ->paginate($size)
             ->withQueryString();
 
-        $costCenterList = CostCenter::orderBy('name')->get();
+        $costCenterList = CostCenter::where('department_id', $managerDepartmentId)->orderBy('name')->get();
         $positionList = Position::orderBy('name')->get();
 
         return view(
@@ -243,6 +262,7 @@ class EmployeeController extends Controller
                 'search',
                 'employmentStatus',
                 'employeeStatus',
+                'isActive',
                 'costCenterId',
                 'positionId',
                 'costCenterList',
@@ -254,17 +274,15 @@ class EmployeeController extends Controller
     public function create()
     {
         $outsourcingList = Outsourcing::orderBy('name')->get();
- 
         $costCenters = CostCenter::orderBy('name')->get();
- 
+
         $psGroups = PsGroup::with('costCenter')
             ->orderBy('name')
             ->get();
- 
-        $positions = Position::orderBy('name')->get();
 
+        $positions = Position::orderBy('name')->get();
         $departments = Department::orderBy('name')->get();
- 
+
         return view(
             'pages.admin.employee.create',
             compact(
@@ -276,84 +294,100 @@ class EmployeeController extends Controller
             )
         );
     }
- 
+
     public function store(Request $request)
     {
         $request->validate([
-            'nik' => ['nullable', 'string', 'max:50', 'unique:employees,nik'],
-            'name' => ['required', 'string', 'max:255'],
- 
+            'nik' => [
+                'nullable',
+                'string',
+                'max:50',
+                'unique:employees,nik',
+            ],
+
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
             'employment_status' => [
                 'required',
-                'in:permanent,outsourcing'
+                'in:permanent,outsourcing',
             ],
- 
-            // wajib diisi kalau outsourcing, otomatis di-set "cpi" kalau permanent
+
             'employee_status' => [
                 'required_if:employment_status,outsourcing',
                 'nullable',
-                'in:borongan,harian'
+                'in:borongan,harian',
             ],
- 
+
             'outsourcing_id' => [
                 'required_if:employment_status,outsourcing',
                 'nullable',
-                'exists:outsourcings,id'
+                'exists:outsourcings,id',
             ],
- 
+
             'department_id' => [
                 'nullable',
-                'exists:departments,id'
+                'exists:departments,id',
             ],
 
             'cost_center_id' => [
                 'nullable',
-                'exists:cost_centers,id'
+                'exists:cost_centers,id',
             ],
- 
+
             'ps_group_id' => [
                 'nullable',
-                'exists:ps_groups,id'
+                'exists:ps_groups,id',
             ],
- 
+
             'position_id' => [
                 'nullable',
-                'exists:positions,id'
+                'exists:positions,id',
             ],
- 
-            'personel_area' => ['nullable', 'string'],
-            'gender' => ['nullable', 'string'],
+
+            'personel_area' => [
+                'nullable',
+                'string',
+            ],
+
+            'gender' => [
+                'nullable',
+                'string',
+            ],
+            'is_active' => [
+                'required', 
+                'boolean', 
+            ],
         ]);
- 
-        // employee_status & outsourcing_id otomatis disesuaikan,
-        // biar gak ada data nyangkut yang gak relevan kalau permanent
+
         $employeeStatus = $request->employment_status === 'permanent'
             ? 'cpi'
             : $request->employee_status;
- 
+
         $outsourcingId = $request->employment_status === 'outsourcing'
             ? $request->outsourcing_id
             : null;
- 
+
         Employee::create([
             'nik' => $request->nik,
             'name' => $request->name,
- 
             'employment_status' => $request->employment_status,
             'employee_status' => $employeeStatus,
- 
             'outsourcing_id' => $outsourcingId,
             'department_id' => $request->department_id,
             'cost_center_id' => $request->cost_center_id,
             'ps_group_id' => $request->ps_group_id,
             'position_id' => $request->position_id,
- 
             'personel_area' => $request->personel_area,
             'gender' => $request->gender,
+            'is_active' => $request->is_active,
         ]);
- 
+
         return redirect()
-            ->route('admin.employee.index')
+            ->back()
             ->with('success', 'Karyawan berhasil ditambahkan');
     }
 
@@ -369,42 +403,43 @@ class EmployeeController extends Controller
 
     public function upload(Request $request)
     {
-
         $request->validate([
             'employment_status' => [
                 'required',
-                'in:permanent,outsourcing'
+                'in:permanent,outsourcing',
             ],
 
             'outsourcing_id' => [
                 'required_if:employment_status,outsourcing',
                 'nullable',
-                'exists:outsourcings,id'
+                'exists:outsourcings,id',
             ],
 
             'employee_status' => [
                 'required_if:employment_status,outsourcing',
                 'nullable',
-                'in:borongan,harian'
+                'in:borongan,harian',
             ],
 
             'file' => [
                 'required',
-                'mimes:xlsx,xls'
-            ]
+                'mimes:xlsx,xls',
+            ],
         ]);
-
 
         try {
             if ($request->employment_status === 'permanent') {
                 Excel::import(
-                    new PermanentEmployeeImport($request->employment_status),
+                    new PermanentEmployeeImport(
+                        $request->employment_status
+                    ),
                     $request->file('file')
                 );
             } else {
                 $outsourcing = Outsourcing::findOrFail(
                     $request->outsourcing_id
                 );
+
                 Excel::import(
                     new OutsourcingEmployeeImport(
                         $outsourcing,
@@ -412,15 +447,12 @@ class EmployeeController extends Controller
                     ),
                     $request->file('file')
                 );
-
             }
 
             return redirect()
                 ->route('admin.employee.index')
                 ->with('success', 'Import karyawan berhasil.');
-
         } catch (\Throwable $e) {
-
             return back()
                 ->withInput()
                 ->with('error', $e->getMessage());
@@ -528,20 +560,22 @@ class EmployeeController extends Controller
                 'nullable',
                 'string',
             ],
+            'is_active' => [
+                'required',
+                'boolean',
+            ],
         ]);
 
         $employee->update([
-
             'nik' => $request->nik,
             'name' => $request->name,
-
             'employment_status' => $request->employment_status,
 
-            'outsourcing_id' => $request->employment_status == 'outsourcing'
+            'outsourcing_id' => $request->employment_status === 'outsourcing'
                 ? $request->outsourcing_id
                 : null,
 
-            'employee_status' => $request->employment_status == 'outsourcing'
+            'employee_status' => $request->employment_status === 'outsourcing'
                 ? $request->employee_status
                 : 'cpi',
 
@@ -551,16 +585,39 @@ class EmployeeController extends Controller
             'position_id' => $request->position_id,
             'personel_area' => $request->personel_area,
             'gender' => $request->gender,
+            'is_active' => $request->is_active,
         ]);
 
         return redirect()
-            ->route('admin.employee.index')
+            ->back()
             ->with('success', 'Data karyawan berhasil diperbarui.');
+    }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $request->validate([
+            'is_active' => [
+                'required',
+                'boolean',
+            ],
+        ]);
+
+        $employee = Employee::findOrFail($id);
+
+        $employee->update([
+            'is_active' => $request->is_active,
+        ]);
+
+        return back()->with(
+            'success',
+            'Status karyawan berhasil diperbarui.'
+        );
     }
 
     public function destroy($id)
     {
         $employee = Employee::findOrFail($id);
+
         $employee->delete();
 
         return redirect()
@@ -569,5 +626,99 @@ class EmployeeController extends Controller
                 'success',
                 'Data karyawan berhasil dihapus.'
             );
+    }
+
+    public function managerCreate()
+    {
+        $managerDepartmentId = auth()->user()->department_id;
+
+        $outsourcingList = Outsourcing::orderBy('name')->get();
+
+        $departmentList = Department::where('id', $managerDepartmentId)
+            ->orderBy('name')
+            ->get();
+
+        $costCenterList = CostCenter::where('department_id', $managerDepartmentId)
+            ->orderBy('name')
+            ->get();
+
+        $psGroupList = PsGroup::whereHas('costCenter', function ($query) use ($managerDepartmentId) {
+            $query->where('department_id', $managerDepartmentId);
+        })
+            ->orderBy('name')
+            ->get();
+
+        $positionList = Position::orderBy('name')->get();
+
+        return view(
+            'pages.manager.employee.create',
+            compact(
+                'outsourcingList',
+                'departmentList',
+                'costCenterList',
+                'psGroupList',
+                'positionList'
+            )
+        );
+    }
+
+    public function managerEdit($id)
+    {
+        $managerDepartmentId = auth()->user()->department_id;
+
+        $employee = Employee::where('id', $id)
+            ->where('department_id', $managerDepartmentId)
+            ->firstOrFail();
+
+        $outsourcingList = Outsourcing::orderBy('name')->get();
+
+        $departmentList = Department::where('id', $managerDepartmentId)
+            ->orderBy('name')
+            ->get();
+
+        $costCenterList = CostCenter::where('department_id', $managerDepartmentId)
+            ->orderBy('name')
+            ->get();
+
+        $psGroupList = PsGroup::whereHas('costCenter', function ($query) use ($managerDepartmentId) {
+            $query->where('department_id', $managerDepartmentId);
+        })
+            ->orderBy('name')
+            ->get();
+
+        $positionList = Position::orderBy('name')->get();
+
+        return view(
+            'pages.manager.employee.edit',
+            compact(
+                'employee',
+                'outsourcingList',
+                'departmentList',
+                'costCenterList',
+                'psGroupList',
+                'positionList'
+            )
+        );
+    }
+
+    public function managerDetail($id)
+    {
+        $managerDepartmentId = auth()->user()->department_id;
+
+        $employee = Employee::with([
+            'outsourcing',
+            'department',
+            'costCenter',
+            'psGroup',
+            'position',
+        ])
+            ->where('id', $id)
+            ->where('department_id', $managerDepartmentId)
+            ->firstOrFail();
+
+        return view(
+            'pages.manager.employee.detail',
+            compact('employee')
+        );
     }
 }

@@ -6,14 +6,11 @@
     </div>
 
     <div class="section-body">
-
         <div class="row">
 
             {{-- PROFILE --}}
             <div class="col-lg-4">
-
                 <div class="card">
-
                     <div class="card-body text-center">
 
                         <img src="https://ui-avatars.com/api/?name={{ urlencode($employee->name) }}&background=6777ef&color=fff&size=150"
@@ -24,10 +21,23 @@
                         </h4>
 
                         <p class="text-muted mb-2">
-                            {{ $employee->nik }}
+                            {{ $employee->nik ?? '-' }}
                         </p>
 
+                        {{-- STATUS AKTIF --}}
+                        @if ($employee->is_active)
+                            <span class="badge badge-success">
+                                Aktif
+                            </span>
+                        @else
+                            <span class="badge badge-danger">
+                                Tidak Aktif
+                            </span>
+                        @endif
+
                         {{-- JENIS KARYAWAN --}}
+                        <br><br>
+
                         @if ($employee->employment_status == 'permanent')
                             <span class="badge badge-primary">
                                 Permanent
@@ -41,44 +51,25 @@
                         {{-- STATUS KARYAWAN --}}
                         @if ($employee->employee_status)
                             <br><br>
-
                             <span class="badge badge-info">
                                 {{ ucfirst($employee->employee_status) }}
                             </span>
                         @endif
 
-                        {{-- STATUS AKTIF --}}
-                        <br><br>
-
-                        @if ($employee->is_active)
-                            <span class="badge badge-success">
-                                Aktif
-                            </span>
-                        @else
-                            <span class="badge badge-danger">
-                                Tidak Aktif
-                            </span>
-                        @endif
-
                     </div>
-
                 </div>
-
             </div>
-
 
             {{-- DATA --}}
             <div class="col-lg-8">
 
                 {{-- INFORMASI PEKERJAAN --}}
                 <div class="card">
-
                     <div class="card-header">
                         <h4>Informasi Pekerjaan</h4>
                     </div>
 
                     <div class="card-body">
-
                         <table class="table table-borderless">
 
                             <tr>
@@ -131,21 +122,16 @@
                             </tr>
 
                         </table>
-
                     </div>
-
                 </div>
-
 
                 {{-- INFORMASI PRIBADI --}}
                 <div class="card">
-
                     <div class="card-header">
                         <h4>Informasi Pribadi</h4>
                     </div>
 
                     <div class="card-body">
-
                         <table class="table table-borderless">
 
                             <tr>
@@ -198,26 +184,17 @@
                             </tr>
 
                         </table>
-
                     </div>
-
                 </div>
-
 
                 {{-- BUTTON --}}
                 <div class="text-right">
-
-                    <a href="{{ route('admin.employee.index') }}" class="btn btn-secondary">
-
+                    <a href="{{ route('manager.employee.index') }}" class="btn btn-secondary">
                         Kembali
-
                     </a>
-
                 </div>
 
             </div>
-
         </div>
-
     </div>
 @endsection

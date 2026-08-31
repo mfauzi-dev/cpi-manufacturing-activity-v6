@@ -221,7 +221,7 @@ class DailyActivityController extends Controller
                         - $payroll->jamsostek
                         - $payroll->bpjs_kesehatan
                         - $payroll->bpjs_pensiun
-                        + $payroll->managemen_fee;
+                        - $payroll->managemen_fee;
 
                     $payroll->save();
                 }

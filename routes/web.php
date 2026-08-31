@@ -187,6 +187,7 @@ Route::prefix('admin-production')->middleware(['auth', 'role:Admin Production'])
 
     Route::prefix('penggajian-harian')->group(function () {
         Route::get('/', [PenggajianHarianController::class, 'index'])->name('admin-production.penggajian-harian.index');
+        Route::get('/export-excel', [PenggajianHarianController::class, 'exportExcel'])->name('admin-production.penggajian-harian.export-excel');
         Route::get('/export-pdf', [PenggajianHarianController::class, 'exportPdf'])->name('admin-production.penggajian-harian.export-pdf');
     });
 
@@ -406,6 +407,7 @@ Route::prefix('general-manager')->middleware(['auth', 'role:General Manager'])->
     
     Route::prefix('penggajian-harian')->group(function () {
         Route::get('/', [PenggajianHarianController::class, 'generalManagerIndex'])->name('general-manager.penggajian-harian.index');
+        Route::get('/export-excel', [PenggajianHarianController::class, 'exportExcelGeneralManager'])->name('general-manager.penggajian-harian.export-excel');
         Route::get('/export-pdf', [PenggajianHarianController::class, 'exportPdfGeneralManager'])->name('general-manager.penggajian-harian.export-pdf');
     });
 
@@ -417,6 +419,15 @@ Route::prefix('general-manager')->middleware(['auth', 'role:General Manager'])->
 });
 
 Route::prefix('manager')->middleware(['auth', 'role:Manager'])->group(function() {
+    Route::prefix('employees')->group(function () {
+        Route::get('/', [EmployeeController::class, 'managerIndex'])->name('manager.employee.index');
+        Route::get('/create', [EmployeeController::class, 'managerCreate'])->name('manager.employee.create');
+        Route::post('/store', [EmployeeController::class, 'store'])->name('manager.employee.store');
+        Route::get('{id}/detail', [EmployeeController::class, 'managerDetail'])->name('manager.employee.detail');
+        Route::get('{id}/edit', [EmployeeController::class, 'managerEdit'])->name('manager.employee.edit');
+        Route::put('{id}/update', [EmployeeController::class, 'update'])->name('manager.employee.update');
+        Route::delete('{id}/delete', [EmployeeController::class, 'destroy'])->name('manager.employee.destroy');
+    });
     Route::prefix('attendances')->group(function(){
         Route::get('/', [AttendanceController::class, 'managerIndex'])->name('manager.attendance.index');
         Route::get('/create', [AttendanceController::class, 'managerCreate'])->name('manager.attendance.create');
@@ -458,6 +469,7 @@ Route::prefix('manager')->middleware(['auth', 'role:Manager'])->group(function()
 
     Route::prefix('penggajian-harian')->group(function () {
         Route::get('/', [PenggajianHarianController::class, 'ManagerIndex'])->name('manager.penggajian-harian.index');
+        Route::get('/export-excel', [PenggajianHarianController::class, 'exportExcelManager'])->name('manager.penggajian-harian.export-excel');
         Route::get('/export-pdf', [PenggajianHarianController::class, 'exportPdfManager'])->name('manager.penggajian-harian.export-pdf');
     });
 

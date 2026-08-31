@@ -22,7 +22,7 @@
 
         <div class="card-body">
 
-            <form action="{{ route('admin.employee.update', $employee->id) }}" method="POST">
+            <form action="{{ route('manager.employee.update', $employee->id) }}" method="POST">
                 @csrf
                 @method('PUT')
 
@@ -33,7 +33,9 @@
                         class="form-control @error('nik') is-invalid @enderror" placeholder="Masukkan NIK">
 
                     @error('nik')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
                     @enderror
                 </div>
 
@@ -44,7 +46,9 @@
                         class="form-control @error('name') is-invalid @enderror" placeholder="Masukkan Nama">
 
                     @error('name')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
                     @enderror
                 </div>
 
@@ -53,7 +57,6 @@
                     <label>Status Aktif</label>
 
                     <select name="is_active" class="form-control @error('is_active') is-invalid @enderror">
-
                         <option value="">-- Pilih Status --</option>
 
                         <option value="1" {{ old('is_active', $employee->is_active) == 1 ? 'selected' : '' }}>
@@ -63,11 +66,12 @@
                         <option value="0" {{ old('is_active', $employee->is_active) == 0 ? 'selected' : '' }}>
                             Tidak Aktif
                         </option>
-
                     </select>
 
                     @error('is_active')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
                     @enderror
                 </div>
 
@@ -77,7 +81,6 @@
 
                     <select name="employment_status" id="employment_status"
                         class="form-control @error('employment_status') is-invalid @enderror">
-
                         <option value="">-- Pilih Jenis Karyawan --</option>
 
                         <option value="permanent"
@@ -89,11 +92,12 @@
                             {{ old('employment_status', $employee->employment_status) == 'outsourcing' ? 'selected' : '' }}>
                             Outsourcing
                         </option>
-
                     </select>
 
                     @error('employment_status')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
                     @enderror
                 </div>
 
@@ -102,7 +106,6 @@
                     <label>Outsourcing</label>
 
                     <select name="outsourcing_id" class="form-control @error('outsourcing_id') is-invalid @enderror">
-
                         <option value="">-- Pilih Outsourcing --</option>
 
                         @foreach ($outsourcingList as $os)
@@ -111,11 +114,12 @@
                                 {{ $os->name }}
                             </option>
                         @endforeach
-
                     </select>
 
                     @error('outsourcing_id')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
                     @enderror
                 </div>
 
@@ -124,7 +128,6 @@
                     <label>Status Karyawan</label>
 
                     <select name="employee_status" class="form-control @error('employee_status') is-invalid @enderror">
-
                         <option value="">-- Pilih Status Karyawan --</option>
 
                         <option value="cpi"
@@ -141,11 +144,12 @@
                             {{ old('employee_status', $employee->employee_status) == 'harian' ? 'selected' : '' }}>
                             Harian
                         </option>
-
                     </select>
 
                     @error('employee_status')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
                     @enderror
                 </div>
 
@@ -153,24 +157,12 @@
                 <div class="form-group">
                     <label>Department</label>
 
-                    <select name="department_id" id="department_id"
-                        class="form-control @error('department_id') is-invalid @enderror">
-
-                        <option value="">-- Pilih Department --</option>
-
-                        @foreach ($departmentList as $department)
-                            <option value="{{ $department->id }}"
-                                {{ old('department_id', $employee->department_id) == $department->id ? 'selected' : '' }}>
-                                {{ $department->name }}
-                            </option>
-                        @endforeach
-
-                    </select>
-
-                    @error('department_id')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                    <input type="text" class="form-control" value="{{ auth()->user()->department->name ?? '-' }}"
+                        readonly>
                 </div>
+
+                {{-- Hidden Department ID --}}
+                <input type="hidden" name="department_id" value="{{ auth()->user()->department_id }}">
 
                 {{-- COST CENTER --}}
                 <div class="form-group">
@@ -178,19 +170,20 @@
 
                     <select name="cost_center_id" id="cost_center_id"
                         class="form-control @error('cost_center_id') is-invalid @enderror">
-
                         <option value="">-- Pilih Cost Center --</option>
 
-                        @if ($employee->costCenter)
-                            <option value="{{ $employee->costCenter->id }}" selected>
-                                {{ $employee->costCenter->name }}
+                        @foreach ($costCenterList as $costCenter)
+                            <option value="{{ $costCenter->id }}"
+                                {{ old('cost_center_id', $employee->cost_center_id) == $costCenter->id ? 'selected' : '' }}>
+                                {{ $costCenter->code ?? '' }}{{ isset($costCenter->code) ? ' - ' : '' }}{{ $costCenter->name }}
                             </option>
-                        @endif
-
+                        @endforeach
                     </select>
 
                     @error('cost_center_id')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
                     @enderror
                 </div>
 
@@ -200,19 +193,13 @@
 
                     <select name="ps_group_id" id="ps_group_id"
                         class="form-control @error('ps_group_id') is-invalid @enderror">
-
                         <option value="">-- Pilih Group --</option>
-
-                        @if ($employee->psGroup)
-                            <option value="{{ $employee->psGroup->id }}" selected>
-                                {{ $employee->psGroup->name }}
-                            </option>
-                        @endif
-
                     </select>
 
                     @error('ps_group_id')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
                     @enderror
                 </div>
 
@@ -221,7 +208,6 @@
                     <label>Posisi</label>
 
                     <select name="position_id" class="form-control @error('position_id') is-invalid @enderror">
-
                         <option value="">-- Pilih Posisi --</option>
 
                         @foreach ($positionList as $position)
@@ -230,11 +216,12 @@
                                 {{ $position->name }}
                             </option>
                         @endforeach
-
                     </select>
 
                     @error('position_id')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
                     @enderror
                 </div>
 
@@ -243,7 +230,6 @@
                     <label>Gender</label>
 
                     <select name="gender" class="form-control @error('gender') is-invalid @enderror">
-
                         <option value="">-- Pilih Gender --</option>
 
                         <option value="L" {{ old('gender', $employee->gender) == 'L' ? 'selected' : '' }}>
@@ -253,11 +239,12 @@
                         <option value="P" {{ old('gender', $employee->gender) == 'P' ? 'selected' : '' }}>
                             Perempuan
                         </option>
-
                     </select>
 
                     @error('gender')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
                     @enderror
                 </div>
 
@@ -269,12 +256,18 @@
                         class="form-control @error('personel_area') is-invalid @enderror">
 
                     @error('personel_area')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
                     @enderror
                 </div>
 
                 {{-- BUTTON --}}
                 <div class="text-right">
+                    <a href="{{ route('manager.employee.index') }}" class="btn btn-secondary">
+                        Kembali
+                    </a>
+
                     <button type="submit" class="btn btn-primary">
                         Update
                     </button>
@@ -290,9 +283,9 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
 
-            // ==========================
-            // Employment Status
-            // ==========================
+            // ==========================================
+            // EMPLOYMENT STATUS
+            // ==========================================
 
             const employmentStatus = document.getElementById('employment_status');
             const outsourcingWrapper = document.getElementById('outsourcing-wrapper');
@@ -318,66 +311,22 @@
             toggleOutsourcingFields();
 
 
-            // ==========================
-            // Dropdown
-            // ==========================
+            // ==========================================
+            // COST CENTER & PS GROUP
+            // ==========================================
 
-            const department = document.getElementById('department_id');
             const costCenter = document.getElementById('cost_center_id');
             const psGroup = document.getElementById('ps_group_id');
 
-            const selectedDepartment = "{{ old('department_id', $employee->department_id) }}";
             const selectedCostCenter = "{{ old('cost_center_id', $employee->cost_center_id) }}";
             const selectedPsGroup = "{{ old('ps_group_id', $employee->ps_group_id) }}";
 
 
-            // ==========================
-            // Load Cost Center
-            // ==========================
+            // ==========================================
+            // LOAD PS GROUP
+            // ==========================================
 
-            function loadCostCenters(departmentId, selected = null) {
-
-                costCenter.innerHTML = '<option value="">-- Pilih Cost Center --</option>';
-                psGroup.innerHTML = '<option value="">-- Pilih Group --</option>';
-
-                if (!departmentId) {
-                    return;
-                }
-
-                fetch(`/employee/cost-centers-by-department/${departmentId}`)
-                    .then(response => response.json())
-                    .then(data => {
-
-                        console.log("Cost Center:", data);
-
-                        data.forEach(item => {
-
-                            const option = document.createElement('option');
-
-                            option.value = item.id;
-                            option.textContent = item.name;
-
-                            if (selected && selected == item.id) {
-                                option.selected = true;
-                            }
-
-                            costCenter.appendChild(option);
-                        });
-
-                        if (selected) {
-                            loadPsGroups(selected, selectedPsGroup);
-                        }
-
-                    })
-                    .catch(error => console.error(error));
-            }
-
-
-            // ==========================
-            // Load PS Group
-            // ==========================
-
-            function loadPsGroups(costCenterId, selected = null) {
+            function loadPsGroups(costCenterId, selectedId = null) {
 
                 psGroup.innerHTML = '<option value="">-- Pilih Group --</option>';
 
@@ -385,40 +334,47 @@
                     return;
                 }
 
-                fetch(`/employee/ps-groups/${costCenterId}`)
-                    .then(response => response.json())
-                    .then(data => {
+                fetch('/employee/ps-groups/' + costCenterId)
+                    .then(function(response) {
 
-                        console.log("PS Group:", data);
+                        if (!response.ok) {
+                            throw new Error('HTTP Error ' + response.status);
+                        }
 
-                        data.forEach(item => {
+                        return response.json();
+
+                    })
+                    .then(function(data) {
+
+                        console.log('PS Group:', data);
+
+                        data.forEach(function(item) {
 
                             const option = document.createElement('option');
 
                             option.value = item.id;
                             option.textContent = item.name;
 
-                            if (selected && selected == item.id) {
+                            if (selectedId && String(selectedId) === String(item.id)) {
                                 option.selected = true;
                             }
 
                             psGroup.appendChild(option);
+
                         });
 
                     })
-                    .catch(error => console.error(error));
+                    .catch(function(error) {
+
+                        console.error('Gagal mengambil PS Group:', error);
+
+                    });
             }
 
 
-            // ==========================
-            // Event
-            // ==========================
-
-            department.addEventListener('change', function() {
-
-                loadCostCenters(this.value);
-
-            });
+            // ==========================================
+            // COST CENTER CHANGE
+            // ==========================================
 
             costCenter.addEventListener('change', function() {
 
@@ -427,15 +383,15 @@
             });
 
 
-            // ==========================
-            // Load value awal
-            // ==========================
+            // ==========================================
+            // LOAD PS GROUP SAAT EDIT
+            // ==========================================
 
-            if (selectedDepartment) {
+            if (selectedCostCenter) {
 
-                loadCostCenters(
-                    selectedDepartment,
-                    selectedCostCenter
+                loadPsGroups(
+                    selectedCostCenter,
+                    selectedPsGroup
                 );
 
             }

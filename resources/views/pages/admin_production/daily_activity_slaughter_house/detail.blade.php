@@ -157,6 +157,14 @@
                             </th>
 
                             <th class="text-right">
+                                Lama Packing
+                            </th>
+
+                            <th class="text-right">
+                                Productivity
+                            </th>
+
+                            <th class="text-right">
                                 Harga / Kg
                             </th>
 
@@ -206,6 +214,14 @@
                                 </td>
 
                                 <td class="text-right">
+                                    {{ number_format($detail->lama_packing, 2, ',', '.') }}
+                                </td>
+
+                                <td class="text-right">
+                                    {{ number_format($detail->productivity, 2, ',', '.') }}
+                                </td>
+
+                                <td class="text-right">
                                     Rp {{ number_format($detail->harga_per_kg, 2, ',', '.') }}
                                 </td>
 
@@ -249,7 +265,7 @@
 
                             <tr>
 
-                                <td colspan="10" class="text-center">
+                                <td colspan="12" class="text-center">
                                     Tidak ada data pada rentang tanggal ini
                                 </td>
 

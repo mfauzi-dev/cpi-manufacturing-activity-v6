@@ -36,24 +36,30 @@
 
                     <div class="row">
 
+                        {{-- TANGGAL --}}
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label>Tanggal</label>
+
                                 <input type="date" name="tanggal" class="form-control"
                                     value="{{ old('tanggal', date('Y-m-d')) }}">
                             </div>
                         </div>
 
+                        {{-- DEPARTMENT --}}
                         <div class="col-md-3">
                             <div class="form-group">
+
                                 <label>Department</label>
 
                                 <input type="text" class="form-control" value="{{ $department->name }}" readonly>
 
                                 <input type="hidden" id="department_id" value="{{ $department->id }}">
+
                             </div>
                         </div>
 
+                        {{-- COST CENTER --}}
                         <div class="col-md-3">
                             <div class="form-group">
 
@@ -70,7 +76,8 @@
                                         <option value="{{ $costCenter->id }}"
                                             {{ old('cost_center_id') == $costCenter->id ? 'selected' : '' }}>
 
-                                            {{ $costCenter->code }} - {{ $costCenter->name }}
+                                            {{ $costCenter->code }} -
+                                            {{ $costCenter->name }}
 
                                         </option>
                                     @endforeach
@@ -86,6 +93,7 @@
                             </div>
                         </div>
 
+                        {{-- GROUP --}}
                         <div class="col-md-3">
                             <div class="form-group">
 
@@ -109,6 +117,7 @@
                             </div>
                         </div>
 
+                        {{-- LINE --}}
                         <div class="col-md-3">
                             <div class="form-group">
 
@@ -125,7 +134,8 @@
                                         <option value="{{ $line->id }}"
                                             {{ old('line_id') == $line->id ? 'selected' : '' }}>
 
-                                            {{ $line->code ? $line->code . ' - ' : '' }}{{ $line->name }}
+                                            {{ $line->code ? $line->code . ' - ' : '' }}
+                                            {{ $line->name }}
 
                                         </option>
                                     @endforeach
@@ -141,6 +151,7 @@
                             </div>
                         </div>
 
+                        {{-- PRODUCT GROUP --}}
                         <div class="col-md-3">
                             <div class="form-group">
 
@@ -173,6 +184,7 @@
                             </div>
                         </div>
 
+                        {{-- EMPLOYEE --}}
                         <div class="col-md-3">
                             <div class="form-group">
 
@@ -206,6 +218,7 @@
             </div>
 
 
+            {{-- DETAIL --}}
             <div class="card">
 
                 <div class="card-header">
@@ -232,6 +245,14 @@
                                     Output KG
                                 </th>
 
+                                <th width="150">
+                                    Lama Packing
+                                </th>
+
+                                <th width="130">
+                                    Productivity
+                                </th>
+
                                 <th width="170">
                                     Harga / KG
                                 </th>
@@ -256,6 +277,7 @@
                                     1
                                 </td>
 
+                                {{-- PRODUCT --}}
                                 <td>
 
                                     <select name="details[0][product_id]" class="form-control select2 product">
@@ -268,6 +290,7 @@
 
                                 </td>
 
+                                {{-- OUTPUT --}}
                                 <td>
 
                                     <input type="number" step="0.01" min="0" name="details[0][output_kg]"
@@ -275,6 +298,24 @@
 
                                 </td>
 
+                                {{-- LAMA PACKING --}}
+                                <td>
+
+                                    <input type="number" step="0.01" min="0" name="details[0][lama_packing]"
+                                        class="form-control lama-packing">
+
+                                </td>
+
+                                {{-- PRODUCTIVITY --}}
+                                <td class="text-right align-middle">
+
+                                    <span class="productivity">
+                                        -
+                                    </span>
+
+                                </td>
+
+                                {{-- HARGA --}}
                                 <td class="text-right align-middle">
 
                                     <span class="harga-per-kg">
@@ -283,6 +324,7 @@
 
                                 </td>
 
+                                {{-- RUPIAH --}}
                                 <td class="text-right align-middle">
 
                                     <strong class="rupiah">
@@ -291,6 +333,7 @@
 
                                 </td>
 
+                                {{-- AKSI --}}
                                 <td class="text-center">
 
                                     <button type="button" class="btn btn-danger btn-sm removeRow">
@@ -350,9 +393,11 @@
         }
 
         #detailTable .select2-container .select2-selection__rendered {
+
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+
         }
     </style>
 @endpush
@@ -362,16 +407,15 @@
     <script>
         $(document).ready(function() {
 
+            /*
+            |--------------------------------------------------------------------------
+            | SELECT2
+            |--------------------------------------------------------------------------
+            */
+
             $('.select2').select2({
                 width: '100%'
             });
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | LOAD AWAL
-            |--------------------------------------------------------------------------
-            */
 
             let costCenterId = $('#cost_center').val();
 
@@ -381,13 +425,6 @@
                 loadProducts(costCenterId);
 
             }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | COST CENTER CHANGE
-            |--------------------------------------------------------------------------
-            */
 
             $('#cost_center').change(function() {
 
@@ -408,17 +445,10 @@
                 }
 
                 loadPsGroups(costCenterId);
-
                 loadProducts(costCenterId);
 
             });
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | LOAD PS GROUP
-            |--------------------------------------------------------------------------
-            */
 
             function loadPsGroups(costCenterId) {
 
@@ -444,27 +474,26 @@
                                 '';
 
                             html += `
+
                         <option value="${item.id}" ${selected}>
+
                             ${item.name}
+
                         </option>
+
                     `;
+
                         });
 
                         $('#ps_group').html(html);
 
                     }
+
                 );
 
             }
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | LOAD PRODUCTS
-            |--------------------------------------------------------------------------
-            | Berdasarkan Cost Center saja
-            |--------------------------------------------------------------------------
-            */
 
             function loadProducts(costCenterId) {
 
@@ -507,16 +536,12 @@
                         resetProductInfo();
 
                     }
+
                 );
 
             }
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | PRODUCT CHANGE
-            |--------------------------------------------------------------------------
-            */
 
             $(document).on(
                 'change',
@@ -544,11 +569,6 @@
             );
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | OUTPUT / LAMA PACKING CHANGE
-            |--------------------------------------------------------------------------
-            */
 
             $(document).on(
                 'keyup change',
@@ -563,12 +583,6 @@
             );
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | HITUNG RUPIAH + PRODUCTIVITY
-            |--------------------------------------------------------------------------
-            */
-
             function hitungRupiah(row) {
 
                 let kg =
@@ -576,9 +590,15 @@
                         row.find('.output-kg').val()
                     ) || 0;
 
+                let lamaPacking =
+                    parseFloat(
+                        row.find('.lama-packing').val()
+                    ) || 0;
+
                 let harga =
                     row.find('.product option:selected')
                     .data('price') || 0;
+
 
 
                 let total =
@@ -590,37 +610,59 @@
                         Number(total)
                         .toLocaleString('id-ID')
                     );
+
+
+                let productivityEl =
+                    row.find('.productivity');
+
+                if (lamaPacking > 0) {
+
+                    let productivity =
+                        kg / lamaPacking;
+
+                    productivityEl.text(
+
+                        productivity.toLocaleString(
+                            'id-ID', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            }
+                        )
+
+                    );
+
+                } else {
+
+                    productivityEl.text('-');
+
+                }
+
             }
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | RESET PRODUCT INFO
-            |--------------------------------------------------------------------------
-            */
 
             function resetProductInfo() {
 
-                $('#detailTable tbody tr').each(function() {
+                $('#detailTable tbody tr')
+                    .each(function() {
 
-                    $(this)
-                        .find('.harga-per-kg')
-                        .text('-');
+                        $(this)
+                            .find('.harga-per-kg')
+                            .text('-');
 
-                    $(this)
-                        .find('.rupiah')
-                        .text('-');
+                        $(this)
+                            .find('.rupiah')
+                            .text('-');
 
-                });
+                        $(this)
+                            .find('.productivity')
+                            .text('-');
+
+                    });
 
             }
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | ADD ROW
-            |--------------------------------------------------------------------------
-            */
 
             let rowIndex = 1;
 
@@ -628,21 +670,22 @@
 
                 let productOptions = '';
 
-                $('.product:first option').each(function() {
+                $('.product:first option')
+                    .each(function() {
 
-                    productOptions += `
+                        productOptions += `
 
-                <option
-                    value="${$(this).val()}"
-                    data-price="${$(this).data('price') ?? ''}">
+                    <option
+                        value="${$(this).val()}"
+                        data-price="${$(this).data('price') ?? ''}">
 
-                    ${$(this).text()}
+                        ${$(this).text()}
 
-                </option>
+                    </option>
 
-            `;
+                `;
 
-                });
+                    });
 
 
                 let html = `
@@ -672,6 +715,25 @@
                         min="0"
                         name="details[${rowIndex}][output_kg]"
                         class="form-control output-kg">
+
+                </td>
+
+                <td>
+
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        name="details[${rowIndex}][lama_packing]"
+                        class="form-control lama-packing">
+
+                </td>
+
+                <td class="text-right align-middle">
+
+                    <span class="productivity">
+                        -
+                    </span>
 
                 </td>
 
@@ -725,12 +787,6 @@
             });
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | REMOVE ROW
-            |--------------------------------------------------------------------------
-            */
-
             $(document).on(
                 'click',
                 '.removeRow',
@@ -758,12 +814,6 @@
             );
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | NUMBERING
-            |--------------------------------------------------------------------------
-            */
-
             function renumberRows() {
 
                 $('#detailTable tbody tr')
@@ -776,13 +826,6 @@
                     });
 
             }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | SUBMIT
-            |--------------------------------------------------------------------------
-            */
 
             $('#dailyActivityForm').on(
                 'submit',
@@ -815,22 +858,10 @@
                                 row.data('row-index');
 
 
-                            /*
-                            |--------------------------------------------------------------------------
-                            | Hapus hidden employee lama
-                            |--------------------------------------------------------------------------
-                            */
-
                             row.find(
                                 'input.hidden-employee'
                             ).remove();
 
-
-                            /*
-                            |--------------------------------------------------------------------------
-                            | Masukkan employee ke setiap detail
-                            |--------------------------------------------------------------------------
-                            */
 
                             employeeIds.forEach(
                                 function(empId) {

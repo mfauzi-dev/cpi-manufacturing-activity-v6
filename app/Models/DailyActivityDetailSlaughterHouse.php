@@ -13,12 +13,16 @@ class DailyActivityDetailSlaughterHouse extends Model
         'daily_activity_slaughter_house_id',
         'product_id',
         'total_kg',
+        'lama_packing',
+        'productivity',
         'harga_per_kg',
         'total_harga',
     ];
  
     protected $casts = [
-        'total_kg'     => 'decimal:2',
+        'total_kg'     => 'decimal:2',  
+        'lama_packing' => 'decimal:2',
+        'productivity' => 'decimal:2',
         'harga_per_kg' => 'decimal:2',
         'total_harga'  => 'decimal:2',
     ];

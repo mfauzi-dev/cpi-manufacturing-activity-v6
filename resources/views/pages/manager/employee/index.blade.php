@@ -60,6 +60,20 @@
                         </div>
 
                         <div class="col-md-3 mb-2">
+                            <select name="is_active" class="form-control">
+                                <option value="">Status Aktif</option>
+
+                                <option value="1" {{ request('is_active') === '1' ? 'selected' : '' }}>
+                                    Aktif
+                                </option>
+
+                                <option value="0" {{ request('is_active') === '0' ? 'selected' : '' }}>
+                                    Tidak Aktif
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3 mb-2">
                             <select name="cost_center_id" class="form-control">
                                 <option value="">Semua Cost Center</option>
 
@@ -85,7 +99,6 @@
                             </select>
                         </div>
 
-
                         <div class="col-md-3 mb-2">
                             <input type="text" name="search" class="form-control" placeholder="NIK / Nama"
                                 value="{{ request('search') }}">
@@ -94,7 +107,7 @@
                     </div>
 
                     <div class="mt-2">
-                        <button class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary">
                             Terapkan Filter
                         </button>
 
@@ -110,6 +123,18 @@
 
         {{-- TABLE --}}
         <div class="card">
+
+            <div class="card-header">
+                <div class="w-100 d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Data Karyawan</h4>
+
+                    <a href="{{ route('manager.employee.create') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Tambah Karyawan
+                    </a>
+                </div>
+            </div>
+
             <div class="card-body table-responsive">
 
                 <table class="table table-bordered table-hover">
@@ -119,10 +144,12 @@
                             <th>NIK</th>
                             <th>Nama</th>
                             <th>Status</th>
+                            <th>Status Aktif</th>
                             <th>Cost Center</th>
                             <th>PS Group</th>
                             <th>Position</th>
                             <th>Gender</th>
+                            <th width="150">Action</th>
                         </tr>
                     </thead>
 
@@ -130,8 +157,14 @@
 
                         @forelse ($employees as $employee)
                             <tr>
-                                <td>{{ $employee->nik ?? '-' }}</td>
-                                <td>{{ $employee->name }}</td>
+
+                                <td>
+                                    {{ $employee->nik ?? '-' }}
+                                </td>
+
+                                <td>
+                                    {{ $employee->name }}
+                                </td>
 
                                 <td>
                                     @if ($employee->employment_status == 'permanent')
@@ -145,18 +178,67 @@
                                     @endif
                                 </td>
 
+                                <td>
+                                    @if ($employee->is_active)
+                                        <span class="badge badge-success">
+                                            Aktif
+                                        </span>
+                                    @else
+                                        <span class="badge badge-danger">
+                                            Tidak Aktif
+                                        </span>
+                                    @endif
+                                </td>
 
-                                <td>{{ $employee->costCenter->name ?? '-' }}</td>
+                                <td>
+                                    {{ $employee->costCenter->name ?? '-' }}
+                                </td>
 
-                                <td>{{ $employee->psGroup->name ?? '-' }}</td>
+                                <td>
+                                    {{ $employee->psGroup->name ?? '-' }}
+                                </td>
 
-                                <td>{{ $employee->position->name ?? '-' }}</td>
+                                <td>
+                                    {{ $employee->position->name ?? '-' }}
+                                </td>
 
-                                <td>{{ $employee->gender ?? '-' }}</td>
+                                <td>
+                                    {{ $employee->gender ?? '-' }}
+                                </td>
+
+                                <td>
+
+                                    <a href="{{ route('manager.employee.detail', $employee->id) }}"
+                                        class="btn btn-info btn-sm" title="Detail">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+
+                                    <a href="{{ route('manager.employee.edit', $employee->id) }}"
+                                        class="btn btn-warning btn-sm" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+
+                                    <form action="{{ route('manager.employee.destroy', $employee->id) }}" method="POST"
+                                        class="d-inline"
+                                        onsubmit="return confirm('Yakin ingin menghapus data karyawan ini?')">
+
+                                        @csrf
+                                        @method('DELETE')
+
+                                        <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+
+                                    </form>
+
+                                </td>
+
                             </tr>
+
                         @empty
+
                             <tr>
-                                <td colspan="12" class="text-center text-muted">
+                                <td colspan="9" class="text-center text-muted">
                                     Tidak ada data
                                 </td>
                             </tr>

@@ -791,7 +791,8 @@ class AttendanceController extends Controller
                 }
             ])
             ->orderBy('name')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         return view('pages.general_manager.attendance.create', compact([
             'employees',
@@ -852,7 +853,8 @@ class AttendanceController extends Controller
                 }
             ])
             ->orderBy('name')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         return view(
             'pages.admin_production.attendance.create',
@@ -914,7 +916,8 @@ class AttendanceController extends Controller
                 }
             ])
             ->orderBy('name')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         return view(
             'pages.admin_production.attendance.create',
@@ -929,7 +932,7 @@ class AttendanceController extends Controller
     }
 
     public function bulkStore(Request $request)
-    {
+    {        
         $request->validate([
             'date' => ['required', 'date'],
             'employees' => ['required', 'array'],
@@ -986,6 +989,25 @@ class AttendanceController extends Controller
                     ? round(($ump / $hariKerjaStandar) * $workDays, 2)
                     : 0;
 
+                $jamsostek = round(
+                    $upahHarian * 0.0489,
+                    2
+                );
+
+                $bpjsKesehatan = round(
+                    $upahHarian * 0.04,
+                    2
+                );
+
+                $bpjsPensiun = round(
+                    $upahHarian * 0.02,
+                    2
+                );
+
+                $managemenFee = $workDays * 6800;
+
+                $grandTotalUpah = $upahHarian - $jamsostek - $bpjsKesehatan - $bpjsPensiun - $managemenFee;
+
                 PenggajianHarian::updateOrCreate(
                     [
                         'employee_id' => $employeeId,
@@ -997,7 +1019,12 @@ class AttendanceController extends Controller
                         'ump_used' => $ump,
                         'hari_kerja_standar_used' => $hariKerjaStandar,
                         'upah_harian' => $upahHarian,
-                        'net_salary' => $upahHarian,
+                        'jamsostek' => $jamsostek,
+                        'bpjs_kesehatan' => $bpjsKesehatan,
+                        'bpjs_pensiun' => $bpjsPensiun,
+                        'managemen_fee' => $managemenFee,
+                        'grand_total_upah' => $grandTotalUpah,
+                        'net_salary' => $grandTotalUpah,
                     ]
                 );
             }
@@ -1064,6 +1091,25 @@ class AttendanceController extends Controller
                     ? round(($ump / $hariKerjaStandar) * $workDays, 2)
                     : 0;
 
+                $jamsostek = round(
+                    $upahHarian * 0.0489,
+                    2
+                );
+
+                $bpjsKesehatan = round(
+                    $upahHarian * 0.04,
+                    2
+                );
+
+                $bpjsPensiun = round(
+                    $upahHarian * 0.02,
+                    2
+                );
+
+                $managemenFee = $workDays * 6800;
+
+                $grandTotalUpah = $upahHarian - $jamsostek - $bpjsKesehatan - $bpjsPensiun - $managemenFee;
+
                 PenggajianHarian::updateOrCreate(
                     [
                         'employee_id' => $employeeId,
@@ -1075,7 +1121,12 @@ class AttendanceController extends Controller
                         'ump_used' => $ump,
                         'hari_kerja_standar_used' => $hariKerjaStandar,
                         'upah_harian' => $upahHarian,
-                        'net_salary' => $upahHarian,
+                        'jamsostek' => $jamsostek,
+                        'bpjs_kesehatan' => $bpjsKesehatan,
+                        'bpjs_pensiun' => $bpjsPensiun,
+                        'managemen_fee' => $managemenFee,
+                        'grand_total_upah' => $grandTotalUpah,
+                        'net_salary' => $grandTotalUpah,
                     ]
                 );
             }
@@ -1142,6 +1193,25 @@ class AttendanceController extends Controller
                     ? round(($ump / $hariKerjaStandar) * $workDays, 2)
                     : 0;
 
+                
+                $jamsostek = round(
+                    $upahHarian * 0.0489,
+                    2
+                );
+
+                $bpjsKesehatan = round(
+                    $upahHarian * 0.04,
+                    2
+                );
+
+                $bpjsPensiun = round(
+                    $upahHarian * 0.02,
+                    2
+                );
+
+                $managemenFee = $workDays * 6800;
+
+                $grandTotalUpah = $upahHarian - $jamsostek - $bpjsKesehatan - $bpjsPensiun - $managemenFee;
                 PenggajianHarian::updateOrCreate(
                     [
                         'employee_id' => $employeeId,
@@ -1153,7 +1223,12 @@ class AttendanceController extends Controller
                         'ump_used' => $ump,
                         'hari_kerja_standar_used' => $hariKerjaStandar,
                         'upah_harian' => $upahHarian,
-                        'net_salary' => $upahHarian,
+                        'jamsostek' => $jamsostek,
+                        'bpjs_kesehatan' => $bpjsKesehatan,
+                        'bpjs_pensiun' => $bpjsPensiun,
+                        'managemen_fee' => $managemenFee,
+                        'grand_total_upah' => $grandTotalUpah,
+                        'net_salary' => $grandTotalUpah,
                     ]
                 );
             }

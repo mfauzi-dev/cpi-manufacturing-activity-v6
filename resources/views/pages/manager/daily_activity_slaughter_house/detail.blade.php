@@ -158,6 +158,14 @@
                             </th>
 
                             <th class="text-right">
+                                Lama Packing
+                            </th>
+
+                            <th class="text-right">
+                                Productivity
+                            </th>
+
+                            <th class="text-right">
                                 Harga / Kg
                             </th>
 
@@ -207,6 +215,14 @@
                                 </td>
 
                                 <td class="text-right">
+                                    {{ number_format($detail->lama_packing, 2, ',', '.') }}
+                                </td>
+
+                                <td class="text-right">
+                                    {{ number_format($detail->productivity, 2, ',', '.') }}
+                                </td>
+
+                                <td class="text-right">
                                     Rp
                                     {{ number_format($detail->harga_per_kg, 0, ',', '.') }}
                                 </td>
@@ -217,7 +233,7 @@
                                 </td>
 
                                 <td>
-                                    {{ $detail->user_name ?? '-' }}
+                                    {{ $detail->input_by ?? '-' }}
                                 </td>
 
                             </tr>
@@ -226,7 +242,7 @@
 
                             <tr>
 
-                                <td colspan="10" class="text-center">
+                                <td colspan="12" class="text-center">
                                     Tidak ada data pada rentang tanggal ini
                                 </td>
 
@@ -234,34 +250,6 @@
                         @endforelse
 
                     </tbody>
-
-                    @if ($details->count())
-                        <tfoot>
-
-                            <tr>
-
-                                <th colspan="6">
-                                    Total
-                                </th>
-
-                                <th class="text-right">
-                                    {{ number_format($details->sum('total_kg'), 2, ',', '.') }}
-                                </th>
-
-                                <th></th>
-
-                                <th class="text-right">
-                                    Rp
-                                    {{ number_format($details->sum('total_harga'), 0, ',', '.') }}
-                                </th>
-
-                                <th></th>
-
-                            </tr>
-
-                        </tfoot>
-                    @endif
-
                 </table>
 
 

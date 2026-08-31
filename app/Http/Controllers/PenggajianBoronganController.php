@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exports\PenggajianBoronganExport;
 use App\Models\Department;
+use App\Models\Outsourcing;
 use App\Models\PenggajianBorongan;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -18,26 +19,31 @@ class PenggajianBoronganController extends Controller
         $month = (int) $request->input('month', now()->month);
         $year = (int) $request->input('year', now()->year);
         $departmentId = $request->input('department_id');
+        $outsourcingId = $request->input('outsourcing_id');
 
         $departments = Department::orderBy('name')->get();
+        $outsourcings = Outsourcing::orderBy('name')->get();
 
         $query = PenggajianBorongan::with([
-            'employee.department'
+            'employee.department',
+            'employee.outsourcing',
         ])
             ->where('period_month', $month)
             ->where('period_year', $year)
-            ->whereHas('employee', function ($q) {
+            ->whereHas('employee', function ($q) use ($departmentId, $outsourcingId) {
                 $q->where('employee_status', 'borongan');
+
+                if ($departmentId) {
+                    $q->where('department_id', $departmentId);
+                }
+
+                if ($outsourcingId) {
+                    $q->where('outsourcing_id', $outsourcingId);
+                }
             });
 
-        if ($departmentId) {
-            $query->whereHas('employee', function ($q) use ($departmentId) {
-                $q->where('department_id', $departmentId);
-            });
-        }
-
-        $grandTotalKg = $query->sum('total_kg');
-        $grandTotalUpah = $query->sum('total_upah');
+        $grandTotalKg = (clone $query)->sum('total_kg');
+        $grandTotalUpah = (clone $query)->sum('total_upah');
 
         $payrolls = $query
             ->orderBy('employee_id')
@@ -53,6 +59,8 @@ class PenggajianBoronganController extends Controller
                 'payrolls',
                 'departments',
                 'departmentId',
+                'outsourcings',
+                'outsourcingId',
                 'month',
                 'year',
                 'grandTotalKg',
@@ -75,23 +83,33 @@ class PenggajianBoronganController extends Controller
             'Akun Anda belum terhubung ke department manapun.'
         );
 
+        $outsourcingId = $request->input('outsourcing_id');
+
         $query = PenggajianBorongan::with([
-            'employee.department'
+            'employee.department',
+            'employee.outsourcing',
         ])
             ->where('period_month', $month)
             ->where('period_year', $year)
-            ->whereHas('employee', function ($q) use ($departmentId) {
+            ->whereHas('employee', function ($q) use ($departmentId, $outsourcingId) {
+
                 $q->where('employee_status', 'borongan')
                     ->where('department_id', $departmentId);
+
+                if ($outsourcingId) {
+                    $q->where('outsourcing_id', $outsourcingId);
+                }
             })
             ->orderBy('employee_id');
 
-        $grandTotalKg = $query->sum('total_kg');
-        $grandTotalUpah = $query->sum('total_upah');
+        $grandTotalKg = (clone $query)->sum('total_kg');
+        $grandTotalUpah = (clone $query)->sum('total_upah');
 
         $payrolls = $query
             ->paginate(10)
             ->withQueryString();
+
+        $outsourcings = Outsourcing::orderBy('name')->get();
 
         $periodLabel = Carbon::create($year, $month, 1)
             ->translatedFormat('F Y');
@@ -104,7 +122,9 @@ class PenggajianBoronganController extends Controller
                 'year',
                 'grandTotalKg',
                 'grandTotalUpah',
-                'periodLabel'
+                'periodLabel',
+                'outsourcings',
+                'outsourcingId'
             )
         );
     }
@@ -113,6 +133,7 @@ class PenggajianBoronganController extends Controller
     {
         $month = (int) $request->input('month', now()->month);
         $year = (int) $request->input('year', now()->year);
+        $outsourcingId = $request->input('outsourcing_id');
 
         $departmentId = Auth::user()->department_id;
 
@@ -123,22 +144,29 @@ class PenggajianBoronganController extends Controller
         );
 
         $query = PenggajianBorongan::with([
-            'employee.department'
+            'employee.department',
+            'employee.outsourcing'
         ])
             ->where('period_month', $month)
             ->where('period_year', $year)
-            ->whereHas('employee', function ($q) use ($departmentId) {
+            ->whereHas('employee', function ($q) use ($departmentId, $outsourcingId) {
                 $q->where('employee_status', 'borongan')
                     ->where('department_id', $departmentId);
+
+                if ($outsourcingId) {
+                    $q->where('outsourcing_id', $outsourcingId);
+                }
             })
             ->orderBy('employee_id');
 
-        $grandTotalKg = $query->sum('total_kg');
-        $grandTotalUpah = $query->sum('total_upah');
+        $grandTotalKg = (clone $query)->sum('total_kg');
+        $grandTotalUpah = (clone $query)->sum('total_upah');
 
         $payrolls = $query
             ->paginate(10)
             ->withQueryString();
+
+        $outsourcings = Outsourcing::orderBy('name')->get();
 
         $periodLabel = Carbon::create($year, $month, 1)
             ->translatedFormat('F Y');
@@ -151,7 +179,9 @@ class PenggajianBoronganController extends Controller
                 'year',
                 'grandTotalKg',
                 'grandTotalUpah',
-                'periodLabel'
+                'periodLabel',
+                'outsourcings',
+                'outsourcingId'
             )
         );
     }
@@ -161,21 +191,25 @@ class PenggajianBoronganController extends Controller
         $month = (int) $request->input('month', now()->month);
         $year = (int) $request->input('year', now()->year);
         $departmentId = $request->input('department_id');
+        $outsourcingId = $request->input('outsourcing_id');
 
         $query = PenggajianBorongan::with([
-            'employee.department'
+            'employee.department',
+            'employee.outsourcing',
         ])
             ->where('period_month', $month)
             ->where('period_year', $year)
-            ->whereHas('employee', function ($q) {
+            ->whereHas('employee', function ($q) use ($departmentId, $outsourcingId) {
                 $q->where('employee_status', 'borongan');
-            });
 
-        if ($departmentId) {
-            $query->whereHas('employee', function ($q) use ($departmentId) {
-                $q->where('department_id', $departmentId);
+                if ($departmentId) {
+                    $q->where('department_id', $departmentId);
+                }
+
+                if ($outsourcingId) {
+                    $q->where('outsourcing_id', $outsourcingId);
+                }
             });
-        }
 
         $payrolls = $query
             ->orderBy('employee_id')
@@ -194,6 +228,13 @@ class PenggajianBoronganController extends Controller
             $departmentName = $department->name ?? '-';
         }
 
+        $outsourcingName = 'Semua Outsourcing';
+
+        if ($outsourcingId) {
+            $outsourcing = Outsourcing::find($outsourcingId);
+            $outsourcingName = $outsourcing->name ?? '-';
+        }
+
         $pdf = Pdf::loadView(
             'pages.general_manager.penggajian-borongan.pdf',
             compact(
@@ -203,7 +244,8 @@ class PenggajianBoronganController extends Controller
                 'grandTotalKg',
                 'grandTotalUpah',
                 'periodLabel',
-                'departmentName'
+                'departmentName',
+                'outsourcingName'
             )
         );
 
@@ -218,6 +260,7 @@ class PenggajianBoronganController extends Controller
     {
         $month = (int) $request->input('month', now()->month);
         $year = (int) $request->input('year', now()->year);
+        $outsourcingId = $request->input('outsourcing_id');
 
         $departmentId = Auth::user()->department_id;
 
@@ -227,17 +270,23 @@ class PenggajianBoronganController extends Controller
             'Akun Anda belum terhubung ke department manapun.'
         );
 
-        $payrolls = PenggajianBorongan::with([
-            'employee.department'
+        $query = PenggajianBorongan::with([
+            'employee.department',
+            'employee.outsourcing'
         ])
             ->where('period_month', $month)
             ->where('period_year', $year)
-            ->whereHas('employee', function ($q) use ($departmentId) {
+            ->whereHas('employee', function ($q) use ($departmentId, $outsourcingId) {
                 $q->where('employee_status', 'borongan')
                     ->where('department_id', $departmentId);
+
+                if ($outsourcingId) {
+                    $q->where('outsourcing_id', $outsourcingId);
+                }
             })
-            ->orderBy('employee_id')
-            ->get();
+            ->orderBy('employee_id');
+
+        $payrolls = $query->get();
 
         $grandTotalKg = $payrolls->sum('total_kg');
         $grandTotalUpah = $payrolls->sum('total_upah');
@@ -246,6 +295,13 @@ class PenggajianBoronganController extends Controller
             ->translatedFormat('F Y');
 
         $departmentName = Auth::user()->department->name ?? '-';
+
+        $outsourcingName = 'Semua Outsourcing';
+
+        if ($outsourcingId) {
+            $outsourcing = Outsourcing::find($outsourcingId);
+            $outsourcingName = $outsourcing->name ?? '-';
+        }
 
         $pdf = Pdf::loadView(
             'pages.manager.penggajian-borongan.pdf',
@@ -256,7 +312,8 @@ class PenggajianBoronganController extends Controller
                 'grandTotalKg',
                 'grandTotalUpah',
                 'periodLabel',
-                'departmentName'
+                'departmentName',
+                'outsourcingName'
             )
         );
 
@@ -271,6 +328,7 @@ class PenggajianBoronganController extends Controller
     {
         $month = (int) $request->input('month', now()->month);
         $year = (int) $request->input('year', now()->year);
+        $outsourcingId = $request->input('outsourcing_id');
 
         $departmentId = Auth::user()->department_id;
 
@@ -280,17 +338,23 @@ class PenggajianBoronganController extends Controller
             'Akun Anda belum terhubung ke department manapun.'
         );
 
-        $payrolls = PenggajianBorongan::with([
-            'employee.department'
+        $query = PenggajianBorongan::with([
+            'employee.department',
+            'employee.outsourcing'
         ])
             ->where('period_month', $month)
             ->where('period_year', $year)
-            ->whereHas('employee', function ($q) use ($departmentId) {
+            ->whereHas('employee', function ($q) use ($departmentId, $outsourcingId) {
                 $q->where('employee_status', 'borongan')
                     ->where('department_id', $departmentId);
+
+                if ($outsourcingId) {
+                    $q->where('outsourcing_id', $outsourcingId);
+                }
             })
-            ->orderBy('employee_id')
-            ->get();
+            ->orderBy('employee_id');
+
+        $payrolls = $query->get();
 
         $grandTotalKg = $payrolls->sum('total_kg');
         $grandTotalUpah = $payrolls->sum('total_upah');
@@ -299,6 +363,13 @@ class PenggajianBoronganController extends Controller
             ->translatedFormat('F Y');
 
         $departmentName = Auth::user()->department->name ?? '-';
+
+        $outsourcingName = 'Semua Outsourcing';
+
+        if ($outsourcingId) {
+            $outsourcing = Outsourcing::find($outsourcingId);
+            $outsourcingName = $outsourcing->name ?? '-';
+        }
 
         $pdf = Pdf::loadView(
             'pages.admin_production.penggajian-borongan.pdf',
@@ -309,7 +380,8 @@ class PenggajianBoronganController extends Controller
                 'grandTotalKg',
                 'grandTotalUpah',
                 'periodLabel',
-                'departmentName'
+                'departmentName',
+                'outsourcingName'
             )
         );
 
@@ -324,6 +396,7 @@ class PenggajianBoronganController extends Controller
     {
         $month = (int) $request->input('month', now()->month);
         $year = (int) $request->input('year', now()->year);
+        $outsourcingId = $request->input('outsourcing_id');
 
         $departmentId = Auth::user()->department_id;
 
@@ -340,7 +413,8 @@ class PenggajianBoronganController extends Controller
             new PenggajianBoronganExport(
                 $month,
                 $year,
-                $departmentId
+                $departmentId,
+                $outsourcingId
             ),
             'Penggajian-Borongan-' . $periodLabel . '.xlsx'
         );
@@ -350,6 +424,7 @@ class PenggajianBoronganController extends Controller
     {
         $month = (int) $request->input('month', now()->month);
         $year = (int) $request->input('year', now()->year);
+        $outsourcingId = $request->input('outsourcing_id');
 
         $departmentId = Auth::user()->department_id;
 
@@ -366,7 +441,8 @@ class PenggajianBoronganController extends Controller
             new PenggajianBoronganExport(
                 $month,
                 $year,
-                $departmentId
+                $departmentId,
+                $outsourcingId
             ),
             'Penggajian-Borongan-' . $periodLabel . '.xlsx'
         );
@@ -378,6 +454,7 @@ class PenggajianBoronganController extends Controller
         $year = (int) $request->input('year', now()->year);
 
         $departmentId = $request->input('department_id');
+        $outsourcingId = $request->input('outsourcing_id');
 
         $periodLabel = Carbon::create($year, $month, 1)
             ->translatedFormat('F-Y');
@@ -386,7 +463,8 @@ class PenggajianBoronganController extends Controller
             new PenggajianBoronganExport(
                 $month,
                 $year,
-                $departmentId ? (int) $departmentId : null
+                $departmentId ? (int) $departmentId : null,
+                $outsourcingId ? (int) $outsourcingId : null
             ),
             'Penggajian-Borongan-' . $periodLabel . '.xlsx'
         );

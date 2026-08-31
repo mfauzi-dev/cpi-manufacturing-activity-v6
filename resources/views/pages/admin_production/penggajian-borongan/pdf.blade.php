@@ -1,4 +1,3 @@
-blade
 <!DOCTYPE html>
 <html>
 
@@ -97,6 +96,12 @@ blade
                 <td width="15%"><strong>Department</strong></td>
                 <td>: {{ $departmentName }}</td>
             </tr>
+            @isset($outsourcingName)
+                <tr>
+                    <td width="15%"><strong>Outsourcing</strong></td>
+                    <td>: {{ $outsourcingName }}</td>
+                </tr>
+            @endisset
         </table>
     </div>
 

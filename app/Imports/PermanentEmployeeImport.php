@@ -2,19 +2,14 @@
 
 namespace App\Imports;
 
-use App\Models\Area;
 use App\Models\CostCenter;
 use App\Models\Department;
 use App\Models\Employee;
-use App\Models\Group;
-use App\Models\Outsourcing;
-use App\Models\Position;
 use App\Models\PsGroup;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 class PermanentEmployeeImport implements ToCollection, WithHeadingRow
 {
@@ -24,7 +19,7 @@ class PermanentEmployeeImport implements ToCollection, WithHeadingRow
     {
         $this->employmentStatus = $employmentStatus;
     }
-    
+
     public function headingRow(): int
     {
         return 3;
@@ -40,6 +35,7 @@ class PermanentEmployeeImport implements ToCollection, WithHeadingRow
             'nomor_karyawan',
             'nama',
             'department',
+            'status',
         ];
 
         $headers = array_keys($rows->first()->toArray());
@@ -52,15 +48,27 @@ class PermanentEmployeeImport implements ToCollection, WithHeadingRow
             }
         }
 
-         foreach ($rows as $row) {
+        foreach ($rows as $row) {
             $nik = trim($row['nomor_karyawan'] ?? '');
             $name = trim($row['nama'] ?? '');
             $costCenterName = trim($row['cost_center'] ?? '');
             $departmentName = trim($row['department'] ?? '');
             $psGroupName = trim($row['ps_group'] ?? '');
+            $gender = trim($row['gender'] ?? '');
+            $status = strtolower(trim($row['status'] ?? ''));
 
             if (empty($nik) && empty($name)) {
                 continue;
+            }
+
+            if ($status === 'active') {
+                $isActive = 1;
+            } elseif ($status === 'tidak active') {
+                $isActive = 0;
+            } else {
+                throw ValidationException::withMessages([
+                    'status' => "Baris \"{$name}\": Status \"{$status}\" tidak valid. Gunakan \"active\" atau \"tidak active\".",
+                ]);
             }
 
             $costCenter = null;
@@ -84,22 +92,15 @@ class PermanentEmployeeImport implements ToCollection, WithHeadingRow
             $data = [
                 'nik' => $nik ?: null,
                 'name' => $name,
-
                 'cost_center_id' => $costCenter?->id,
-
                 'ps_group_id' => $psGroup?->id,
-
                 'position_id' => null,
-
                 'department_id' => $department?->id,
-
                 'employment_status' => $this->employmentStatus,
-
                 'employee_status' => 'cpi',
-
                 'personel_area' => null,
-
-                'gender' => trim($row['gender'] ?? ''),
+                'gender' => $gender,
+                'is_active' => $isActive,
             ];
 
             if (!empty($nik)) {

@@ -6,7 +6,6 @@ use App\Models\CostCenter;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Outsourcing;
-use App\Models\Position;
 use App\Models\PsGroup;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -39,13 +38,14 @@ class OutsourcingEmployeeImport implements ToCollection, WithHeadingRow
             'nama',
             'department',
             'ps_group',
-            'cost_center'
+            'cost_center',
+            'status',
         ];
 
         $headers = array_keys($rows->first()->toArray());
 
         foreach ($requiredHeaders as $header) {
-            if (! in_array($header, $headers)) {
+            if (!in_array($header, $headers)) {
                 throw new \Exception(
                     "Format Excel tidak sesuai. Kolom '{$header}' tidak ditemukan."
                 );
@@ -58,11 +58,21 @@ class OutsourcingEmployeeImport implements ToCollection, WithHeadingRow
             $departmentName = trim($row['department'] ?? '');
             $gender = trim($row['gender'] ?? '');
             $nik = trim($row['nomor_karyawan'] ?? '');
-        
             $name = trim($row['nama'] ?? '');
+            $status = strtolower(trim($row['status'] ?? ''));
 
             if (empty($name)) {
                 continue;
+            }
+
+            if ($status === 'active') {
+                $isActive = 1;
+            } elseif ($status === 'tidak active') {
+                $isActive = 0;
+            } else {
+                throw ValidationException::withMessages([
+                    'status' => "Baris \"{$name}\": Status \"{$status}\" tidak valid. Gunakan \"active\" atau \"tidak active\".",
+                ]);
             }
 
             $department = Department::where('name', $departmentName)->first();
@@ -87,49 +97,34 @@ class OutsourcingEmployeeImport implements ToCollection, WithHeadingRow
                 ->where('cost_center_id', $costCenter->id)
                 ->first();
 
-
+            if (!$psGroup) {
+                throw ValidationException::withMessages([
+                    'ps_group' => "Baris \"{$name}\": PS Group \"{$psGroupName}\" tidak ditemukan di Cost Center \"{$costCenterName}\".",
+                ]);
+            }
 
             $data = [
                 'outsourcing_id' => $this->outsourcing->id,
-
                 'nik' => $nik ?: null,
-
                 'name' => $name,
-
                 'department_id' => $department->id,
-
                 'cost_center_id' => $costCenter->id,
-
                 'ps_group_id' => $psGroup->id,
-
                 'employment_status' => 'outsourcing',
-
                 'employee_status' => $this->employeeStatus,
-
                 'gender' => $gender,
+                'is_active' => $isActive,
             ];
 
-            if (!empty($nik)) {
-                Employee::updateOrCreate(
-                    [
-                        'name' => $name,
-                        'department_id' => $department->id,
-                        'outsourcing_id' => $this->outsourcing->id,
-                        'employee_status' => $this->employeeStatus,
-                    ],
-                    $data
-                );
-            } else {
-                Employee::updateOrCreate(
-                    [
-                        'name' => $name,
-                        'department_id' => $department->id,
-                        'outsourcing_id' => $this->outsourcing->id,
-                        'employee_status' => $this->employeeStatus,
-                    ],
-                    $data
-                );
-            }
+            Employee::updateOrCreate(
+                [
+                    'name' => $name,
+                    'department_id' => $department->id,
+                    'outsourcing_id' => $this->outsourcing->id,
+                    'employee_status' => $this->employeeStatus,
+                ],
+                $data
+            );
         }
     }
 }

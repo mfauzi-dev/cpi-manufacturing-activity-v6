@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="section-header">
-        <h1>Edit Karyawan</h1>
+        <h1>Tambah Karyawan</h1>
     </div>
 
     @if (session()->has('success'))
@@ -17,19 +17,19 @@
 
     <div class="card">
         <div class="card-header">
-            <h4>Edit Employee</h4>
+            <h4>Tambah Employee</h4>
         </div>
 
         <div class="card-body">
 
-            <form action="{{ route('admin.employee.update', $employee->id) }}" method="POST">
+            <form action="{{ route('manager.employee.store') }}" method="POST">
                 @csrf
-                @method('PUT')
 
                 {{-- NIK --}}
                 <div class="form-group">
                     <label>NIK</label>
-                    <input type="text" name="nik" value="{{ old('nik', $employee->nik) }}"
+
+                    <input type="text" name="nik" value="{{ old('nik') }}"
                         class="form-control @error('nik') is-invalid @enderror" placeholder="Masukkan NIK">
 
                     @error('nik')
@@ -37,10 +37,12 @@
                     @enderror
                 </div>
 
+
                 {{-- NAME --}}
                 <div class="form-group">
                     <label>Nama</label>
-                    <input type="text" name="name" value="{{ old('name', $employee->name) }}"
+
+                    <input type="text" name="name" value="{{ old('name') }}"
                         class="form-control @error('name') is-invalid @enderror" placeholder="Masukkan Nama">
 
                     @error('name')
@@ -48,19 +50,20 @@
                     @enderror
                 </div>
 
+
                 {{-- STATUS AKTIF --}}
                 <div class="form-group">
                     <label>Status Aktif</label>
 
                     <select name="is_active" class="form-control @error('is_active') is-invalid @enderror">
 
-                        <option value="">-- Pilih Status --</option>
+                        <option value="">-- Pilih Status Aktif --</option>
 
-                        <option value="1" {{ old('is_active', $employee->is_active) == 1 ? 'selected' : '' }}>
+                        <option value="1" {{ old('is_active', '1') == '1' ? 'selected' : '' }}>
                             Aktif
                         </option>
 
-                        <option value="0" {{ old('is_active', $employee->is_active) == 0 ? 'selected' : '' }}>
+                        <option value="0" {{ old('is_active') == '0' ? 'selected' : '' }}>
                             Tidak Aktif
                         </option>
 
@@ -71,6 +74,7 @@
                     @enderror
                 </div>
 
+
                 {{-- EMPLOYMENT STATUS --}}
                 <div class="form-group">
                     <label>Jenis Karyawan</label>
@@ -80,13 +84,11 @@
 
                         <option value="">-- Pilih Jenis Karyawan --</option>
 
-                        <option value="permanent"
-                            {{ old('employment_status', $employee->employment_status) == 'permanent' ? 'selected' : '' }}>
+                        <option value="permanent" {{ old('employment_status') == 'permanent' ? 'selected' : '' }}>
                             Permanent
                         </option>
 
-                        <option value="outsourcing"
-                            {{ old('employment_status', $employee->employment_status) == 'outsourcing' ? 'selected' : '' }}>
+                        <option value="outsourcing" {{ old('employment_status') == 'outsourcing' ? 'selected' : '' }}>
                             Outsourcing
                         </option>
 
@@ -97,8 +99,10 @@
                     @enderror
                 </div>
 
+
                 {{-- OUTSOURCING --}}
                 <div class="form-group d-none" id="outsourcing-wrapper">
+
                     <label>Outsourcing</label>
 
                     <select name="outsourcing_id" class="form-control @error('outsourcing_id') is-invalid @enderror">
@@ -106,8 +110,7 @@
                         <option value="">-- Pilih Outsourcing --</option>
 
                         @foreach ($outsourcingList as $os)
-                            <option value="{{ $os->id }}"
-                                {{ old('outsourcing_id', $employee->outsourcing_id) == $os->id ? 'selected' : '' }}>
+                            <option value="{{ $os->id }}" {{ old('outsourcing_id') == $os->id ? 'selected' : '' }}>
                                 {{ $os->name }}
                             </option>
                         @endforeach
@@ -117,28 +120,28 @@
                     @error('outsourcing_id')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
+
                 </div>
+
 
                 {{-- EMPLOYEE STATUS --}}
                 <div class="form-group d-none" id="employee-status-wrapper">
+
                     <label>Status Karyawan</label>
 
                     <select name="employee_status" class="form-control @error('employee_status') is-invalid @enderror">
 
                         <option value="">-- Pilih Status Karyawan --</option>
 
-                        <option value="cpi"
-                            {{ old('employee_status', $employee->employee_status) == 'cpi' ? 'selected' : '' }}>
+                        <option value="cpi" {{ old('employee_status') == 'cpi' ? 'selected' : '' }}>
                             CPI
                         </option>
 
-                        <option value="borongan"
-                            {{ old('employee_status', $employee->employee_status) == 'borongan' ? 'selected' : '' }}>
+                        <option value="borongan" {{ old('employee_status') == 'borongan' ? 'selected' : '' }}>
                             Borongan
                         </option>
 
-                        <option value="harian"
-                            {{ old('employee_status', $employee->employee_status) == 'harian' ? 'selected' : '' }}>
+                        <option value="harian" {{ old('employee_status') == 'harian' ? 'selected' : '' }}>
                             Harian
                         </option>
 
@@ -147,33 +150,30 @@
                     @error('employee_status')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
+
                 </div>
+
 
                 {{-- DEPARTMENT --}}
                 <div class="form-group">
+
                     <label>Department</label>
 
-                    <select name="department_id" id="department_id"
-                        class="form-control @error('department_id') is-invalid @enderror">
-
-                        <option value="">-- Pilih Department --</option>
-
-                        @foreach ($departmentList as $department)
-                            <option value="{{ $department->id }}"
-                                {{ old('department_id', $employee->department_id) == $department->id ? 'selected' : '' }}>
-                                {{ $department->name }}
-                            </option>
-                        @endforeach
-
-                    </select>
+                    <input type="text" class="form-control" value="{{ auth()->user()->department->name ?? '-' }}"
+                        readonly>
 
                     @error('department_id')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback d-block">
+                            {{ $message }}
+                        </div>
                     @enderror
+
                 </div>
+
 
                 {{-- COST CENTER --}}
                 <div class="form-group">
+
                     <label>Cost Center</label>
 
                     <select name="cost_center_id" id="cost_center_id"
@@ -181,21 +181,29 @@
 
                         <option value="">-- Pilih Cost Center --</option>
 
-                        @if ($employee->costCenter)
-                            <option value="{{ $employee->costCenter->id }}" selected>
-                                {{ $employee->costCenter->name }}
+                        @foreach ($costCenterList as $costCenter)
+                            <option value="{{ $costCenter->id }}"
+                                {{ old('cost_center_id') == $costCenter->id ? 'selected' : '' }}>
+
+                                {{ $costCenter->code }} - {{ $costCenter->name }}
+
                             </option>
-                        @endif
+                        @endforeach
 
                     </select>
 
                     @error('cost_center_id')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
                     @enderror
+
                 </div>
+
 
                 {{-- PS GROUP --}}
                 <div class="form-group">
+
                     <label>Group</label>
 
                     <select name="ps_group_id" id="ps_group_id"
@@ -203,21 +211,20 @@
 
                         <option value="">-- Pilih Group --</option>
 
-                        @if ($employee->psGroup)
-                            <option value="{{ $employee->psGroup->id }}" selected>
-                                {{ $employee->psGroup->name }}
-                            </option>
-                        @endif
-
                     </select>
 
                     @error('ps_group_id')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
                     @enderror
+
                 </div>
+
 
                 {{-- POSITION --}}
                 <div class="form-group">
+
                     <label>Posisi</label>
 
                     <select name="position_id" class="form-control @error('position_id') is-invalid @enderror">
@@ -226,58 +233,80 @@
 
                         @foreach ($positionList as $position)
                             <option value="{{ $position->id }}"
-                                {{ old('position_id', $employee->position_id) == $position->id ? 'selected' : '' }}>
+                                {{ old('position_id') == $position->id ? 'selected' : '' }}>
+
                                 {{ $position->name }}
+
                             </option>
                         @endforeach
 
                     </select>
 
                     @error('position_id')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
                     @enderror
+
                 </div>
+
 
                 {{-- GENDER --}}
                 <div class="form-group">
+
                     <label>Gender</label>
 
                     <select name="gender" class="form-control @error('gender') is-invalid @enderror">
 
                         <option value="">-- Pilih Gender --</option>
 
-                        <option value="L" {{ old('gender', $employee->gender) == 'L' ? 'selected' : '' }}>
+                        <option value="L" {{ old('gender') == 'L' ? 'selected' : '' }}>
                             Laki-laki
                         </option>
 
-                        <option value="P" {{ old('gender', $employee->gender) == 'P' ? 'selected' : '' }}>
+                        <option value="P" {{ old('gender') == 'P' ? 'selected' : '' }}>
                             Perempuan
                         </option>
 
                     </select>
 
                     @error('gender')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
                     @enderror
+
                 </div>
+
 
                 {{-- PERSONNEL AREA --}}
                 <div class="form-group">
+
                     <label>Personel Area</label>
 
-                    <input type="text" name="personel_area" value="{{ old('personel_area', $employee->personel_area) }}"
+                    <input type="text" name="personel_area" value="{{ old('personel_area') }}"
                         class="form-control @error('personel_area') is-invalid @enderror">
 
                     @error('personel_area')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
                     @enderror
+
                 </div>
+
 
                 {{-- BUTTON --}}
                 <div class="text-right">
+
+                    <a href="{{ route('manager.employee.index') }}" class="btn btn-secondary">
+                        Kembali
+                    </a>
+
                     <button type="submit" class="btn btn-primary">
-                        Update
+                        Simpan
                     </button>
+
                 </div>
 
             </form>
@@ -286,97 +315,44 @@
     </div>
 @endsection
 
+
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
 
-            // ==========================
-            // Employment Status
-            // ==========================
-
+            // ==========================================
+            // EMPLOYMENT STATUS
+            // ==========================================
             const employmentStatus = document.getElementById('employment_status');
             const outsourcingWrapper = document.getElementById('outsourcing-wrapper');
             const employeeStatusWrapper = document.getElementById('employee-status-wrapper');
 
             function toggleOutsourcingFields() {
-
                 if (employmentStatus.value === 'outsourcing') {
-
                     outsourcingWrapper.classList.remove('d-none');
                     employeeStatusWrapper.classList.remove('d-none');
-
                 } else {
-
                     outsourcingWrapper.classList.add('d-none');
                     employeeStatusWrapper.classList.add('d-none');
-
                 }
             }
 
             employmentStatus.addEventListener('change', toggleOutsourcingFields);
-
             toggleOutsourcingFields();
 
 
-            // ==========================
-            // Dropdown
-            // ==========================
-
-            const department = document.getElementById('department_id');
+            // ==========================================
+            // COST CENTER & PS GROUP
+            // ==========================================
             const costCenter = document.getElementById('cost_center_id');
             const psGroup = document.getElementById('ps_group_id');
 
-            const selectedDepartment = "{{ old('department_id', $employee->department_id) }}";
-            const selectedCostCenter = "{{ old('cost_center_id', $employee->cost_center_id) }}";
-            const selectedPsGroup = "{{ old('ps_group_id', $employee->ps_group_id) }}";
+            const selectedPsGroup = "{{ old('ps_group_id') }}";
 
 
-            // ==========================
-            // Load Cost Center
-            // ==========================
-
-            function loadCostCenters(departmentId, selected = null) {
-
-                costCenter.innerHTML = '<option value="">-- Pilih Cost Center --</option>';
-                psGroup.innerHTML = '<option value="">-- Pilih Group --</option>';
-
-                if (!departmentId) {
-                    return;
-                }
-
-                fetch(`/employee/cost-centers-by-department/${departmentId}`)
-                    .then(response => response.json())
-                    .then(data => {
-
-                        console.log("Cost Center:", data);
-
-                        data.forEach(item => {
-
-                            const option = document.createElement('option');
-
-                            option.value = item.id;
-                            option.textContent = item.name;
-
-                            if (selected && selected == item.id) {
-                                option.selected = true;
-                            }
-
-                            costCenter.appendChild(option);
-                        });
-
-                        if (selected) {
-                            loadPsGroups(selected, selectedPsGroup);
-                        }
-
-                    })
-                    .catch(error => console.error(error));
-            }
-
-
-            // ==========================
-            // Load PS Group
-            // ==========================
-
+            // ==========================================
+            // LOAD PS GROUP
+            // ==========================================
             function loadPsGroups(costCenterId, selected = null) {
 
                 psGroup.innerHTML = '<option value="">-- Pilih Group --</option>';
@@ -386,10 +362,19 @@
                 }
 
                 fetch(`/employee/ps-groups/${costCenterId}`)
-                    .then(response => response.json())
+                    .then(response => {
+
+                        if (!response.ok) {
+                            throw new Error(
+                                'HTTP error: ' + response.status
+                            );
+                        }
+
+                        return response.json();
+                    })
                     .then(data => {
 
-                        console.log("PS Group:", data);
+                        console.log('PS Group:', data);
 
                         data.forEach(item => {
 
@@ -404,22 +389,20 @@
 
                             psGroup.appendChild(option);
                         });
-
                     })
-                    .catch(error => console.error(error));
+                    .catch(error => {
+
+                        console.error(
+                            'Gagal mengambil PS Group:',
+                            error
+                        );
+                    });
             }
 
 
-            // ==========================
-            // Event
-            // ==========================
-
-            department.addEventListener('change', function() {
-
-                loadCostCenters(this.value);
-
-            });
-
+            // ==========================================
+            // COST CENTER CHANGE
+            // ==========================================
             costCenter.addEventListener('change', function() {
 
                 loadPsGroups(this.value);
@@ -427,15 +410,14 @@
             });
 
 
-            // ==========================
-            // Load value awal
-            // ==========================
+            // ==========================================
+            // LOAD OLD PS GROUP
+            // ==========================================
+            if (costCenter.value) {
 
-            if (selectedDepartment) {
-
-                loadCostCenters(
-                    selectedDepartment,
-                    selectedCostCenter
+                loadPsGroups(
+                    costCenter.value,
+                    selectedPsGroup
                 );
 
             }

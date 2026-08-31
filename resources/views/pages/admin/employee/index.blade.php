@@ -104,6 +104,20 @@
                             </div>
                         </div>
 
+                        <div class="col-md-3 mb-2">
+                            <div class="form-group">
+                                <label>Status Aktif</label>
+                                <select name="is_active" class="form-control">
+                                    <option value="">Semua Status</option>
+                                    <option value="1" {{ request('is_active') === '1' ? 'selected' : '' }}>
+                                        Aktif
+                                    </option>
+                                    <option value="0" {{ request('is_active') === '0' ? 'selected' : '' }}>
+                                        Tidak Aktif
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
 
                         <div class="col-md-3 mb-2">
                             <div class="form-group">
@@ -141,6 +155,7 @@
                             <th>NIK</th>
                             <th>Nama</th>
                             <th>Status</th>
+                            <th>Status Aktif</th>
                             <th>Cost Center</th>
                             <th>PS Group</th>
                             <th>Outsourcing</th>
@@ -169,6 +184,17 @@
                                     @endif
                                 </td>
 
+                                <td>
+                                    @if ($employee->is_active)
+                                        <span class="badge badge-success">
+                                            Aktif
+                                        </span>
+                                    @else
+                                        <span class="badge badge-danger">
+                                            Tidak Aktif
+                                        </span>
+                                    @endif
+                                </td>
 
                                 <td>{{ $employee->costCenter->name ?? '-' }}</td>
 

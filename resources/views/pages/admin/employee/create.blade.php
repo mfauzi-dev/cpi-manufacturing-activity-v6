@@ -5,6 +5,16 @@
         <h1>Tambah Karyawan</h1>
     </div>
 
+    @if (session()->has('success'))
+        <div class="alert alert-success alert-dismissible fade show">
+            {{ session('success') }}
+
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        </div>
+    @endif
+
     <div class="card">
         <div class="card-header">
             <h4>Tambah Employee</h4>
@@ -30,6 +40,18 @@
                     <input type="text" name="name" value="{{ old('name') }}"
                         class="form-control @error('name') is-invalid @enderror" placeholder="Masukkan Nama">
                     @error('name')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="form-group">
+                    <label>Status Aktif</label>
+                    <select name="is_active" class="form-control @error('is_active') is-invalid @enderror">
+                        <option value="">-- Pilih Status Aktif --</option>
+                        <option value="1" {{ old('is_active', '1') == '1' ? 'selected' : '' }}>Aktif</option>
+                        <option value="0" {{ old('is_active') == '0' ? 'selected' : '' }}>Tidak Aktif</option>
+                    </select>
+                    @error('is_active')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>

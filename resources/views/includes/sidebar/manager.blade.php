@@ -18,6 +18,29 @@
                 </a>
             </li>
 
+            <li class="menu-header">Manajemen Karyawan</li>
+
+            <li class="dropdown {{ Request::is('manager/employees*') ? 'active' : '' }}">
+                <a href="#" class="nav-link has-dropdown" data-toggle="dropdown">
+                    <i class="fas fa-users"></i>
+                    <span>Karyawan</span>
+                </a>
+
+                <ul class="dropdown-menu">
+                    <li class="{{ Request::routeIs('manager.employee.index') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('manager.employee.index') }}">
+                            Data Karyawan
+                        </a>
+                    </li>
+
+                    <li class="{{ Request::routeIs('manager.employee.create') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('manager.employee.create') }}">
+                            Tambah Karyawan
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
             <li class="menu-header">Operational</li>
             <li class="dropdown {{ Request::is('manager/attendances*') ? 'active' : '' }}">
                 <a href="#" class="nav-link has-dropdown" data-toggle="dropdown"><i

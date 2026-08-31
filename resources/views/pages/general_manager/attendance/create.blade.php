@@ -200,6 +200,10 @@
 
                         </table>
 
+                        <div class="card-footer text-right">
+                            {{ $employees->withQueryString()->links() }}
+                        </div>
+
                     </div>
 
                     @if ($employees->count())

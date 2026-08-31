@@ -126,6 +126,7 @@ class DailyActivitySlaughterHouseController extends Controller
             'details.*.employee_id.*' => ['exists:employees,id'],
             'details.*.product_id'    => ['required', 'exists:products,id'],
             'details.*.output_kg'      => ['required', 'numeric', 'min:0'],
+            'details.*.lama_packing' => ['required', 'numeric', 'min:0'],
         ]);
 
         DB::beginTransaction();
@@ -140,8 +141,10 @@ class DailyActivitySlaughterHouseController extends Controller
                 $product = Product::findOrFail($detail['product_id']);
 
                 $outputKg = (float) $detail['output_kg'];
+                $lamaPacking = (float) $detail['lama_packing'];
                 $hargaPerKg = (float) $product->harga_per_kg;
                 $totalHarga = $outputKg * $hargaPerKg;
+                $productivity = $lamaPacking > 0 ? $outputKg / $lamaPacking : 0;
 
                 foreach ($detail['employee_id'] as $employeeId) {
 
@@ -161,6 +164,8 @@ class DailyActivitySlaughterHouseController extends Controller
                         'total_kg'     => $outputKg,
                         'harga_per_kg' => $hargaPerKg,
                         'total_harga'  => $totalHarga,
+                        'lama_packing' => $lamaPacking,
+                        'productivity' => $productivity,
                     ]);
 
                     $payroll = PenggajianBorongan::firstOrCreate(
@@ -216,7 +221,7 @@ class DailyActivitySlaughterHouseController extends Controller
                         - $payroll->jamsostek
                         - $payroll->bpjs_kesehatan
                         - $payroll->bpjs_pensiun
-                        + $payroll->managemen_fee;
+                        - $payroll->managemen_fee;
 
                     $payroll->save();
                 }
@@ -331,7 +336,7 @@ class DailyActivitySlaughterHouseController extends Controller
             )
             ->orderBy('cost_centers.name')
             ->orderBy('product_groups.name')
-            ->paginate(10);
+            ->paginate(50);
  
         $grandTotalKg = 0;
         $grandTotalRupiah = 0;
@@ -651,11 +656,13 @@ class DailyActivitySlaughterHouseController extends Controller
                 'products.material_name',
                 'daily_activity_detail_slaughter_houses.total_kg',
                 'daily_activity_detail_slaughter_houses.harga_per_kg',
-                'daily_activity_detail_slaughter_houses.total_harga'
+                'daily_activity_detail_slaughter_houses.total_harga',
+                'daily_activity_detail_slaughter_houses.lama_packing',
+                'daily_activity_detail_slaughter_houses.productivity'
             )
             ->orderByDesc('daily_activity_slaughter_houses.tanggal')
             ->orderByDesc('daily_activity_detail_slaughter_houses.id')
-            ->paginate(100)->withQueryString();
+            ->paginate(50)->withQueryString();
  
         return view('pages.admin_production.daily_activity_slaughter_house.detail', compact(
             'costCenter',
@@ -695,10 +702,12 @@ class DailyActivitySlaughterHouseController extends Controller
                 'products.material_name',
                 'daily_activity_detail_slaughter_houses.total_kg',
                 'daily_activity_detail_slaughter_houses.harga_per_kg',
-                'daily_activity_detail_slaughter_houses.total_harga'
+                'daily_activity_detail_slaughter_houses.total_harga',
+                'daily_activity_detail_slaughter_houses.lama_packing',
+                'daily_activity_detail_slaughter_houses.productivity'
             )
             ->orderByDesc('daily_activity_slaughter_houses.tanggal')
-            ->paginate(100)->withQueryString();
+            ->paginate(50)->withQueryString();
  
         return view('pages.general_manager.daily_activity_slaughter_house.detail', compact(
             'costCenter',
@@ -741,10 +750,12 @@ class DailyActivitySlaughterHouseController extends Controller
                 'products.material_name',
                 'daily_activity_detail_slaughter_houses.total_kg',
                 'daily_activity_detail_slaughter_houses.harga_per_kg',
-                'daily_activity_detail_slaughter_houses.total_harga'
+                'daily_activity_detail_slaughter_houses.total_harga',
+                'daily_activity_detail_slaughter_houses.lama_packing',
+                'daily_activity_detail_slaughter_houses.productivity'
             )
             ->orderByDesc('daily_activity_slaughter_houses.tanggal')
-            ->paginate(100)->withQueryString();
+            ->paginate(50)->withQueryString();
  
         return view('pages.manager.daily_activity_slaughter_house.detail', compact(
             'costCenter',
@@ -812,6 +823,7 @@ class DailyActivitySlaughterHouseController extends Controller
         $request->validate([
             'product_id' => ['required', 'exists:products,id'],
             'total_kg'   => ['required', 'numeric', 'min:0'],
+            'lama_packing' => ['required', 'numeric', 'min:0'],
         ]);
  
         DB::beginTransaction();
@@ -822,14 +834,18 @@ class DailyActivitySlaughterHouseController extends Controller
             $product = Product::findOrFail($request->product_id);
  
             $outputKg   = (float) $request->total_kg;
+            $lamaPacking = (float) $request->lama_packing;
             $hargaPerKg = (float) $product->harga_per_kg;
             $totalHarga = $outputKg * $hargaPerKg;
+            $productivity = $lamaPacking > 0 ? $outputKg / $lamaPacking : 0;
  
             $detail->update([
                 'product_id'   => $product->id,
                 'total_kg'     => $outputKg,
                 'harga_per_kg' => $hargaPerKg,
                 'total_harga'  => $totalHarga,
+                'lama_packing' => $lamaPacking,
+                'productivity' => $productivity,
             ]);
  
             $costCenterId = $detail->dailyActivitySlaughterHouse->cost_center_id;
