@@ -93,23 +93,26 @@ class OutsourcingEmployeeImport implements ToCollection, WithHeadingRow
                 ]);
             }
 
-            $psGroup = PsGroup::where('name', $psGroupName)
-                ->where('cost_center_id', $costCenter->id)
-                ->first();
+            $psGroup = null;
 
-            if (!$psGroup) {
-                throw ValidationException::withMessages([
-                    'ps_group' => "Baris \"{$name}\": PS Group \"{$psGroupName}\" tidak ditemukan di Cost Center \"{$costCenterName}\".",
-                ]);
+            if (!empty($psGroupName)) {
+                $psGroup = PsGroup::where('name', $psGroupName)
+                    ->where('cost_center_id', $costCenter->id)
+                    ->first();
+
+                if (!$psGroup) {
+                    throw ValidationException::withMessages([
+                        'ps_group' => "Baris \"{$name}\": PS Group \"{$psGroupName}\" tidak ditemukan di Cost Center \"{$costCenterName}\".",
+                    ]);
+                }
             }
-
             $data = [
                 'outsourcing_id' => $this->outsourcing->id,
                 'nik' => $nik ?: null,
                 'name' => $name,
                 'department_id' => $department->id,
                 'cost_center_id' => $costCenter->id,
-                'ps_group_id' => $psGroup->id,
+                'ps_group_id' => $psGroup?->id,
                 'employment_status' => 'outsourcing',
                 'employee_status' => $this->employeeStatus,
                 'gender' => $gender,
