@@ -169,194 +169,208 @@
             </div>
         </div>
 
-        {{-- TABLE --}}
-        <div class="card">
-            <div class="card-body table-responsive">
-                <div class="mb-2">
-                    <a href="{{ route('general-manager.attendance.summary.export-excel', request()->query()) }}"
-                        class="btn btn-success">
-                        <i class="fas fa-file-excel"></i>
-                        Excel
-                    </a>
-
-                    <a href="{{ route('general-manager.attendance.summary.export-pdf', request()->query()) }}"
-                        class="btn btn-danger" target="_blank">
-                        <i class="fas fa-file-pdf"></i>
-                        PDF
-                    </a>
+        <div class="row mb-2">
+            <div class="col-md-3">
+                <div class="card card-primary">
+                    <div class="card-body">
+                        <div class="text-muted">
+                            Total Karyawan
+                        </div>
+                        <h3 class="mb-0">
+                            {{ $totalEmployee }} Orang
+                        </h3>
+                    </div>
                 </div>
-
-                <table class="table table-bordered table-striped">
-
-                    <thead>
-                        <tr>
-                            <th>NIK</th>
-                            <th>Nama</th>
-                            <th>Department</th>
-                            <th>OS</th>
-                            <th>Group</th>
-                            <th class="text-center">Hadir</th>
-                            <th class="text-center">Izin</th>
-                            <th class="text-center">Sakit</th>
-                            <th class="text-center">Cuti</th>
-                            <th class="text-center">Alpa</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-
-                        @forelse ($employees as $employee)
-                            <tr>
-
-                                <td>{{ $employee->nik }}</td>
-
-                                <td>{{ $employee->name }}</td>
-
-                                <td>{{ $employee->department->name ?? '-' }}</td>
-
-                                <td>{{ $employee->outsourcing->name ?? '-' }}</td>
-
-                                <td>{{ $employee->psGroup->name ?? '-' }}</td>
-
-                                <td class="text-center">
-                                    {{ $employee->total_hadir }}
-                                </td>
-
-                                <td class="text-center">
-                                    {{ $employee->total_izin }}
-                                </td>
-
-                                <td class="text-center">
-                                    {{ $employee->total_sakit }}
-                                </td>
-
-                                <td class="text-center">
-                                    {{ $employee->total_cuti }}
-                                </td>
-
-                                <td class="text-center">
-                                    {{ $employee->total_alfa }}
-                                </td>
-
-                                <td class="text-right">
-                                    <a href="{{ route('general-manager.attendance.summary.detail', array_merge(request()->query(), ['employee' => $employee->id])) }}"
-                                        class="btn btn-sm btn-info">
-                                        Detail
-                                    </a>
-                                </td>
-
-                            </tr>
-
-                        @empty
-
-                            <tr>
-                                <td colspan="11" class="text-center">
-                                    Tidak ada data employee
-                                </td>
-                            </tr>
-                        @endforelse
-
-                    </tbody>
-
-                </table>
-
             </div>
 
-            <div class="card-footer text-right">
-                {{ $employees->withQueryString()->links() }}
+            {{-- TABLE --}}
+            <div class="card">
+                <div class="card-body table-responsive">
+                    <div class="mb-2">
+                        <a href="{{ route('general-manager.attendance.summary.export-excel', request()->query()) }}"
+                            class="btn btn-success">
+                            <i class="fas fa-file-excel"></i>
+                            Excel
+                        </a>
+
+                        <a href="{{ route('general-manager.attendance.summary.export-pdf', request()->query()) }}"
+                            class="btn btn-danger" target="_blank">
+                            <i class="fas fa-file-pdf"></i>
+                            PDF
+                        </a>
+                    </div>
+
+                    <table class="table table-bordered table-striped">
+
+                        <thead>
+                            <tr>
+                                <th>NIK</th>
+                                <th>Nama</th>
+                                <th>Department</th>
+                                <th>OS</th>
+                                <th>Group</th>
+                                <th class="text-center">Hadir</th>
+                                <th class="text-center">Izin</th>
+                                <th class="text-center">Sakit</th>
+                                <th class="text-center">Cuti</th>
+                                <th class="text-center">Alpa</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            @forelse ($employees as $employee)
+                                <tr>
+
+                                    <td>{{ $employee->nik }}</td>
+
+                                    <td>{{ $employee->name }}</td>
+
+                                    <td>{{ $employee->department->name ?? '-' }}</td>
+
+                                    <td>{{ $employee->outsourcing->name ?? '-' }}</td>
+
+                                    <td>{{ $employee->psGroup->name ?? '-' }}</td>
+
+                                    <td class="text-center">
+                                        {{ $employee->total_hadir }}
+                                    </td>
+
+                                    <td class="text-center">
+                                        {{ $employee->total_izin }}
+                                    </td>
+
+                                    <td class="text-center">
+                                        {{ $employee->total_sakit }}
+                                    </td>
+
+                                    <td class="text-center">
+                                        {{ $employee->total_cuti }}
+                                    </td>
+
+                                    <td class="text-center">
+                                        {{ $employee->total_alfa }}
+                                    </td>
+
+                                    <td class="text-right">
+                                        <a href="{{ route('general-manager.attendance.summary.detail', array_merge(request()->query(), ['employee' => $employee->id])) }}"
+                                            class="btn btn-sm btn-info">
+                                            Detail
+                                        </a>
+                                    </td>
+
+                                </tr>
+
+                            @empty
+
+                                <tr>
+                                    <td colspan="11" class="text-center">
+                                        Tidak ada data employee
+                                    </td>
+                                </tr>
+                            @endforelse
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+                <div class="card-footer text-right">
+                    {{ $employees->withQueryString()->links() }}
+                </div>
+
             </div>
 
         </div>
+    @endsection
 
-    </div>
-@endsection
-
-@push('scripts')
-    <script>
-        $(function() {
-
-            loadCostCenters();
-
-            $('#department_id').change(function() {
+    @push('scripts')
+        <script>
+            $(function() {
 
                 loadCostCenters();
 
+                $('#department_id').change(function() {
+
+                    loadCostCenters();
+
+                });
+
+                $('#cost_center_id').change(function() {
+
+                    loadPsGroups();
+
+                });
+
             });
 
-            $('#cost_center_id').change(function() {
+            function loadCostCenters() {
 
-                loadPsGroups();
+                let departmentId = $('#department_id').val();
 
-            });
+                if (departmentId == '') {
 
-        });
+                    $('#cost_center_id').html('<option value="">Semua Cost Center</option>');
+                    $('#ps_group_id').html('<option value="">Semua Group</option>');
+                    return;
 
-        function loadCostCenters() {
+                }
 
-            let departmentId = $('#department_id').val();
+                $.get('/attendance/cost-centers/' + departmentId, function(res) {
 
-            if (departmentId == '') {
+                    let html = '<option value="">Semua Cost Center</option>';
 
-                $('#cost_center_id').html('<option value="">Semua Cost Center</option>');
-                $('#ps_group_id').html('<option value="">Semua Group</option>');
-                return;
+                    $.each(res, function(i, item) {
 
-            }
-
-            $.get('/attendance/cost-centers/' + departmentId, function(res) {
-
-                let html = '<option value="">Semua Cost Center</option>';
-
-                $.each(res, function(i, item) {
-
-                    html += `
+                        html += `
                 <option value="${item.id}"
                     ${item.id == "{{ request('cost_center_id') }}" ? 'selected' : ''}>
                     ${item.name}
                 </option>
             `;
 
+                    });
+
+                    $('#cost_center_id').html(html);
+
+                    loadPsGroups();
+
                 });
-
-                $('#cost_center_id').html(html);
-
-                loadPsGroups();
-
-            });
-
-        }
-
-        function loadPsGroups() {
-
-            let costCenterId = $('#cost_center_id').val();
-
-            if (costCenterId == '') {
-
-                $('#ps_group_id').html('<option value="">Semua Group</option>');
-                return;
 
             }
 
-            $.get('/attendance/ps-groups/' + costCenterId, function(res) {
+            function loadPsGroups() {
 
-                let html = '<option value="">Semua Group</option>';
+                let costCenterId = $('#cost_center_id').val();
 
-                $.each(res, function(i, item) {
+                if (costCenterId == '') {
 
-                    html += `
+                    $('#ps_group_id').html('<option value="">Semua Group</option>');
+                    return;
+
+                }
+
+                $.get('/attendance/ps-groups/' + costCenterId, function(res) {
+
+                    let html = '<option value="">Semua Group</option>';
+
+                    $.each(res, function(i, item) {
+
+                        html += `
                 <option value="${item.id}"
                     ${item.id == "{{ request('ps_group_id') }}" ? 'selected' : ''}>
                     ${item.name}
                 </option>
             `;
 
+                    });
+
+                    $('#ps_group_id').html(html);
+
                 });
 
-                $('#ps_group_id').html(html);
-
-            });
-
-        }
-    </script>
-@endpush
+            }
+        </script>
+    @endpush

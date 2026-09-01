@@ -117,7 +117,7 @@ blade
                 <th>JAMSOSTEK<br>(4.89%)</th>
                 <th>BPJS KESEHATAN<br>(4%)</th>
                 <th>BPJS PENSIUN<br>(2%)</th>
-                <th>MANAGEMEN FEE<br>(6800 × per Hari Kerja)</th>
+                <th>MANAGEMEN FEE<br>(175000/25)</th>
                 <th>GRAND TOTAL<br>UPAH DITERIMA</th>
             </tr>
         </thead>

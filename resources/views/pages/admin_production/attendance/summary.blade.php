@@ -158,6 +158,21 @@
             </div>
         </div>
 
+        <div class="row mb-2">
+            <div class="col-md-3">
+                <div class="card card-primary">
+                    <div class="card-body">
+                        <div class="text-muted">
+                            Total Karyawan
+                        </div>
+                        <h3 class="mb-0">
+                            {{ $totalEmployee }} Orang
+                        </h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- TABLE --}}
         <div class="card">
             <div class="card-body table-responsive">

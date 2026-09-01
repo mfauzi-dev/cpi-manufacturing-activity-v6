@@ -115,17 +115,16 @@ class DailyActivitySlaughterHouseController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'tanggal'          => ['required', 'date'],
-            'cost_center_id'   => ['required', 'exists:cost_centers,id'],
-            'ps_group_id'      => ['required', 'exists:ps_groups,id'],
+            'tanggal' => ['required', 'date'],
+            'cost_center_id' => ['required', 'exists:cost_centers,id'],
+            'ps_group_id' => ['required', 'exists:ps_groups,id'],
             'product_group_id' => ['required', 'exists:product_groups,id'],
-            'line_id'          => ['required', 'exists:lines,id'],
-
-            'details'                 => ['required', 'array', 'min:1'],
-            'details.*.employee_id'   => ['required', 'array', 'min:1'],
+            'line_id' => ['required', 'exists:lines,id'],
+            'details' => ['required', 'array', 'min:1'],
+            'details.*.employee_id' => ['required', 'array', 'min:1'],
             'details.*.employee_id.*' => ['exists:employees,id'],
-            'details.*.product_id'    => ['required', 'exists:products,id'],
-            'details.*.output_kg'      => ['required', 'numeric', 'min:0'],
+            'details.*.product_id' => ['required', 'exists:products,id'],
+            'details.*.output_kg' => ['required', 'numeric', 'min:0'],
             'details.*.lama_packing' => ['required', 'numeric', 'min:0'],
         ]);
 
@@ -137,59 +136,91 @@ class DailyActivitySlaughterHouseController extends Controller
             $userId = auth()->user()->id;
 
             foreach ($request->details as $detail) {
-
                 $product = Product::findOrFail($detail['product_id']);
 
                 $outputKg = (float) $detail['output_kg'];
                 $lamaPacking = (float) $detail['lama_packing'];
                 $hargaPerKg = (float) $product->harga_per_kg;
+
                 $totalHarga = $outputKg * $hargaPerKg;
-                $productivity = $lamaPacking > 0 ? $outputKg / $lamaPacking : 0;
+
+                $productivity = $lamaPacking > 0
+                    ? $outputKg / $lamaPacking
+                    : 0;
 
                 foreach ($detail['employee_id'] as $employeeId) {
 
-                    $dailyActivitySlaughterHouse = DailyActivitySlaughterHouse::firstOrCreate([
-                        'employee_id'      => $employeeId,
-                        'tanggal'          => $request->tanggal,
-                        'cost_center_id'   => $request->cost_center_id,
-                        'ps_group_id'      => $request->ps_group_id,
-                        'product_group_id' => $request->product_group_id,
-                        'line_id'          => $request->line_id,
-                        'department_id'    => $departmentId,
-                        'input_by'         => $userId,
-                    ]);
+                    $dailyActivitySlaughterHouse = DailyActivitySlaughterHouse::firstOrCreate(
+                        [
+                            'employee_id' => $employeeId,
+                            'tanggal' => $tanggal->format('Y-m-d'),
+                            'cost_center_id' => $request->cost_center_id,
+                            'ps_group_id' => $request->ps_group_id,
+                            'product_group_id' => $request->product_group_id,
+                            'line_id' => $request->line_id,
+                        ],
+                        [
+                            'department_id' => $departmentId,
+                            'input_by' => $userId,
+                        ]
+                    );
 
                     $dailyActivitySlaughterHouse->details()->create([
-                        'product_id'   => $product->id,
-                        'total_kg'     => $outputKg,
+                        'product_id' => $product->id,
+                        'total_kg' => $outputKg,
                         'harga_per_kg' => $hargaPerKg,
-                        'total_harga'  => $totalHarga,
+                        'total_harga' => $totalHarga,
                         'lama_packing' => $lamaPacking,
                         'productivity' => $productivity,
                     ]);
 
                     $payroll = PenggajianBorongan::firstOrCreate(
                         [
-                            'employee_id'  => $employeeId,
+                            'employee_id' => $employeeId,
                             'period_month' => $tanggal->month,
-                            'period_year'  => $tanggal->year,
+                            'period_year' => $tanggal->year,
                         ],
                         [
-                            'total_kg'         => 0,
+                            'total_kg' => 0,
                             'total_hari_kerja' => 0,
-                            'total_upah'       => 0,
-                            'jamsostek'        => 0,
-                            'bpjs_kesehatan'   => 0,
-                            'bpjs_pensiun'     => 0,
-                            'managemen_fee'    => 0,
+                            'total_upah' => 0,
+                            'jamsostek' => 0,
+                            'bpjs_kesehatan' => 0,
+                            'bpjs_pensiun' => 0,
+                            'managemen_fee' => 0,
                             'grand_total_upah' => 0,
                         ]
                     );
 
-                    $payroll->total_kg += $outputKg;
-                    $payroll->total_upah += $totalHarga;
+                    $monthlyDetails = DailyActivityDetailSlaughterHouse::query()
+                        ->join(
+                            'daily_activity_slaughter_houses',
+                            'daily_activity_slaughter_houses.id',
+                            '=',
+                            'daily_activity_detail_slaughter_houses.daily_activity_slaughter_house_id'
+                        )
+                        ->where(
+                            'daily_activity_slaughter_houses.employee_id',
+                            $employeeId
+                        )
+                        ->whereMonth(
+                            'daily_activity_slaughter_houses.tanggal',
+                            $tanggal->month
+                        )
+                        ->whereYear(
+                            'daily_activity_slaughter_houses.tanggal',
+                            $tanggal->year
+                        )
+                        ->select(
+                            'daily_activity_detail_slaughter_houses.total_kg',
+                            'daily_activity_detail_slaughter_houses.total_harga'
+                        )
+                        ->get();
 
-                    $payroll->total_hari_kerja = DailyActivitySlaughterHouse::where(
+                    $totalKg = $monthlyDetails->sum('total_kg');
+                    $totalUpah = $monthlyDetails->sum('total_harga');
+
+                    $totalHariKerja = DailyActivitySlaughterHouse::where(
                         'employee_id',
                         $employeeId
                     )
@@ -198,32 +229,30 @@ class DailyActivitySlaughterHouseController extends Controller
                         ->distinct()
                         ->count('tanggal');
 
-                    $payroll->jamsostek = round(
-                        $payroll->total_upah * 0.0489,
-                        2
-                    );
+                    $jamsostek = round($totalUpah * 0.0489, 2);
+                    $bpjsKesehatan = round($totalUpah * 0.04, 2);
+                    $bpjsPensiun = round($totalUpah * 0.02, 2);
 
-                    $payroll->bpjs_kesehatan = round(
-                        $payroll->total_upah * 0.04,
-                        2
-                    );
+                    $managemenFeePerDay = 175000 / 25;
+                    $managemenFee = $totalHariKerja * $managemenFeePerDay;
 
-                    $payroll->bpjs_pensiun = round(
-                        $payroll->total_upah * 0.02,
-                        2
-                    );
+                    $grandTotalUpah =
+                        $totalUpah
+                        + $jamsostek
+                        + $bpjsKesehatan
+                        + $bpjsPensiun
+                        + $managemenFee;
 
-                    $payroll->managemen_fee =
-                        $payroll->total_hari_kerja * 6800;
-
-                    $payroll->grand_total_upah =
-                        $payroll->total_upah
-                        - $payroll->jamsostek
-                        - $payroll->bpjs_kesehatan
-                        - $payroll->bpjs_pensiun
-                        - $payroll->managemen_fee;
-
-                    $payroll->save();
+                    $payroll->update([
+                        'total_kg' => $totalKg,
+                        'total_hari_kerja' => $totalHariKerja,
+                        'total_upah' => $totalUpah,
+                        'jamsostek' => $jamsostek,
+                        'bpjs_kesehatan' => $bpjsKesehatan,
+                        'bpjs_pensiun' => $bpjsPensiun,
+                        'managemen_fee' => $managemenFee,
+                        'grand_total_upah' => $grandTotalUpah,
+                    ]);
                 }
             }
 
@@ -237,6 +266,7 @@ class DailyActivitySlaughterHouseController extends Controller
                 );
 
         } catch (\Throwable $e) {
+
             DB::rollBack();
 
             return redirect()
@@ -769,32 +799,134 @@ class DailyActivitySlaughterHouseController extends Controller
     public function destroy($id)
     {
         DB::beginTransaction();
- 
+
         try {
-            $detail = DailyActivityDetailSlaughterHouse::findOrFail($id);
-            $dailyActivityId = $detail->daily_activity_slaughter_house_id;
- 
+            $detail = DailyActivityDetailSlaughterHouse::with(
+                'dailyActivitySlaughterHouse'
+            )->findOrFail($id);
+
+            $dailyActivitySlaughterHouse = $detail->dailyActivitySlaughterHouse;
+
+            $employeeId = $dailyActivitySlaughterHouse->employee_id;
+            $tanggal = Carbon::parse($dailyActivitySlaughterHouse->tanggal);
+
+            $costCenterId = $dailyActivitySlaughterHouse->cost_center_id;
+            $psGroupId = $dailyActivitySlaughterHouse->ps_group_id;
+            $lineId = $dailyActivitySlaughterHouse->line_id;
+            $dateFrom = $tanggal->format('Y-m-d');
+
             $detail->delete();
- 
-            // kalau daily_activity_slaughter_house sudah tidak punya detail lagi, hapus juga headernya
-            $remaining = DailyActivityDetailSlaughterHouse::where('daily_activity_slaughter_house_id', $dailyActivityId)->count();
- 
+
+            $remaining = DailyActivityDetailSlaughterHouse::where(
+                'daily_activity_slaughter_house_id',
+                $dailyActivitySlaughterHouse->id
+            )->count();
+
             if ($remaining === 0) {
-                DailyActivitySlaughterHouse::destroy($dailyActivityId);
+                $dailyActivitySlaughterHouse->delete();
             }
- 
+
+            $monthlyDetails = DailyActivityDetailSlaughterHouse::query()
+                ->join(
+                    'daily_activity_slaughter_houses',
+                    'daily_activity_slaughter_houses.id',
+                    '=',
+                    'daily_activity_detail_slaughter_houses.daily_activity_slaughter_house_id'
+                )
+                ->where(
+                    'daily_activity_slaughter_houses.employee_id',
+                    $employeeId
+                )
+                ->whereMonth(
+                    'daily_activity_slaughter_houses.tanggal',
+                    $tanggal->month
+                )
+                ->whereYear(
+                    'daily_activity_slaughter_houses.tanggal',
+                    $tanggal->year
+                )
+                ->select(
+                    'daily_activity_detail_slaughter_houses.total_kg',
+                    'daily_activity_detail_slaughter_houses.total_harga'
+                )
+                ->get();
+
+            $totalKg = $monthlyDetails->sum('total_kg');
+            $totalUpah = $monthlyDetails->sum('total_harga');
+
+            $totalHariKerja = DailyActivitySlaughterHouse::where(
+                'employee_id',
+                $employeeId
+            )
+                ->whereMonth('tanggal', $tanggal->month)
+                ->whereYear('tanggal', $tanggal->year)
+                ->distinct()
+                ->count('tanggal');
+
+            $payroll = PenggajianBorongan::where(
+                'employee_id',
+                $employeeId
+            )
+                ->where('period_month', $tanggal->month)
+                ->where('period_year', $tanggal->year)
+                ->first();
+
+            if ($payroll) {
+
+                $jamsostek = round($totalUpah * 0.0489, 2);
+                $bpjsKesehatan = round($totalUpah * 0.04, 2);
+                $bpjsPensiun = round($totalUpah * 0.02, 2);
+
+                $managemenFeePerDay = 175000 / 25;
+                $managemenFee = $totalHariKerja * $managemenFeePerDay;
+
+                $grandTotalUpah =
+                    $totalUpah
+                    - $jamsostek
+                    - $bpjsKesehatan
+                    - $bpjsPensiun
+                    - $managemenFee;
+
+                $payroll->update([
+                    'total_kg' => $totalKg,
+                    'total_hari_kerja' => $totalHariKerja,
+                    'total_upah' => $totalUpah,
+                    'jamsostek' => $jamsostek,
+                    'bpjs_kesehatan' => $bpjsKesehatan,
+                    'bpjs_pensiun' => $bpjsPensiun,
+                    'managemen_fee' => $managemenFee,
+                    'grand_total_upah' => $grandTotalUpah,
+                ]);
+            }
+
             DB::commit();
- 
+
             return redirect()
-                ->back()
-                ->with('success', 'Data berhasil dihapus.');
- 
+                ->route(
+                    'admin-production.daily-activity-slaughter-house.detail',
+                    [
+                        'costCenter' => $costCenterId,
+                        'psGroup' => $psGroupId,
+                        'lineId' => $lineId,
+                        'date_from' => $dateFrom,
+                        'date_to' => $dateFrom,
+                    ]
+                )
+                ->with(
+                    'success',
+                    'Data berhasil dihapus dan penggajian borongan berhasil diperbarui.'
+                );
+
         } catch (\Throwable $e) {
+
             DB::rollBack();
- 
+
             return redirect()
                 ->back()
-                ->with('error', 'Gagal menghapus data: ' . $e->getMessage());
+                ->with(
+                    'error',
+                    'Gagal menghapus data: ' . $e->getMessage()
+                );
         }
     }
  
@@ -822,55 +954,145 @@ class DailyActivitySlaughterHouseController extends Controller
     {
         $request->validate([
             'product_id' => ['required', 'exists:products,id'],
-            'total_kg'   => ['required', 'numeric', 'min:0'],
+            'total_kg' => ['required', 'numeric', 'min:0'],
             'lama_packing' => ['required', 'numeric', 'min:0'],
         ]);
- 
+
         DB::beginTransaction();
- 
+
         try {
-            $detail = DailyActivityDetailSlaughterHouse::with('product', 'dailyActivitySlaughterHouse')->findOrFail($id);
- 
+            $detail = DailyActivityDetailSlaughterHouse::with(
+                'dailyActivitySlaughterHouse'
+            )->findOrFail($id);
+
+            $dailyActivitySlaughterHouse = $detail->dailyActivitySlaughterHouse;
+
+            $employeeId = $dailyActivitySlaughterHouse->employee_id;
+            $tanggal = Carbon::parse($dailyActivitySlaughterHouse->tanggal);
+
             $product = Product::findOrFail($request->product_id);
- 
-            $outputKg   = (float) $request->total_kg;
+
+            $outputKg = (float) $request->total_kg;
             $lamaPacking = (float) $request->lama_packing;
             $hargaPerKg = (float) $product->harga_per_kg;
+
             $totalHarga = $outputKg * $hargaPerKg;
-            $productivity = $lamaPacking > 0 ? $outputKg / $lamaPacking : 0;
- 
+
+            $productivity = $lamaPacking > 0
+                ? $outputKg / $lamaPacking
+                : 0;
+
             $detail->update([
-                'product_id'   => $product->id,
-                'total_kg'     => $outputKg,
+                'product_id' => $product->id,
+                'total_kg' => $outputKg,
                 'harga_per_kg' => $hargaPerKg,
-                'total_harga'  => $totalHarga,
+                'total_harga' => $totalHarga,
                 'lama_packing' => $lamaPacking,
                 'productivity' => $productivity,
             ]);
- 
-            $costCenterId = $detail->dailyActivitySlaughterHouse->cost_center_id;
-            $psGroupId    = $detail->dailyActivitySlaughterHouse->ps_group_id;
-            $lineId       = $detail->dailyActivitySlaughterHouse->line_id;
-            $dateForm     = $detail->dailyActivitySlaughterHouse->tanggal->format('Y-m-d');
- 
+
+            $monthlyDetails = DailyActivityDetailSlaughterHouse::query()
+                ->join(
+                    'daily_activity_slaughter_houses',
+                    'daily_activity_slaughter_houses.id',
+                    '=',
+                    'daily_activity_detail_slaughter_houses.daily_activity_slaughter_house_id'
+                )
+                ->where(
+                    'daily_activity_slaughter_houses.employee_id',
+                    $employeeId
+                )
+                ->whereMonth(
+                    'daily_activity_slaughter_houses.tanggal',
+                    $tanggal->month
+                )
+                ->whereYear(
+                    'daily_activity_slaughter_houses.tanggal',
+                    $tanggal->year
+                )
+                ->select(
+                    'daily_activity_detail_slaughter_houses.total_kg',
+                    'daily_activity_detail_slaughter_houses.total_harga'
+                )
+                ->get();
+
+            $totalKg = $monthlyDetails->sum('total_kg');
+            $totalUpah = $monthlyDetails->sum('total_harga');
+
+            $totalHariKerja = DailyActivitySlaughterHouse::where(
+                'employee_id',
+                $employeeId
+            )
+                ->whereMonth('tanggal', $tanggal->month)
+                ->whereYear('tanggal', $tanggal->year)
+                ->distinct()
+                ->count('tanggal');
+
+            $jamsostek = round($totalUpah * 0.0489, 2);
+            $bpjsKesehatan = round($totalUpah * 0.04, 2);
+            $bpjsPensiun = round($totalUpah * 0.02, 2);
+
+            $managemenFeePerDay = 175000 / 25;
+            $managemenFee = $totalHariKerja * $managemenFeePerDay;
+
+            $grandTotalUpah =
+                $totalUpah
+                + $jamsostek
+                + $bpjsKesehatan
+                + $bpjsPensiun
+                + $managemenFee;
+
+            PenggajianBorongan::updateOrCreate(
+                [
+                    'employee_id' => $employeeId,
+                    'period_month' => $tanggal->month,
+                    'period_year' => $tanggal->year,
+                ],
+                [
+                    'total_kg' => $totalKg,
+                    'total_hari_kerja' => $totalHariKerja,
+                    'total_upah' => $totalUpah,
+                    'jamsostek' => $jamsostek,
+                    'bpjs_kesehatan' => $bpjsKesehatan,
+                    'bpjs_pensiun' => $bpjsPensiun,
+                    'managemen_fee' => $managemenFee,
+                    'grand_total_upah' => $grandTotalUpah,
+                ]
+            );
+
+            $costCenterId = $dailyActivitySlaughterHouse->cost_center_id;
+            $psGroupId = $dailyActivitySlaughterHouse->ps_group_id;
+            $lineId = $dailyActivitySlaughterHouse->line_id;
+            $dateFrom = $tanggal->format('Y-m-d');
+
             DB::commit();
- 
+
             return redirect()
-                ->route('admin-production.daily-activity-slaughter-house.detail', [
-                    'costCenter' => $costCenterId,
-                    'psGroup'    => $psGroupId,
-                    'date_from'  => $dateForm,
-                    'date_to'    => $dateForm,
-                    'lineId'     => $lineId,
-                ])
-                ->with('success', 'Data berhasil diupdate.');
- 
+                ->route(
+                    'admin-production.daily-activity-slaughter-house.detail',
+                    [
+                        'costCenter' => $costCenterId,
+                        'psGroup' => $psGroupId,
+                        'lineId' => $lineId,
+                        'date_from' => $dateFrom,
+                        'date_to' => $dateFrom,
+                    ]
+                )
+                ->with(
+                    'success',
+                    'Data berhasil diupdate dan penggajian borongan berhasil diperbarui.'
+                );
+
         } catch (\Throwable $e) {
+
             DB::rollBack();
- 
+
             return redirect()
                 ->back()
-                ->with('error', 'Gagal mengupdate data: ' . $e->getMessage());
+                ->with(
+                    'error',
+                    'Gagal mengupdate data: ' . $e->getMessage()
+                );
         }
     }
 

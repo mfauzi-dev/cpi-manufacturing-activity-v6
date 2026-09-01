@@ -253,7 +253,7 @@
                             <th class="text-center">
                                 Managemen Fee
                                 <br>
-                                (6800 × per Hari Kerja)
+                                (175000/25)
                             </th>
 
                             <th class="text-center">

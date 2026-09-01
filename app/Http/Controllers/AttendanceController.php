@@ -382,6 +382,8 @@ class AttendanceController extends Controller
                     ->whereMonth('date', $monthNum);
             },
         ]);
+
+        $totalEmployee = (clone $query)->count();
  
         $employees = $query
             ->leftJoin('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
@@ -401,7 +403,8 @@ class AttendanceController extends Controller
                 'outsourcings',
                 'costCenters',
                 'monthNum',
-                'year'
+                'year',
+                'totalEmployee'
             )
         );
     }
@@ -527,6 +530,8 @@ class AttendanceController extends Controller
                     ->whereMonth('date', $monthNum);
             },
         ]);
+
+        $totalEmployee = (clone $query)->count();
  
         $employees = $query
             ->leftJoin('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
@@ -547,7 +552,8 @@ class AttendanceController extends Controller
                 'departments',
                 'outsourcings',
                 'monthNum',
-                'year'
+                'year',
+                'totalEmployee'
             )
         );
     }
@@ -631,6 +637,8 @@ class AttendanceController extends Controller
             },
         ]);
 
+        $totalEmployee = (clone $query)->count();
+
         $employees = $query
             ->leftJoin('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
             ->addSelect('employees.*')
@@ -649,7 +657,8 @@ class AttendanceController extends Controller
                 'managerDepartment',
                 'outsourcings',
                 'monthNum',
-                'year'
+                'year',
+                'totalEmployee'
             )
         );
     }

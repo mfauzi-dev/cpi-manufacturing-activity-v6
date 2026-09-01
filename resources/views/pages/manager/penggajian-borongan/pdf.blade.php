@@ -146,7 +146,7 @@
                 <th width="10%">
                     Managemen Fee
                     <br>
-                    (6800 × Hari Kerja)
+                    (175000/25)
                 </th>
 
                 <th width="11%">

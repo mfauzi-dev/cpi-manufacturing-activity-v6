@@ -111,7 +111,7 @@
             <tr>
                 <th width="4%">NO</th>
                 <th>NO. KTP</th>
-                <th>NIK AML</th>
+                <th>NIK</th>
                 <th>NAMA</th>
                 <th>HASIL PROSES (Kg)</th>
                 <th>TOTAL HARI</th>
@@ -119,7 +119,7 @@
                 <th>JAMSOSTEK (4.89%)</th>
                 <th>BPJS KESEHATAN (4%)</th>
                 <th>BPJS PENSIUN (2%)</th>
-                <th>MANAGEMEN FEE<br>(6800 × per Hari Kerja)</th>
+                <th>MANAGEMEN FEE<br>(175000/25)</th>
                 <th>GRAND TOTAL UPAH DITERIMA</th>
             </tr>
         </thead>

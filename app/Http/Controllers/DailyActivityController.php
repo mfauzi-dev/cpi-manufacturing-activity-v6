@@ -213,15 +213,18 @@ class DailyActivityController extends Controller
                         2
                     );
 
-                    $payroll->managemen_fee =
-                        $payroll->total_hari_kerja * 6800;
+                    $managemenFeePercent = 175000 / 25;
+
+                    $managemenFee = $payroll->total_hari_kerja * $managemenFeePercent;
+
+                    $payroll->managemen_fee = $managemenFee;
 
                     $payroll->grand_total_upah =
                         $payroll->total_upah
-                        - $payroll->jamsostek
-                        - $payroll->bpjs_kesehatan
-                        - $payroll->bpjs_pensiun
-                        - $payroll->managemen_fee;
+                        + $payroll->jamsostek
+                        + $payroll->bpjs_kesehatan
+                        + $payroll->bpjs_pensiun
+                        + $payroll->managemen_fee;
 
                     $payroll->save();
                 }
@@ -769,16 +772,93 @@ class DailyActivityController extends Controller
         DB::beginTransaction();
 
         try {
-            $detail = DailyActivityDetail::findOrFail($id);
-            $dailyActivityId = $detail->daily_activity_id;
+            $detail = DailyActivityDetail::with('dailyActivity')->findOrFail($id);
+
+            $dailyActivity = $detail->dailyActivity;
+
+            $employeeId = $dailyActivity->employee_id;
+            $tanggal = Carbon::parse($dailyActivity->tanggal);
+
+            $periodMonth = $tanggal->month;
+            $periodYear = $tanggal->year;
 
             $detail->delete();
 
-            // kalau daily_activity sudah tidak punya detail lagi, hapus juga headernya
-            $remaining = DailyActivityDetail::where('daily_activity_id', $dailyActivityId)->count();
+            $remaining = DailyActivityDetail::where(
+                'daily_activity_id',
+                $dailyActivity->id
+            )->count();
 
             if ($remaining === 0) {
-                DailyActivity::destroy($dailyActivityId);
+                $dailyActivity->delete();
+            }
+
+            $activities = DailyActivity::with('details')
+                ->where('employee_id', $employeeId)
+                ->whereMonth('tanggal', $periodMonth)
+                ->whereYear('tanggal', $periodYear)
+                ->get();
+
+            if ($activities->isEmpty()) {
+
+                PenggajianBorongan::where('employee_id', $employeeId)
+                    ->where('period_month', $periodMonth)
+                    ->where('period_year', $periodYear)
+                    ->delete();
+
+            } else {
+
+                $totalKg = 0;
+                $totalUpah = 0;
+
+                $totalHariKerja = $activities
+                    ->pluck('tanggal')
+                    ->unique()
+                    ->count();
+
+                foreach ($activities as $activity) {
+                    foreach ($activity->details as $activityDetail) {
+
+                        $totalKg += (float) $activityDetail->total_kg;
+
+                        $totalUpah += (float) $activityDetail->total_harga;
+                    }
+                }
+
+                // Hitung ulang potongan
+                $jamsostek = round($totalUpah * 0.0489, 2);
+
+                $bpjsKesehatan = round($totalUpah * 0.04, 2);
+
+                $bpjsPensiun = round($totalUpah * 0.02, 2);
+
+                $managemenFee = $totalHariKerja * 6800;
+
+                $grandTotalUpah =
+                    $totalUpah
+                    + $jamsostek
+                    + $bpjsKesehatan
+                    + $bpjsPensiun
+                    + $managemenFee;
+
+                // Update Penggajian Borongan
+                PenggajianBorongan::updateOrCreate(
+                    [
+                        'employee_id' => $employeeId,
+                        'period_month' => $periodMonth,
+                        'period_year' => $periodYear,
+                    ],
+                    [
+                        'total_kg' => $totalKg,
+                        'total_hari_kerja' => $totalHariKerja,
+                        'total_upah' => $totalUpah,
+                        'jamsostek' => $jamsostek,
+                        'bpjs_kesehatan' => $bpjsKesehatan,
+                        'bpjs_pensiun' => $bpjsPensiun,
+                        'managemen_fee' => $managemenFee,
+                        'grand_total_upah' => $grandTotalUpah,
+                    ]
+                );
             }
 
             DB::commit();
@@ -793,7 +873,10 @@ class DailyActivityController extends Controller
 
             return redirect()
                 ->back()
-                ->with('error', 'Gagal menghapus data: ' . $e->getMessage());
+                ->with(
+                    'error',
+                    'Gagal menghapus data: ' . $e->getMessage()
+                );
         }
     }
 
@@ -815,47 +898,119 @@ class DailyActivityController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'product_id'    => ['required', 'exists:products,id'],
-            'output_kg'     => ['required', 'numeric', 'min:0'],
-            'lama_packing'  => ['required', 'numeric', 'min:0'],
+            'product_id' => ['required', 'exists:products,id'],
+            'output_kg' => ['required', 'numeric', 'min:0'],
+            'lama_packing' => ['required', 'numeric', 'min:0'],
         ]);
 
         DB::beginTransaction();
 
         try {
-            $detail = DailyActivityDetail::with('product', 'dailyActivity')->findOrFail($id);
+            $detail = DailyActivityDetail::with('product', 'dailyActivity.employee')
+                ->findOrFail($id);
+
+            $dailyActivity = $detail->dailyActivity;
+
+            $employeeId = $dailyActivity->employee_id;
+            $tanggal = Carbon::parse($dailyActivity->tanggal);
 
             $product = Product::findOrFail($request->product_id);
 
-            $outputKg     = (float) $request->output_kg;
-            $lamaPacking  = (float) $request->lama_packing;
-            $hargaPerKg   = (float) $product->harga_per_kg;
-            $totalHarga   = $outputKg * $hargaPerKg;
-            $productivity = $lamaPacking > 0 ? $outputKg / $lamaPacking : 0;
+            $outputKg = (float) $request->output_kg;
+            $lamaPacking = (float) $request->lama_packing;
+            $hargaPerKg = (float) $product->harga_per_kg;
 
+            $totalHarga = $outputKg * $hargaPerKg;
+
+            $productivity = $lamaPacking > 0
+                ? $outputKg / $lamaPacking
+                : 0;
+
+            // Update Daily Activity Detail
             $detail->update([
-                'product_id'   => $product->id,
-                'total_kg'     => $outputKg,
+                'product_id' => $product->id,
+                'total_kg' => $outputKg,
                 'lama_packing' => $lamaPacking,
                 'harga_per_kg' => $hargaPerKg,
-                'total_harga'  => $totalHarga,
+                'total_harga' => $totalHarga,
                 'productivity' => $productivity,
             ]);
 
-            $costCenterId = $detail->dailyActivity->cost_center_id;
-            $psGroupId    = $detail->dailyActivity->ps_group_id;
-            $dateForm     = $detail->dailyActivity->tanggal->format('Y-m-d');
+            $monthlyDetails = DailyActivityDetail::query()
+                ->join(
+                    'daily_activities',
+                    'daily_activities.id',
+                    '=',
+                    'daily_activity_details.daily_activity_id'
+                )
+                ->where('daily_activities.employee_id', $employeeId)
+                ->whereMonth('daily_activities.tanggal', $tanggal->month)
+                ->whereYear('daily_activities.tanggal', $tanggal->year)
+                ->select(
+                    'daily_activity_details.total_kg',
+                    'daily_activity_details.total_harga'
+                )
+                ->get();
+
+            $totalKg = $monthlyDetails->sum('total_kg');
+            $totalUpah = $monthlyDetails->sum('total_harga');
+
+            $totalHariKerja = DailyActivity::where('employee_id', $employeeId)
+                ->whereMonth('tanggal', $tanggal->month)
+                ->whereYear('tanggal', $tanggal->year)
+                ->distinct()
+                ->count('tanggal');
+
+            $jamsostek = round($totalUpah * 0.0489, 2);
+
+            $bpjsKesehatan = round($totalUpah * 0.04, 2);
+
+            $bpjsPensiun = round($totalUpah * 0.02, 2);
+
+            $managemenFeePerDay = 175000 / 25;
+
+            $managemenFee = $totalHariKerja * $managemenFeePerDay;
+
+            $grandTotalUpah =
+                $totalUpah
+                + $jamsostek
+                + $bpjsKesehatan
+                + $bpjsPensiun
+                + $managemenFee;
+
+            // Ambil payroll bulan tersebut
+            PenggajianBorongan::updateOrCreate(
+                [
+                    'employee_id' => $employeeId,
+                    'period_month' => $tanggal->month,
+                    'period_year' => $tanggal->year,
+                ],
+                [
+                    'total_kg' => $totalKg,
+                    'total_hari_kerja' => $totalHariKerja,
+                    'total_upah' => $totalUpah,
+                    'jamsostek' => $jamsostek,
+                    'bpjs_kesehatan' => $bpjsKesehatan,
+                    'bpjs_pensiun' => $bpjsPensiun,
+                    'managemen_fee' => $managemenFee,
+                    'grand_total_upah' => $grandTotalUpah,
+                ]
+            );
+
+            $costCenterId = $dailyActivity->cost_center_id;
+            $psGroupId = $dailyActivity->ps_group_id;
+            $dateFrom = $tanggal->format('Y-m-d');
 
             DB::commit();
 
             return redirect()
                 ->route('admin-production.daily-activity.detail', [
                     'costCenter' => $costCenterId,
-                    'psGroup'    => $psGroupId,
-                    'date_from'  => $dateForm,
-                    'date_to'    => $dateForm,
+                    'psGroup' => $psGroupId,
+                    'date_from' => $dateFrom,
+                    'date_to' => $dateFrom,
                 ])
-                ->with('success', 'Data berhasil diupdate.');
+                ->with('success', 'Data berhasil diupdate dan penggajian borongan berhasil diperbarui.');
 
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -864,7 +1019,7 @@ class DailyActivityController extends Controller
                 ->back()
                 ->with('error', 'Gagal mengupdate data: ' . $e->getMessage());
         }
-    }
+    }            
 
     public function exportExcelGeneralManager(Request $request, $costCenterId, $psGroupId)
     {
