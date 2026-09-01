@@ -1006,7 +1006,7 @@ class AttendanceController extends Controller
 
                 $managemenFee = $workDays * 6800;
 
-                $grandTotalUpah = $upahHarian - $jamsostek - $bpjsKesehatan - $bpjsPensiun - $managemenFee;
+                $grandTotalUpah = $upahHarian + $jamsostek + $bpjsKesehatan + $bpjsPensiun + $managemenFee;
 
                 PenggajianHarian::updateOrCreate(
                     [
@@ -1108,7 +1108,7 @@ class AttendanceController extends Controller
 
                 $managemenFee = $workDays * 6800;
 
-                $grandTotalUpah = $upahHarian - $jamsostek - $bpjsKesehatan - $bpjsPensiun - $managemenFee;
+                $grandTotalUpah = $upahHarian + $jamsostek + $bpjsKesehatan + $bpjsPensiun + $managemenFee;
 
                 PenggajianHarian::updateOrCreate(
                     [
@@ -1211,7 +1211,7 @@ class AttendanceController extends Controller
 
                 $managemenFee = $workDays * 6800;
 
-                $grandTotalUpah = $upahHarian - $jamsostek - $bpjsKesehatan - $bpjsPensiun - $managemenFee;
+                $grandTotalUpah = $upahHarian + $jamsostek + $bpjsKesehatan + $bpjsPensiun + $managemenFee;
                 PenggajianHarian::updateOrCreate(
                     [
                         'employee_id' => $employeeId,
