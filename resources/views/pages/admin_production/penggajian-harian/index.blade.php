@@ -247,7 +247,7 @@
                             </th>
 
                             <th class="text-right">
-                                Management Fee
+                                Management Fee (175000/25)
                             </th>
 
                             <th class="text-right">

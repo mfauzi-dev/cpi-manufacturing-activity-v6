@@ -120,7 +120,7 @@
 
                 <th>
                     Management Fee<br>
-                    (6.800 × Hari Kerja)
+                    175000/25
                 </th>
 
                 <th>

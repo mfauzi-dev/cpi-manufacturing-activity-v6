@@ -25,7 +25,7 @@
         <div class="card mb-3">
             <div class="card-body">
 
-                <form method="GET" action="{{ route('admin-production.attendance.create') }}">
+                <form method="GET" action="{{ route('manager.attendance.create') }}">
 
                     <div class="row">
 
@@ -108,7 +108,7 @@
                             Terapkan Filter
                         </button>
 
-                        <a href="{{ route('admin-production.attendance.create') }}" class="btn btn-secondary">
+                        <a href="{{ route('manager.attendance.create') }}" class="btn btn-secondary">
                             Reset
                         </a>
                     </div>
@@ -119,7 +119,7 @@
         </div>
 
         {{-- FORM ABSENSI --}}
-        <form method="POST" action="{{ route('admin-production.attendance.bulk.store') }}">
+        <form method="POST" action="{{ route('manager.attendance.bulk.store') }}">
             @csrf
 
             <input type="hidden" name="date" value="{{ request('date', $date) }}">

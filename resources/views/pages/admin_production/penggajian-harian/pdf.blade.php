@@ -79,7 +79,7 @@
                 <th>Jamsostek<br>(4,89%)</th>
                 <th>BPJS Kesehatan<br>(4%)</th>
                 <th>BPJS Pensiun<br>(2%)</th>
-                <th>Management Fee<br>(6.800 × Hari Kerja)</th>
+                <th>Management Fee<br>(175000/25)</th>
                 <th>Gaji Bersih</th>
                 <th>Grand Total Upah</th>
             </tr>

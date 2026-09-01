@@ -857,7 +857,7 @@ class AttendanceController extends Controller
             ->withQueryString();
 
         return view(
-            'pages.admin_production.attendance.create',
+            'pages.manager.attendance.create',
             compact(
                 'employees',
                 'costCenters',
@@ -1004,7 +1004,9 @@ class AttendanceController extends Controller
                     2
                 );
 
-                $managemenFee = $workDays * 6800;
+                $managemenFeePercent = 175000 / 25;
+
+                $managemenFee = $workDays * $managemenFeePercent;
 
                 $grandTotalUpah = $upahHarian + $jamsostek + $bpjsKesehatan + $bpjsPensiun + $managemenFee;
 
@@ -1106,7 +1108,9 @@ class AttendanceController extends Controller
                     2
                 );
 
-                $managemenFee = $workDays * 6800;
+                $managemenFeePercent = 175000 / 25;
+
+                $managemenFee = $workDays * $managemenFeePercent;
 
                 $grandTotalUpah = $upahHarian + $jamsostek + $bpjsKesehatan + $bpjsPensiun + $managemenFee;
 
@@ -1209,7 +1213,9 @@ class AttendanceController extends Controller
                     2
                 );
 
-                $managemenFee = $workDays * 6800;
+                $managemenFeePercent = 175000 / 25;
+
+                $managemenFee = $workDays * $managemenFeePercent;
 
                 $grandTotalUpah = $upahHarian + $jamsostek + $bpjsKesehatan + $bpjsPensiun + $managemenFee;
                 PenggajianHarian::updateOrCreate(
