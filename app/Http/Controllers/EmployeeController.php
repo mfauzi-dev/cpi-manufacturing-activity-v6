@@ -88,8 +88,22 @@ class EmployeeController extends Controller
             $query->where('position_id', $positionId);
         }
 
+        $query
+            ->orderBy(
+                CostCenter::select('name')
+                    ->whereColumn('cost_centers.id', 'employees.cost_center_id')
+            )
+            ->orderBy(
+                PsGroup::select('name')
+                    ->whereColumn('ps_groups.id', 'employees.ps_group_id')
+            )
+            ->orderBy(
+                Outsourcing::select('name')
+                    ->whereColumn('outsourcings.id', 'employees.outsourcing_id')
+            )
+            ->orderBy('employees.name');
+
         $employees = $query
-            ->latest()
             ->paginate($size)
             ->withQueryString();
 
@@ -166,8 +180,23 @@ class EmployeeController extends Controller
             $query->where('position_id', $positionId);
         }
 
+        
+        $query
+            ->orderBy(
+                CostCenter::select('name')
+                    ->whereColumn('cost_centers.id', 'employees.cost_center_id')
+            )
+            ->orderBy(
+                PsGroup::select('name')
+                    ->whereColumn('ps_groups.id', 'employees.ps_group_id')
+            )
+            ->orderBy(
+                Outsourcing::select('name')
+                    ->whereColumn('outsourcings.id', 'employees.outsourcing_id')
+            )
+            ->orderBy('employees.name');
+
         $employees = $query
-            ->latest()
             ->paginate($size)
             ->withQueryString();
 
@@ -247,10 +276,26 @@ class EmployeeController extends Controller
             $query->where('position_id', $positionId);
         }
 
+        
+        $query
+            ->orderBy(
+                CostCenter::select('name')
+                    ->whereColumn('cost_centers.id', 'employees.cost_center_id')
+            )
+            ->orderBy(
+                PsGroup::select('name')
+                    ->whereColumn('ps_groups.id', 'employees.ps_group_id')
+            )
+            ->orderBy(
+                Outsourcing::select('name')
+                    ->whereColumn('outsourcings.id', 'employees.outsourcing_id')
+            )
+            ->orderBy('employees.name');
+
         $employees = $query
-            ->latest()
             ->paginate($size)
             ->withQueryString();
+
 
         $costCenterList = CostCenter::where('department_id', $managerDepartmentId)->orderBy('name')->get();
         $positionList = Position::orderBy('name')->get();
