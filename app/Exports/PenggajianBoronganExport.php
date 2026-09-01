@@ -79,7 +79,7 @@ class PenggajianBoronganExport implements
             'JAMSOSTEK (4.89%)',
             'BPJS KESEHATAN (4%)',
             'BPJS PENSIUN (2%)',
-            'MANAGEMEN FEE (6800 * per Hari Kerja)',
+            'MANAGEMEN FEE (175000/25)',
             'GRAND TOTAL UPAH DITERIMA',
         ];
     }
