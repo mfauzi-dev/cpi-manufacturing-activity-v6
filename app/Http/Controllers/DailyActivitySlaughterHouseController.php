@@ -850,6 +850,7 @@ class DailyActivitySlaughterHouseController extends Controller
  
             $costCenterId = $detail->dailyActivitySlaughterHouse->cost_center_id;
             $psGroupId    = $detail->dailyActivitySlaughterHouse->ps_group_id;
+            $lineId       = $detail->dailyActivitySlaughterHouse->line_id;
             $dateForm     = $detail->dailyActivitySlaughterHouse->tanggal->format('Y-m-d');
  
             DB::commit();
@@ -860,6 +861,7 @@ class DailyActivitySlaughterHouseController extends Controller
                     'psGroup'    => $psGroupId,
                     'date_from'  => $dateForm,
                     'date_to'    => $dateForm,
+                    'lineId'     => $lineId,
                 ])
                 ->with('success', 'Data berhasil diupdate.');
  
