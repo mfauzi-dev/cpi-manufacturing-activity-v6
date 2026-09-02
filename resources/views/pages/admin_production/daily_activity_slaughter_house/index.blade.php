@@ -144,6 +144,8 @@
                             <th>Product Group</th>
                             <th>Line</th>
                             <th class="text-right">Total Kg</th>
+                            <th class="text-right">Rupiah per KG Aktual</th>
+                            <th class="text-right">Total Rupiah</th>
                             <th width="100">Action</th>
                         </tr>
                     </thead>
@@ -179,6 +181,14 @@
 
                                 <td class="text-right">
                                     {{ number_format($summary->total_kg, 2, ',', '.') }}
+                                </td>
+
+                                <td class="text-right">
+                                    Rp {{ number_format($summary->harga_per_kg, 2, ',', '.') }}
+                                </td>
+
+                                <td class="text-right">
+                                    Rp {{ number_format($summary->total_rupiah, 2, ',', '.') }}
                                 </td>
 
                                 <td class="text-center">
@@ -231,6 +241,14 @@
 
                                 <th class="text-right">
                                     {{ number_format($grandTotalKg, 2, ',', '.') }}
+                                </th>
+
+                                <th class="text-right">
+                                    Rp {{ number_format($grandHargaPerKg, 0, ',', '.') }}
+                                </th>
+
+                                <th class="text-right">
+                                    Rp {{ number_format($grandTotalRupiah, 0, ',', '.') }}
                                 </th>
 
                                 <th></th>
