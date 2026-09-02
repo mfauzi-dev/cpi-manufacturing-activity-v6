@@ -17,20 +17,36 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class DailyProductionController extends Controller
 {
+    
     public function create()
     {
         $departmentId = auth()->user()->department_id;
 
-        $department = Department::where('id', $departmentId)->firstOrFail();
+        $department = Department::findOrFail($departmentId);
 
-        $costCenterList = CostCenter::where('department_id', $departmentId)->orderBy('name')->get();
+        $costCenterList = CostCenter::where('department_id', $departmentId)
+            ->orderBy('name')
+            ->get();
+
+        $costCenterIds = $costCenterList->pluck('id');
+
+        $productList = Product::whereIn('cost_center_id', $costCenterIds)
+            ->orderBy('material_name')
+            ->get([
+                'id',
+                'material_name',
+                'material_code',
+                'cost_center_id',
+                'harga_per_kg'
+            ]);
 
         return view('pages.admin_production.daily_production.create', compact(
             'department',
             'costCenterList',
+            'productList'
         ));
     }
-
+    
     public function getProducts($costCenterId)
     {
         $products = Product::where('cost_center_id', $costCenterId)

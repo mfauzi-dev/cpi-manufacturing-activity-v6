@@ -53,6 +53,24 @@
                             </div>
                         </div>
 
+                        @if (strtolower($managerDepartment->name) === 'further processing')
+                            <div class="col-md-3 mb-2">
+                                <div class="form-group">
+                                    <label>Line</label>
+                                    <select name="line_id" class="form-control">
+                                        <option value="">Semua Line</option>
+
+                                        @foreach ($lineList as $line)
+                                            <option value="{{ $line->id }}"
+                                                {{ request('line_id') == $line->id ? 'selected' : '' }}>
+                                                {{ $line->code ? $line->code . ' - ' : '' }}{{ $line->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        @endif
+
                         <div class="col-md-3 mb-2">
                             <div class="form-group">
                                 <label>Status</label>
@@ -61,8 +79,10 @@
                                     <option value="hadir" {{ request('status') == 'hadir' ? 'selected' : '' }}>Hadir
                                     </option>
                                     <option value="cuti" {{ request('status') == 'cuti' ? 'selected' : '' }}>Cuti</option>
-                                    <option value="alfa" {{ request('status') == 'alfa' ? 'selected' : '' }}>Alpa</option>
-                                    <option value="izin" {{ request('status') == 'izin' ? 'selected' : '' }}>Izin</option>
+                                    <option value="alfa" {{ request('status') == 'alfa' ? 'selected' : '' }}>Alpa
+                                    </option>
+                                    <option value="izin" {{ request('status') == 'izin' ? 'selected' : '' }}>Izin
+                                    </option>
                                     <option value="sakit" {{ request('status') == 'sakit' ? 'selected' : '' }}>Sakit
                                     </option>
                                 </select>
@@ -136,6 +156,9 @@
                             <th>Department</th>
                             <th>OS</th>
                             <th>Group</th>
+                            @if (strtolower($managerDepartment->name) === 'further processing')
+                                <th>Line</th>
+                            @endif
                             <th>Status</th>
                             <th>Keterangan</th>
                             <th>Input By</th>
@@ -150,6 +173,9 @@
                                 <td>{{ $employee->department?->name ?? '-' }}</td>
                                 <td>{{ $employee->outsourcing?->name ?? '-' }}</td>
                                 <td>{{ $employee->psGroup->name ?? '-' }}</td>
+                                @if (strtolower($managerDepartment->name) === 'further processing')
+                                    <td>{{ $attendance?->line?->name ?? '-' }}</td>
+                                @endif
                                 <td>
                                     @if (!$attendance)
                                         -
@@ -170,7 +196,10 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center">Tidak ada data attendance</td>
+                                <td colspan="{{ strtolower($managerDepartment->name) === 'slaughter house' ? 9 : 8 }}"
+                                    class="text-center">
+                                    Tidak ada data attendance
+                                </td>
                             </tr>
                         @endforelse
                     </tbody>

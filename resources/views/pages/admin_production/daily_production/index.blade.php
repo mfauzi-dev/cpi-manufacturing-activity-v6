@@ -100,8 +100,6 @@
                             <th>Cost Center</th>
                             <th>PS Group</th>
                             <th class="text-right">Total Kg</th>
-                            <th class="text-right">Rupiah per KG Aktual</th>
-                            <th class="text-right">Total Rupiah</th>
                             <th width="100">Action</th>
                         </tr>
                     </thead>
@@ -115,10 +113,6 @@
                                 <td>{{ $summary->cost_center_name }}</td>
                                 <td>{{ $summary->ps_group_name }}</td>
                                 <td class="text-right">{{ number_format($summary->total_kg, 2, ',', '.') }}</td>
-                                <td class="text-right"><strong>Rp
-                                        {{ number_format($summary->harga_per_kg, 2, ',', '.') }}</strong></td>
-                                <td class="text-right"><strong>Rp
-                                        {{ number_format($summary->total_rupiah, 0, ',', '.') }}</strong></td>
                                 <td class="text-center">
                                     <a href="{{ route('admin-production.daily-production.detail', [
                                         'costCenter' => $summary->cost_center_id,
@@ -148,8 +142,6 @@
                                 <th></th>
                                 <th></th>
                                 <th class="text-right">{{ number_format($grandTotalKg, 0, ',', '.') }}</th>
-                                <th class="text-right">Rp {{ number_format($grandHargaPerKg, 2, ',', '.') }}</th>
-                                <th class="text-right">Rp {{ number_format($grandTotalRupiah, 0, ',', '.') }}</th>
                                 <th></th>
                             </tr>
                         </tfoot>

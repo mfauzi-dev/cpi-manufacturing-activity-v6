@@ -55,9 +55,7 @@ class DailyProductionExport implements FromQuery, WithHeadings, WithMapping, Wit
             'Kode Material',
             'Nama Material',
             'Kg',
-            'Harga/kg',
-            'Rupiah',
-            'Diinput Oleh',
+            'Diinput Oleh'
         ];
     }
 
@@ -70,8 +68,6 @@ class DailyProductionExport implements FromQuery, WithHeadings, WithMapping, Wit
             $row->product->material_code ?? '-',
             $row->product->material_name ?? '-',
             (float) $row->total_kg,
-            (float) $row->harga_per_kg,
-            (float) $row->total_harga,
             $dp->inputBy->name ?? '-',
         ];
     }

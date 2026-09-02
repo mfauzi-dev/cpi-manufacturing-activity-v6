@@ -105,9 +105,7 @@
                             <th>Kode Material</th>
                             <th>Nama Material</th>
                             <th class="text-right">Kg</th>
-                            <th class="text-right">Harga/kg</th>
-                            <th class="text-right">Rupiah</th>
-                            <th>Yang Input</th>
+                            <th>Diinput Oleh</th>
                             <th class="text-center">Action</th>
                         </tr>
                     </thead>
@@ -120,17 +118,10 @@
                                 <td>{{ $detail->material_code ?? '-' }}</td>
                                 <td>{{ $detail->material_name }}</td>
                                 <td class="text-right">{{ number_format($detail->total_kg, 2, ',', '.') }}</td>
-                                <td class="text-right">Rp {{ number_format($detail->harga_per_kg, 2, ',', '.') }}</td>
-                                <td class="text-right"><strong>Rp
-                                        {{ number_format($detail->total_harga, 2, ',', '.') }}</strong></td>
                                 <td>{{ $detail->user_name }}</td>
 
                                 <td>
                                     <div class="btn-group">
-                                        <a href="{{ route('admin-production.daily-production.edit', $detail->id) }}"
-                                            class="btn btn-warning btn-sm mr-2">
-                                            Edit
-                                        </a>
                                         <form
                                             action="{{ route('admin-production.daily-production.destroy', $detail->id) }}"
                                             method="POST" onsubmit="return confirm('Yakin hapus data ini?')">

@@ -15,6 +15,7 @@ class Attendance extends Model
         'status',
         'keterangan_izin',
         'input_by',
+        'line_id',
     ];
 
     protected $casts = [
@@ -24,6 +25,11 @@ class Attendance extends Model
     public function employee()
     {
         return $this->belongsTo(Employee::class);
+    }
+
+    public function line()
+    {
+        return $this->belongsTo(Line::class);
     }
  
     public function inputBy()

@@ -121,6 +121,16 @@
                             </div>
                         </div>
 
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Line</label>
+
+                                <select name="line_id" id="line_id" class="form-control">
+                                    <option value="">Semua Line</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <div class="col-md-3 mb-2">
                             <div class="form-group">
                                 <label>Cari Karyawan</label>
@@ -149,6 +159,7 @@
                             <th>Department</th>
                             <th>OS</th>
                             <th>Group</th>
+                            <th>Line</th>
                             <th>Status</th>
                             <th>Keterangan</th>
                             <th>Input By</th>
@@ -163,6 +174,7 @@
                                 <td>{{ $employee->department?->name ?? '-' }}</td>
                                 <td>{{ $employee->outsourcing?->name ?? '-' }}</td>
                                 <td>{{ $employee->psGroup->name ?? '-' }}</td>
+                                <td>{{ $attendance->line->name ?? '-' }}</td>
                                 <td>
                                     @if (!$attendance)
                                         -
@@ -283,5 +295,52 @@
             });
 
         }
+
+        const department = document.getElementById('department_id');
+        const lineSelect = document.getElementById('line_id');
+
+        const selectedLine = "{{ $lineId ?? '' }}";
+
+        function loadLines(departmentId, selected = null) {
+            lineSelect.innerHTML = '<option value="">Loading...</option>';
+
+            if (!departmentId) {
+                lineSelect.innerHTML = '<option value="">Semua Line</option>';
+                return;
+            }
+
+            fetch(`/attendance/lines/${departmentId}`)
+                .then(response => response.json())
+                .then(data => {
+
+                    lineSelect.innerHTML = '<option value="">Semua Line</option>';
+
+                    data.forEach(item => {
+
+                        let option = document.createElement('option');
+
+                        option.value = item.id;
+                        option.textContent = item.code ? `${item.code} - ${item.name}` : item.name;
+
+                        if (selected == item.id) {
+                            option.selected = true;
+                        }
+
+                        lineSelect.appendChild(option);
+
+                    });
+
+                });
+        }
+
+        department.addEventListener('change', function() {
+            loadLines(this.value);
+        });
+
+        window.addEventListener('DOMContentLoaded', function() {
+            if (department.value) {
+                loadLines(department.value, selectedLine);
+            }
+        });
     </script>
 @endpush

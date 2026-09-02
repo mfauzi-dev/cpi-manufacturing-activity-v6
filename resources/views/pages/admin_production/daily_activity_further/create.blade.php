@@ -145,19 +145,6 @@
                             </div>
                         </div>
 
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label>Nama Karyawan</label>
-
-                                <select id="employee_id_group" multiple class="form-control select2">
-                                </select>
-
-                                @error('details.*.employee_id')
-                                    <div class="text-danger small mt-1">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
                     </div>
 
                 </div>
@@ -294,7 +281,6 @@
             let costCenterId = $(this).val();
 
             $('#ps_group').html('<option value="">Pilih Group</option>');
-            resetEmployeeSelect();
 
             if (!costCenterId) {
                 $('.product').html('<option value="">Pilih SKU</option>');
@@ -367,56 +353,8 @@
                     });
 
                     $('#ps_group').html(html);
-
-                    // Kalau PS Group ternyata sudah punya value (misal ke-restore dari old()),
-                    // langsung panggil loader employee-nya juga sebagai function call.
-                    if ($('#ps_group').val()) {
-                        loadEmployees(costCenterId, $('#ps_group').val());
-                    }
                 }
             );
-        }
-
-        $('#ps_group').change(function() {
-
-            let costCenterId = $('#cost_center').val();
-            let psGroupId = $(this).val();
-
-            if (!costCenterId || !psGroupId) {
-                resetEmployeeSelect();
-                return;
-            }
-
-            loadEmployees(costCenterId, psGroupId);
-        });
-
-        function loadEmployees(costCenterId, psGroupId) {
-
-            $.get(
-                "{{ route('daily-activity-further.employees', [':costCenterId', ':psGroupId']) }}"
-                .replace(':costCenterId', costCenterId)
-                .replace(':psGroupId', psGroupId),
-
-                function(data) {
-
-                    let options = '';
-
-                    $.each(data, function(i, item) {
-                        options += `<option value="${item.id}">${item.name}</option>`;
-                    });
-
-                    let $sel = $('#employee_id_group');
-                    let previouslySelected = $sel.val() || [];
-
-                    $sel.html(options);
-                    $sel.val(previouslySelected);
-                    $sel.trigger('change');
-                }
-            );
-        }
-
-        function resetEmployeeSelect() {
-            $('#employee_id_group').html('').trigger('change');
         }
 
         $(document).on('click', '.removeRow', function() {
@@ -511,34 +449,5 @@
                 $(this).find('.nomor').text(index + 1);
             });
         }
-
-        $('#dailyActivityForm').on('submit', function(e) {
-
-            let employeeIds = $('#employee_id_group').val() || [];
-
-            if (employeeIds.length === 0) {
-                e.preventDefault();
-                alert('Pilih minimal 1 employee.');
-                return false;
-            }
-
-            $('#detailTable tbody tr').each(function() {
-
-                let $row = $(this);
-                let idx = $row.data('row-index');
-
-                // bersihkan hidden input lama, jaga-jaga kalau submit gagal & diulang
-                $row.find('input.hidden-employee').remove();
-
-                employeeIds.forEach(function(empId) {
-                    $('<input>').attr({
-                        type: 'hidden',
-                        class: 'hidden-employee',
-                        name: `details[${idx}][employee_id][]`,
-                        value: empId
-                    }).appendTo($row);
-                });
-            });
-        });
     </script>
 @endpush

@@ -137,6 +137,24 @@
                             </div>
                         </div>
 
+                        @if (strtolower(auth()->user()->department->name) === 'further processing')
+                            <div class="col-md-3 mb-2">
+                                <div class="form-group">
+                                    <label>Line</label>
+                                    <select name="line_id" class="form-control">
+                                        <option value="">Semua Line</option>
+
+                                        @foreach ($lineList as $line)
+                                            <option value="{{ $line->id }}"
+                                                {{ request('line_id') == $line->id ? 'selected' : '' }}>
+                                                {{ $line->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        @endif
+
                         {{-- SEARCH --}}
                         <div class="col-md-3 mb-2">
                             <div class="form-group">
@@ -178,6 +196,9 @@
                             <th>Nama</th>
                             <th>OS</th>
                             <th>Group</th>
+                            @if (strtolower(auth()->user()->department->name) === 'further processing')
+                                <th>Line</th>
+                            @endif
                             <th>Status</th>
                             <th>Keterangan</th>
                             <th>Input By</th>
@@ -204,6 +225,12 @@
                                 <td>
                                     {{ $employee->psGroup->name ?? '-' }}
                                 </td>
+
+                                @if (strtolower(auth()->user()->department->name) === 'further processing')
+                                    <td>
+                                        {{ $attendance?->line?->name ?? '-' }}
+                                    </td>
+                                @endif
 
                                 <td>
 
@@ -246,7 +273,8 @@
                         @empty
 
                             <tr>
-                                <td colspan="7" class="text-center">
+                                <td colspan="{{ strtolower(auth()->user()->department->name) === 'further processing' ? 8 : 7 }}"
+                                    class="text-center">
                                     Tidak ada data attendance
                                 </td>
                             </tr>

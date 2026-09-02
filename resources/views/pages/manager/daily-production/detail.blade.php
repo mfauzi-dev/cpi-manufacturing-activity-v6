@@ -129,13 +129,6 @@
                                 Kg
                             </th>
 
-                            <th class="text-right">
-                                Harga/kg
-                            </th>
-
-                            <th class="text-right">
-                                Rupiah
-                            </th>
 
                             <th>
                                 Diinput Oleh
@@ -165,18 +158,6 @@
 
                                 <td class="text-right">
                                     {{ number_format($detail->total_kg, 2, ',', '.') }}
-                                </td>
-
-                                <td class="text-right">
-                                    Rp
-                                    {{ number_format($detail->harga_per_kg, 2, ',', '.') }}
-                                </td>
-
-                                <td class="text-right">
-                                    <strong>
-                                        Rp
-                                        {{ number_format($detail->total_harga, 2, ',', '.') }}
-                                    </strong>
                                 </td>
 
                                 <td>

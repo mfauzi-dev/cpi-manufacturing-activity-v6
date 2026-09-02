@@ -41,6 +41,7 @@ class DailyActivityFurtherController extends Controller
             ->get();
 
         $lineList = Line::orderBy('name')
+            ->where('department_id', $departmentId)
             ->get();
 
         return view(
@@ -163,15 +164,31 @@ class DailyActivityFurtherController extends Controller
             'cost_center_id' => ['required', 'exists:cost_centers,id'],
             'ps_group_id' => ['required', 'exists:ps_groups,id'],
             'line_id' => ['required', 'exists:lines,id'],
- 
+
             'details' => ['required', 'array', 'min:1'],
-            'details.*.employee_id' => ['required', 'array', 'min:1'],
-            'details.*.employee_id.*' => ['exists:employees,id'],
             'details.*.product_id' => ['required', 'exists:products,id'],
             'details.*.total_kg' => ['required', 'numeric', 'min:0'],
             'details.*.lama_packing' => ['required', 'numeric', 'min:0'],
         ]);
- 
+
+        $departmentId = auth()->user()->department_id;
+
+        $employeeIds = Employee::where('cost_center_id', $request->cost_center_id)
+            ->where('ps_group_id', $request->ps_group_id)
+            ->whereHas('attendances', function ($q) use ($request) {
+                $q->whereDate('date', $request->tanggal)
+                ->where('line_id', $request->line_id)
+                ->where('status', 'hadir');
+            })
+            ->pluck('id');
+
+        if ($employeeIds->isEmpty()) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Tidak ada karyawan yang tercatat hadir di Line ini pada tanggal & PS Group tersebut. Pastikan absensi sudah diisi terlebih dahulu.');
+        }
+        
         foreach ($request->details as $detail) {
  
             $product = Product::findOrFail($detail['product_id']);
@@ -180,7 +197,7 @@ class DailyActivityFurtherController extends Controller
             $lamaPacking = (float) $detail['lama_packing'];
             $productivity = $lamaPacking > 0 ? $outputKg / $lamaPacking : 0;
  
-            foreach ($detail['employee_id'] as $employeeId) {
+            foreach ($employeeIds as $employeeId) {
  
                 $dailyActivityFurther = DailyActivityFurther::firstOrCreate([
                     'employee_id' => $employeeId,
@@ -188,7 +205,7 @@ class DailyActivityFurtherController extends Controller
                     'cost_center_id' => $request->cost_center_id,
                     'ps_group_id' => $request->ps_group_id,
                     'line_id' => $request->line_id,
-                    'department_id' => auth()->user()->department_id,
+                    'department_id' => $departmentId,
                     'input_by' => auth()->user()->id,
                 ]);
  

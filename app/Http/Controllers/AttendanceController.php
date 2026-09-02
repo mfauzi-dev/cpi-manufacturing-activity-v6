@@ -13,6 +13,7 @@ use App\Models\Outsourcing;
 use App\Models\PsGroup;
 use Illuminate\Http\Request;
 use App\Exports\AttendanceSummaryExport;
+use App\Models\Line;
 use App\Models\PenggajianHarian;
 use App\Models\WageConfig;
 use Maatwebsite\Excel\Facades\Excel;
@@ -21,6 +22,18 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class AttendanceController extends Controller
 {
+    public function getLines($departmentId)
+    {
+        $lines = Line::where('department_id', $departmentId)
+            ->orderBy('name')
+            ->get([
+                'id',
+                'name',
+            ]);
+
+        return response()->json($lines);
+    }
+    
     public function groupsByDepartment(Request $request)
     {
         $departmentId = $request->department_id;
@@ -74,6 +87,7 @@ class AttendanceController extends Controller
             'outsourcing_id' => ['nullable', 'integer'],
             'cost_center_id' => ['nullable', 'integer'],
             'ps_group_id' => ['nullable', 'integer'],
+            'line_id' => ['nullable', 'integer'],
             'search' => ['nullable', 'string'],
             'size' => ['nullable', 'integer'],
         ]);
@@ -84,6 +98,7 @@ class AttendanceController extends Controller
         $outsourcingId = $request->outsourcing_id;
         $costCenterId = $request->cost_center_id;
         $groupId = $request->ps_group_id;
+        $lineId = $request->line_id;
         $search = $request->search;
         $size = $request->size ?? 50;
 
@@ -108,6 +123,13 @@ class AttendanceController extends Controller
         if ($request->ps_group_id) {
             $query->where('employees.ps_group_id', $request->ps_group_id);
         }
+
+        if ($lineId) {
+            $query->whereHas('attendances', function ($q) use ($date, $lineId) {
+                $q->whereDate('date', $date)
+                ->where('line_id', $lineId);
+            });
+}
 
         // Search
         if ($search) {
@@ -141,6 +163,8 @@ class AttendanceController extends Controller
 
         $costCenters = CostCenter::where('department_id', auth()->user()->department_id)->get();
 
+        $lineList = Line::where('department_id', $user->department_id)->get();
+
         $groups = PsGroup::orderBy('name')->get();
 
         return view(
@@ -149,7 +173,8 @@ class AttendanceController extends Controller
                 'employees',
                 'outsourcings',
                 'costCenters',
-                'date'
+                'date',
+                'lineList'
             )
         );
     }
@@ -163,6 +188,7 @@ class AttendanceController extends Controller
             'outsourcing_id' => ['nullable', 'integer'],
             'cost_center_id' => ['nullable', 'integer'],
             'ps_group_id' => ['nullable', 'integer'],
+            'line_id' => ['nullable', 'integer'],
             'department_id' => ['nullable', 'integer'],
             'search' => ['nullable', 'string'],
             'size' => ['nullable', 'integer'],
@@ -170,6 +196,7 @@ class AttendanceController extends Controller
 
         $date = $request->date ?? now()->toDateString();
         $employeeStatus = $request->employee_status;
+        $lineId = $request->line_id;
 
         $query = Employee::with([
             'costCenter',
@@ -214,9 +241,18 @@ class AttendanceController extends Controller
             });
         }
 
+        if ($lineId) {
+            $query->whereHas('attendances', function ($q) use ($date, $lineId) {
+                $q->whereDate('date', $date)
+                ->where('line_id', $lineId);
+            });
+        }
+
         $employees = $query
             ->leftJoin('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
+            ->leftJoin('departments', 'employees.department_id', '=', 'departments.id')
             ->select('employees.*')
+            ->orderBy('departments.name')
             ->orderBy('ps_groups.name')
             ->orderBy('employees.name')
             ->paginate($request->size ?? 50)
@@ -227,6 +263,7 @@ class AttendanceController extends Controller
             'outsourcings' => Outsourcing::orderBy('name')->get(),
             'departments' => Department::orderBy('name')->get(),
             'date' => $date,
+            'lineId' => $lineId,
         ]);
     }
 
@@ -242,12 +279,14 @@ class AttendanceController extends Controller
             'outsourcing_id' => ['nullable', 'integer'],
             'cost_center_id' => ['nullable', 'integer'],
             'ps_group_id' => ['nullable', 'integer'],
+            'line_id' => ['nullable', 'integer'],
             'search' => ['nullable', 'string'],
             'size' => ['nullable', 'integer'],
         ]);
 
         $date = $request->date ?? now()->toDateString();
-        $employeeStatus = $request->employee_status; 
+        $employeeStatus = $request->employee_status;
+        $lineId = $request->line_id;
 
         $query = Employee::with([
             'costCenter',
@@ -288,6 +327,13 @@ class AttendanceController extends Controller
             });
         }
 
+        if ($lineId) {
+            $query->whereHas('attendances', function ($q) use ($date, $lineId) {
+                $q->whereDate('date', $date)
+                ->where('line_id', $lineId);
+            });
+        }
+
         $employees = $query
             ->leftJoin('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
             ->select('employees.*')
@@ -296,11 +342,14 @@ class AttendanceController extends Controller
             ->paginate($request->size ?? 50)
             ->withQueryString();
 
+        $lineList = Line::where('department_id', $managerDepartmentId)->orderBy('name')->get();
+
         return view('pages.manager.attendance.index', [
             'employees' => $employees,
             'outsourcings' => Outsourcing::orderBy('name')->get(),
             'managerDepartment' => Department::find($managerDepartmentId),
             'date' => $date,
+            'lineList' => $lineList,
         ]);
     }
 
@@ -315,6 +364,7 @@ class AttendanceController extends Controller
             'outsourcing_id' => ['nullable', 'integer'],
             'cost_center_id' => ['nullable', 'integer'],
             'ps_group_id' => ['nullable', 'integer'],
+            'line_id' => ['nullable', 'integer'],
             'search' => ['nullable', 'string'],
             'size' => ['nullable', 'integer'],
         ]);
@@ -325,6 +375,7 @@ class AttendanceController extends Controller
         $outsourcingId = $request->outsourcing_id;
         $costCenterId = $request->cost_center_id;
         $psGroupId = $request->ps_group_id;
+        $lineId = $request->line_id;
         $search = $request->search;
         $size = $request->size ?? 50;
  
@@ -396,6 +447,9 @@ class AttendanceController extends Controller
         $outsourcings = Outsourcing::orderBy('name')->get();
  
         $costCenters = CostCenter::where('department_id', auth()->user()->department_id)->get();
+
+        $lineList = Line::where('department_id', $user->department_id)->orderBy('name')->get();
+
         return view(
             'pages.admin_production.attendance.summary',
             compact(
@@ -404,7 +458,8 @@ class AttendanceController extends Controller
                 'costCenters',
                 'monthNum',
                 'year',
-                'totalEmployee'
+                'totalEmployee',
+                'lineList'
             )
         );
     }
@@ -458,6 +513,7 @@ class AttendanceController extends Controller
             'outsourcing_id' => ['nullable', 'integer'],
             'cost_center_id' => ['nullable', 'integer'],
             'ps_group_id' => ['nullable', 'integer'],
+            'line_id' => ['nullable', 'integer'],
             'search' => ['nullable', 'string'],
             'size' => ['nullable', 'integer'],
         ]);
@@ -469,6 +525,7 @@ class AttendanceController extends Controller
         $outsourcingId = $request->outsourcing_id;
         $costCenterId = $request->cost_center_id;
         $psGroupId = $request->ps_group_id;
+        $lineId = $request->line_id;
         $search = $request->search;
         $size = $request->size ?? 50;
  
@@ -544,6 +601,8 @@ class AttendanceController extends Controller
         $departments = Department::orderBy('name')->get();
  
         $outsourcings = Outsourcing::orderBy('name')->get();
+
+        $lineList = Line::where('department_id', $user->department_id)->orderBy('name')->get();
  
         return view(
             'pages.general_manager.attendance.summary',
@@ -553,7 +612,9 @@ class AttendanceController extends Controller
                 'outsourcings',
                 'monthNum',
                 'year',
-                'totalEmployee'
+                'totalEmployee',
+                'lineList',
+                'lineId'
             )
         );
     }
@@ -570,6 +631,7 @@ class AttendanceController extends Controller
             'outsourcing_id' => ['nullable', 'integer'],
             'cost_center_id' => ['nullable', 'integer'],
             'ps_group_id' => ['nullable', 'integer'],
+            'line_id' => ['nullable', 'integer'],
             'search' => ['nullable', 'string'],
             'size' => ['nullable', 'integer'],
         ]);
@@ -580,6 +642,7 @@ class AttendanceController extends Controller
         $outsourcingId = $request->outsourcing_id;
         $costCenterId = $request->cost_center_id;
         $psGroupId = $request->ps_group_id;
+        $lineId = $request->line_id;
         $search = $request->search;
         $size = $request->size ?? 50;
 
@@ -649,7 +712,9 @@ class AttendanceController extends Controller
 
         $outsourcings = Outsourcing::orderBy('name')->get();
         $managerDepartment = Department::find($managerDepartmentId);
-
+        
+        $lineList = Line::where('department_id', $managerDepartmentId)->orderBy('name')->get();
+        
         return view(
             'pages.manager.attendance.summary',
             compact(
@@ -658,7 +723,8 @@ class AttendanceController extends Controller
                 'outsourcings',
                 'monthNum',
                 'year',
-                'totalEmployee'
+                'totalEmployee',
+                'lineList'
             )
         );
     }
@@ -793,6 +859,8 @@ class AttendanceController extends Controller
             });
         }
 
+        $lineList = Line::where('department_id', $departmentId)->get();
+
         $employees = $query
             ->with([
                 'attendances' => function ($q) use ($date) {
@@ -810,7 +878,8 @@ class AttendanceController extends Controller
             'departmentId',
             'costCenterId',
             'psGroupId',
-            'date'
+            'date',
+            'lineList'
         ]));
     }
 
@@ -855,6 +924,8 @@ class AttendanceController extends Controller
             });
         }
 
+        $lineList = Line::where('department_id', $departmentId)->get();
+
         $employees = $query
             ->with([
                 'attendances' => function ($q) use ($date) {
@@ -872,7 +943,8 @@ class AttendanceController extends Controller
                 'costCenters',
                 'date',
                 'costCenterId',
-                'psGroupId'
+                'psGroupId',
+                'lineList'
             )
         );
     }
@@ -928,6 +1000,8 @@ class AttendanceController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        $lineList = Line::where('department_id', $departmentId)->get();
+
         return view(
             'pages.admin_production.attendance.create',
             compact(
@@ -935,7 +1009,8 @@ class AttendanceController extends Controller
                 'costCenters',
                 'date',
                 'costCenterId',
-                'psGroupId'
+                'psGroupId',
+                'lineList'
             )
         );
     }
@@ -945,6 +1020,7 @@ class AttendanceController extends Controller
         $request->validate([
             'date' => ['required', 'date'],
             'employees' => ['required', 'array'],
+            'employees.*.line_id' => ['nullable', 'exists:lines,id'],
         ]);
 
         $date = Carbon::parse($request->date);
@@ -965,6 +1041,7 @@ class AttendanceController extends Controller
                 [
                     'status' => $status,
                     'keterangan_izin' => $data['keterangan_izin'] ?? null,
+                    'line_id' => $data['line_id'] ?? null,
                     'input_by' => auth()->id(),
                 ]
             );
@@ -1049,6 +1126,7 @@ class AttendanceController extends Controller
         $request->validate([
             'date' => ['required', 'date'],
             'employees' => ['required', 'array'],
+            'employees.*.line_id' => ['nullable', 'exists:lines,id'],
         ]);
 
         $date = Carbon::parse($request->date);
@@ -1069,6 +1147,7 @@ class AttendanceController extends Controller
                 [
                     'status' => $status,
                     'keterangan_izin' => $data['keterangan_izin'] ?? null,
+                    'line_id' => $data['line_id'] ?? null,
                     'input_by' => auth()->id(),
                 ]
             );
@@ -1153,6 +1232,7 @@ class AttendanceController extends Controller
         $request->validate([
             'date' => ['required', 'date'],
             'employees' => ['required', 'array'],
+            'employees.*.line_id' => ['nullable', 'exists:lines,id'],
         ]);
 
         $date = Carbon::parse($request->date);
@@ -1173,6 +1253,7 @@ class AttendanceController extends Controller
                 [
                     'status' => $status,
                     'keterangan_izin' => $data['keterangan_izin'] ?? null,
+                    'line_id' => $data['line_id'] ?? null,
                     'input_by' => auth()->id(),
                 ]
             );

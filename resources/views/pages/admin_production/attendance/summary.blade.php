@@ -131,6 +131,25 @@
                             </div>
                         </div>
 
+                        @if (strtolower(auth()->user()->department->name) === 'further processing')
+                            <div class="col-md-3 mb-2">
+                                <div class="form-group">
+                                    <label>Line</label>
+                                    <select name="line_id" class="form-control">
+                                        <option value="">Semua Line</option>
+
+                                        @foreach ($lineList as $line)
+                                            <option value="{{ $line->id }}"
+                                                {{ request('line_id') == $line->id ? 'selected' : '' }}>
+                                                {{ $line->code ? $line->code . ' - ' : '' }}{{ $line->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        @endif
+
+
                         <div class="col-md-3 mb-2">
                             <div class="form-group">
                                 <label>Nama Karyawan</label>

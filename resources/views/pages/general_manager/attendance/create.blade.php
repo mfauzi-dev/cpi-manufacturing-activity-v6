@@ -130,6 +130,7 @@
                                     <th>Izin</th>
                                     <th>Sakit</th>
                                     <th>Alpa</th>
+                                    <th>Line</th>
                                     <th>Keterangan Izin</th>
                                 </tr>
                             </thead>
@@ -170,6 +171,19 @@
                                         <td class="text-center">
                                             <input type="checkbox" class="attendance-status" data-status="alfa"
                                                 {{ optional($attendance)->status == 'alfa' ? 'checked' : '' }}>
+                                        </td>
+
+                                        <td>
+                                            <select name="employees[{{ $employee->id }}][line_id]" class="form-control">
+                                                <option value="">Pilih Line</option>
+
+                                                @foreach ($lineList as $line)
+                                                    <option value="{{ $line->id }}"
+                                                        {{ optional($attendance)->line_id == $line->id ? 'selected' : '' }}>
+                                                        {{ $line->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
                                         </td>
 
                                         <td>

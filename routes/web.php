@@ -58,6 +58,7 @@ Route::middleware(['auth'])->group(function() {
     Route::get('/daily-production/ps-groups/{costCenterId}', [DailyProductionController::class, 'getPsGroups'])->name('daily-production.ps-groups');
     Route::get('/daily-activity-further/products/{costCenterId}', [DailyActivityFurtherController::class, 'getProducts'])->name('admin-production.daily-activity-further.products');
 
+    Route::get('/attendance/lines/{departmentId}', [AttendanceController::class, 'getLines'])->name('attendance.lines');
     Route::get('/daily-activity-further/ps-groups/{costCenterId}', [DailyActivityFurtherController::class, 'getPsGroups'])->name('daily-activity-further.ps-groups');
 
     Route::get('/daily-activity-further/employees/{costCenterId}/{psGroupId}', [DailyActivityFurtherController::class, 'getEmployees'])->name('daily-activity-further.employees');

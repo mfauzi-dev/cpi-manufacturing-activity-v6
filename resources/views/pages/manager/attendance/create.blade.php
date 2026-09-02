@@ -141,6 +141,9 @@
                                 <th>Izin</th>
                                 <th>Sakit</th>
                                 <th>Alpa</th>
+                                @if (strtolower(auth()->user()->department->name) === 'further processing')
+                                    <th>Line</th>
+                                @endif
                                 <th>Keterangan Izin</th>
                             </tr>
                         </thead>
@@ -189,6 +192,21 @@
                                         <input type="checkbox" class="attendance-status" data-status="alfa"
                                             {{ optional($attendance)->status == 'alfa' ? 'checked' : '' }}>
                                     </td>
+
+                                    @if (strtolower(auth()->user()->department->name) === 'further processing')
+                                        <td>
+                                            <select name="employees[{{ $employee->id }}][line_id]" class="form-control">
+                                                <option value="">Pilih Line</option>
+
+                                                @foreach ($lineList as $line)
+                                                    <option value="{{ $line->id }}"
+                                                        {{ optional($attendance)->line_id == $line->id ? 'selected' : '' }}>
+                                                        {{ $line->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </td>
+                                    @endif
 
                                     <td>
 

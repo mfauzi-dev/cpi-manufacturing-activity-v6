@@ -78,27 +78,6 @@
                     @enderror
                 </div>
 
-                <div class="form-group">
-                    <label>Harga per KG</label>
-
-                    <input type="text" id="harga_per_kg_display" class="form-control"
-                        value="Rp {{ number_format($detail->harga_per_kg, 2, ',', '.') }}" readonly>
-
-                    <small class="form-text text-muted">
-                        Harga otomatis mengikuti master data material yang dipilih.
-                    </small>
-                </div>
-
-                <div class="form-group">
-                    <label>Total Rupiah</label>
-
-                    <input type="text" id="total_rupiah_display" class="form-control" readonly>
-
-                    <small class="form-text text-muted">
-                        Total KG x Harga per KG
-                    </small>
-                </div>
-
                 <button type="submit" class="btn btn-primary">
                     Update
                 </button>

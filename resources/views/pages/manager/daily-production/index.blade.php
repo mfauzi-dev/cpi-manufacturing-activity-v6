@@ -15,34 +15,12 @@
         {{-- SUMMARY --}}
         <div class="row">
 
-            <div class="col-md-4">
+            <div class="col-md-12">
                 <div class="card">
                     <div class="card-body text-center">
                         <h6>Total KG</h6>
                         <h3>
                             {{ number_format($grandTotalKg, 2, ',', '.') }}
-                        </h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h6>Total Rupiah</h6>
-                        <h3>
-                            Rp {{ number_format($grandTotalRupiah, 0, ',', '.') }}
-                        </h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h6>Rupiah per KG Aktual</h6>
-                        <h3>
-                            Rp {{ number_format($grandHargaPerKg, 2, ',', '.') }}
                         </h3>
                     </div>
                 </div>
@@ -60,10 +38,6 @@
 
                     <div class="row">
 
-                        {{-- Dropdown Department dihapus. Manager sudah di-lock
-                             ke department-nya sendiri (lihat badge di atas). --}}
-
-                        {{-- COST CENTER --}}
                         <div class="col-md-4 mb-3">
                             <div class="form-group">
 
@@ -186,8 +160,6 @@
                             <th>Cost Center</th>
                             <th>PS Group</th>
                             <th class="text-right">Total Kg</th>
-                            <th class="text-right">Rupiah per KG</th>
-                            <th class="text-right">Total Rupiah</th>
                             <th width="100">Action</th>
                         </tr>
                     </thead>
@@ -213,20 +185,6 @@
 
                                 <td class="text-right">
                                     {{ number_format($summary->total_kg, 2, ',', '.') }}
-                                </td>
-
-                                <td class="text-right">
-                                    <strong>
-                                        Rp
-                                        {{ number_format($summary->harga_per_kg, 2, ',', '.') }}
-                                    </strong>
-                                </td>
-
-                                <td class="text-right">
-                                    <strong>
-                                        Rp
-                                        {{ number_format($summary->total_rupiah, 0, ',', '.') }}
-                                    </strong>
                                 </td>
 
                                 <td class="text-center">
@@ -273,16 +231,6 @@
 
                                 <th class="text-right">
                                     {{ number_format($grandTotalKg, 2, ',', '.') }}
-                                </th>
-
-                                <th class="text-right">
-                                    Rp
-                                    {{ number_format($grandHargaPerKg, 2, ',', '.') }}
-                                </th>
-
-                                <th class="text-right">
-                                    Rp
-                                    {{ number_format($grandTotalRupiah, 0, ',', '.') }}
                                 </th>
 
                                 <th></th>

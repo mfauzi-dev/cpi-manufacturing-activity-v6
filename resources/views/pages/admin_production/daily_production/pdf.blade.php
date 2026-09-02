@@ -60,8 +60,6 @@
                 <th>Kode Material</th>
                 <th>Nama Material</th>
                 <th class="text-right">Kg</th>
-                <th class="text-right">Harga/kg</th>
-                <th class="text-right">Rupiah</th>
                 <th>Diinput Oleh</th>
             </tr>
         </thead>
@@ -73,8 +71,6 @@
                     <td>{{ $row->product->material_code ?? '-' }}</td>
                     <td>{{ $row->product->material_name ?? '-' }}</td>
                     <td class="text-right">{{ number_format($row->total_kg, 2, ',', '.') }}</td>
-                    <td class="text-right">Rp. {{ number_format($row->harga_per_kg, 0, ',', '.') }}</td>
-                    <td class="text-right">Rp. {{ number_format($row->total_harga, 0, ',', '.') }}</td>
                     <td>{{ $dp->inputBy->name ?? '-' }}</td>
                 </tr>
             @empty

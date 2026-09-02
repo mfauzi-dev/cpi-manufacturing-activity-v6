@@ -182,195 +182,196 @@
                     </div>
                 </div>
             </div>
+        </div>
 
-            {{-- TABLE --}}
-            <div class="card">
-                <div class="card-body table-responsive">
-                    <div class="mb-2">
-                        <a href="{{ route('general-manager.attendance.summary.export-excel', request()->query()) }}"
-                            class="btn btn-success">
-                            <i class="fas fa-file-excel"></i>
-                            Excel
-                        </a>
+        {{-- TABLE --}}
+        <div class="card">
+            <div class="card-body table-responsive">
+                <div class="mb-2">
+                    <a href="{{ route('general-manager.attendance.summary.export-excel', request()->query()) }}"
+                        class="btn btn-success">
+                        <i class="fas fa-file-excel"></i>
+                        Excel
+                    </a>
 
-                        <a href="{{ route('general-manager.attendance.summary.export-pdf', request()->query()) }}"
-                            class="btn btn-danger" target="_blank">
-                            <i class="fas fa-file-pdf"></i>
-                            PDF
-                        </a>
-                    </div>
+                    <a href="{{ route('general-manager.attendance.summary.export-pdf', request()->query()) }}"
+                        class="btn btn-danger" target="_blank">
+                        <i class="fas fa-file-pdf"></i>
+                        PDF
+                    </a>
+                </div>
 
-                    <table class="table table-bordered table-striped">
+                <table class="table table-bordered table-striped">
 
-                        <thead>
+                    <thead>
+                        <tr>
+                            <th>NIK</th>
+                            <th>Nama</th>
+                            <th>Department</th>
+                            <th>OS</th>
+                            <th>Group</th>
+                            <th class="text-center">Hadir</th>
+                            <th class="text-center">Izin</th>
+                            <th class="text-center">Sakit</th>
+                            <th class="text-center">Cuti</th>
+                            <th class="text-center">Alpa</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        @forelse ($employees as $employee)
                             <tr>
-                                <th>NIK</th>
-                                <th>Nama</th>
-                                <th>Department</th>
-                                <th>OS</th>
-                                <th>Group</th>
-                                <th class="text-center">Hadir</th>
-                                <th class="text-center">Izin</th>
-                                <th class="text-center">Sakit</th>
-                                <th class="text-center">Cuti</th>
-                                <th class="text-center">Alpa</th>
-                                <th></th>
+
+                                <td>{{ $employee->nik }}</td>
+
+                                <td>{{ $employee->name }}</td>
+
+                                <td>{{ $employee->department->name ?? '-' }}</td>
+
+                                <td>{{ $employee->outsourcing->name ?? '-' }}</td>
+
+                                <td>{{ $employee->psGroup->name ?? '-' }}</td>
+
+                                <td class="text-center">
+                                    {{ $employee->total_hadir }}
+                                </td>
+
+                                <td class="text-center">
+                                    {{ $employee->total_izin }}
+                                </td>
+
+                                <td class="text-center">
+                                    {{ $employee->total_sakit }}
+                                </td>
+
+                                <td class="text-center">
+                                    {{ $employee->total_cuti }}
+                                </td>
+
+                                <td class="text-center">
+                                    {{ $employee->total_alfa }}
+                                </td>
+
+                                <td class="text-right">
+                                    <a href="{{ route('general-manager.attendance.summary.detail', array_merge(request()->query(), ['employee' => $employee->id])) }}"
+                                        class="btn btn-sm btn-info">
+                                        Detail
+                                    </a>
+                                </td>
+
                             </tr>
-                        </thead>
 
-                        <tbody>
+                        @empty
 
-                            @forelse ($employees as $employee)
-                                <tr>
+                            <tr>
+                                <td colspan="11" class="text-center">
+                                    Tidak ada data employee
+                                </td>
+                            </tr>
+                        @endforelse
 
-                                    <td>{{ $employee->nik }}</td>
+                    </tbody>
 
-                                    <td>{{ $employee->name }}</td>
-
-                                    <td>{{ $employee->department->name ?? '-' }}</td>
-
-                                    <td>{{ $employee->outsourcing->name ?? '-' }}</td>
-
-                                    <td>{{ $employee->psGroup->name ?? '-' }}</td>
-
-                                    <td class="text-center">
-                                        {{ $employee->total_hadir }}
-                                    </td>
-
-                                    <td class="text-center">
-                                        {{ $employee->total_izin }}
-                                    </td>
-
-                                    <td class="text-center">
-                                        {{ $employee->total_sakit }}
-                                    </td>
-
-                                    <td class="text-center">
-                                        {{ $employee->total_cuti }}
-                                    </td>
-
-                                    <td class="text-center">
-                                        {{ $employee->total_alfa }}
-                                    </td>
-
-                                    <td class="text-right">
-                                        <a href="{{ route('general-manager.attendance.summary.detail', array_merge(request()->query(), ['employee' => $employee->id])) }}"
-                                            class="btn btn-sm btn-info">
-                                            Detail
-                                        </a>
-                                    </td>
-
-                                </tr>
-
-                            @empty
-
-                                <tr>
-                                    <td colspan="11" class="text-center">
-                                        Tidak ada data employee
-                                    </td>
-                                </tr>
-                            @endforelse
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-                <div class="card-footer text-right">
-                    {{ $employees->withQueryString()->links() }}
-                </div>
+                </table>
 
             </div>
 
-        </div>
-    @endsection
+            <div class="card-footer text-right">
+                {{ $employees->withQueryString()->links() }}
+            </div>
 
-    @push('scripts')
-        <script>
-            $(function() {
+        </div>
+
+    </div>
+@endsection
+
+@push('scripts')
+    <script>
+        $(function() {
+
+            loadCostCenters();
+
+            $('#department_id').change(function() {
 
                 loadCostCenters();
 
-                $('#department_id').change(function() {
+            });
 
-                    loadCostCenters();
+            $('#cost_center_id').change(function() {
 
-                });
-
-                $('#cost_center_id').change(function() {
-
-                    loadPsGroups();
-
-                });
+                loadPsGroups();
 
             });
 
-            function loadCostCenters() {
+        });
 
-                let departmentId = $('#department_id').val();
+        function loadCostCenters() {
 
-                if (departmentId == '') {
+            let departmentId = $('#department_id').val();
 
-                    $('#cost_center_id').html('<option value="">Semua Cost Center</option>');
-                    $('#ps_group_id').html('<option value="">Semua Group</option>');
-                    return;
+            if (departmentId == '') {
 
-                }
+                $('#cost_center_id').html('<option value="">Semua Cost Center</option>');
+                $('#ps_group_id').html('<option value="">Semua Group</option>');
+                return;
 
-                $.get('/attendance/cost-centers/' + departmentId, function(res) {
+            }
 
-                    let html = '<option value="">Semua Cost Center</option>';
+            $.get('/attendance/cost-centers/' + departmentId, function(res) {
 
-                    $.each(res, function(i, item) {
+                let html = '<option value="">Semua Cost Center</option>';
 
-                        html += `
+                $.each(res, function(i, item) {
+
+                    html += `
                 <option value="${item.id}"
                     ${item.id == "{{ request('cost_center_id') }}" ? 'selected' : ''}>
                     ${item.name}
                 </option>
             `;
 
-                    });
-
-                    $('#cost_center_id').html(html);
-
-                    loadPsGroups();
-
                 });
+
+                $('#cost_center_id').html(html);
+
+                loadPsGroups();
+
+            });
+
+        }
+
+        function loadPsGroups() {
+
+            let costCenterId = $('#cost_center_id').val();
+
+            if (costCenterId == '') {
+
+                $('#ps_group_id').html('<option value="">Semua Group</option>');
+                return;
 
             }
 
-            function loadPsGroups() {
+            $.get('/attendance/ps-groups/' + costCenterId, function(res) {
 
-                let costCenterId = $('#cost_center_id').val();
+                let html = '<option value="">Semua Group</option>';
 
-                if (costCenterId == '') {
+                $.each(res, function(i, item) {
 
-                    $('#ps_group_id').html('<option value="">Semua Group</option>');
-                    return;
-
-                }
-
-                $.get('/attendance/ps-groups/' + costCenterId, function(res) {
-
-                    let html = '<option value="">Semua Group</option>';
-
-                    $.each(res, function(i, item) {
-
-                        html += `
+                    html += `
                 <option value="${item.id}"
                     ${item.id == "{{ request('ps_group_id') }}" ? 'selected' : ''}>
                     ${item.name}
                 </option>
             `;
 
-                    });
-
-                    $('#ps_group_id').html(html);
-
                 });
 
-            }
-        </script>
-    @endpush
+                $('#ps_group_id').html(html);
+
+            });
+
+        }
+    </script>
+@endpush
