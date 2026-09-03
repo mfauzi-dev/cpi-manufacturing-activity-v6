@@ -22,7 +22,7 @@
     {{-- ===== Cards ringkasan ===== --}}
     <div class="row">
         <div class="col-md-2-4 col-sm-6 col-12 mb-4" style="flex:0 0 20%; max-width:20%;">
-            <div class="card">
+            <div class="card w-100 h-100">
                 <div class="card-body">
                     <small class="text-muted">Total karyawan</small>
                     <h3 class="mb-0">{{ $totalKaryawan }}</h3>
@@ -30,7 +30,7 @@
             </div>
         </div>
         <div class="col-md-2-4 col-sm-6 col-12 mb-4" style="flex:0 0 20%; max-width:20%;">
-            <div class="card">
+            <div class="card w-100 h-100">
                 <div class="card-body">
                     <small class="text-muted">Hadir hari ini</small>
                     <h3 class="mb-0 text-success">{{ $attendanceToday->hadir ?? 0 }}</h3>
@@ -38,7 +38,7 @@
             </div>
         </div>
         <div class="col-md-2-4 col-sm-6 col-12 mb-4" style="flex:0 0 20%; max-width:20%;">
-            <div class="card">
+            <div class="card w-100 h-100">
                 <div class="card-body">
                     <small class="text-muted">Izin / sakit / cuti</small>
                     <h3 class="mb-0 text-warning">{{ $attendanceToday->izin_sakit_cuti ?? 0 }}</h3>
@@ -46,7 +46,7 @@
             </div>
         </div>
         <div class="col-md-2-4 col-sm-6 col-12 mb-4" style="flex:0 0 20%; max-width:20%;">
-            <div class="card">
+            <div class="card w-100 h-100">
                 <div class="card-body">
                     <small class="text-muted">Alfa hari ini</small>
                     <h3 class="mb-0 text-danger">{{ $attendanceToday->alfa ?? 0 }}</h3>
@@ -56,7 +56,7 @@
 
         @if (strtolower(auth()->user()->department->name) === 'sausage')
             <div class="col-md-2-4 col-sm-6 col-12 mb-4" style="flex:0 0 20%; max-width:20%;">
-                <div class="card">
+                <div class="card w-100 h-100">
                     <div class="card-body">
                         <small class="text-muted">Output Production Borongan Hari Ini</small>
                         <h3 class="mb-0">{{ number_format($outputHariIniSosis, 0, ',', '.') }} kg</h3>
@@ -64,7 +64,7 @@
                 </div>
             </div>
             <div class="col-md-2-4 col-sm-6 col-12 mb-4" style="flex:0 0 20%; max-width:20%;">
-                <div class="card">
+                <div class="card w-100 h-100">
                     <div class="card-body">
                         <small class="text-muted">Output Production Harian Hari Ini</small>
                         <h3 class="mb-0">{{ number_format($outputHariIniSosisProduction, 0, ',', '.') }} kg</h3>
@@ -75,7 +75,7 @@
 
         @if (strtolower(auth()->user()->department->name) === 'further processing')
             <div class="col-md-2-4 col-sm-6 col-12 mb-4" style="flex:0 0 20%; max-width:20%;">
-                <div class="card">
+                <div class="card w-100 h-100">
                     <div class="card-body">
                         <small class="text-muted">Output Hari Ini</small>
                         <h3 class="mb-0">{{ number_format($outputHariIniFurther, 0, ',', '.') }} kg</h3>
@@ -86,7 +86,7 @@
 
         @if (strtolower(auth()->user()->department->name) === 'slaughter house')
             <div class="col-md-2-4 col-sm-6 col-12 mb-4" style="flex:0 0 20%; max-width:20%;">
-                <div class="card">
+                <div class="card w-100 h-100">
                     <div class="card-body">
                         <small class="text-muted">Output Hari Ini</small>
                         <h3 class="mb-0">{{ number_format($outputHariIniSlaughterHouse, 0, ',', '.') }} kg</h3>

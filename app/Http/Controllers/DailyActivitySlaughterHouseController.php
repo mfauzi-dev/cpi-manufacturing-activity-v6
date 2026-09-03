@@ -45,7 +45,7 @@ class DailyActivitySlaughterHouseController extends Controller
         $employeeList = Employee::where('department_id', $departmentId)
             ->where('employee_status', 'borongan')
             ->orderBy('name')
-            ->get(['id', 'nik', 'name', 'employee_status']);
+            ->get(['id', 'nik', 'name', 'employee_status', 'outsourcing_id']);
 
         $productGroupList = ProductGroup::where('department_id', $departmentId)->orderBy('name')
             ->get();
@@ -118,7 +118,6 @@ class DailyActivitySlaughterHouseController extends Controller
             'tanggal' => ['required', 'date'],
             'cost_center_id' => ['required', 'exists:cost_centers,id'],
             'ps_group_id' => ['required', 'exists:ps_groups,id'],
-            'product_group_id' => ['required', 'exists:product_groups,id'],
             'line_id' => ['required', 'exists:lines,id'],
             'details' => ['required', 'array', 'min:1'],
             'details.*.employee_id' => ['required', 'array', 'min:1'],
@@ -156,7 +155,7 @@ class DailyActivitySlaughterHouseController extends Controller
                             'tanggal' => $tanggal->format('Y-m-d'),
                             'cost_center_id' => $request->cost_center_id,
                             'ps_group_id' => $request->ps_group_id,
-                            'product_group_id' => $request->product_group_id,
+                            'product_group_id' => $product->product_group_id,
                             'line_id' => $request->line_id,
                         ],
                         [

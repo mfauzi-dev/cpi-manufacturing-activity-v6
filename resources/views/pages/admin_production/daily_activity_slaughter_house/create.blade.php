@@ -151,39 +151,6 @@
                             </div>
                         </div>
 
-                        {{-- PRODUCT GROUP --}}
-                        <div class="col-md-3">
-                            <div class="form-group">
-
-                                <label>Product Group</label>
-
-                                <select name="product_group_id" id="product_group"
-                                    class="form-control @error('product_group_id') is-invalid @enderror">
-
-                                    <option value="">
-                                        Pilih Product Group
-                                    </option>
-
-                                    @foreach ($productGroupList as $productGroup)
-                                        <option value="{{ $productGroup->id }}"
-                                            {{ old('product_group_id') == $productGroup->id ? 'selected' : '' }}>
-
-                                            {{ $productGroup->name }}
-
-                                        </option>
-                                    @endforeach
-
-                                </select>
-
-                                @error('product_group_id')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-
-                            </div>
-                        </div>
-
                         {{-- EMPLOYEE --}}
                         <div class="col-md-3">
                             <div class="form-group">
@@ -196,7 +163,7 @@
                                         <option value="{{ $employee->id }}"
                                             {{ collect(old('employee_id', []))->contains($employee->id) ? 'selected' : '' }}>
 
-                                            {{ $employee->name }}
+                                            {{ $employee->name }} - {{ $employee->outsourcing?->name ?? '-' }}
 
                                         </option>
                                     @endforeach
