@@ -85,7 +85,6 @@
                             <th width="60">No.</th>
                             <th>Department</th>
                             <th>Line</th>
-                            <th>Code</th>
                             <th width="180" class="text-center">Action</th>
                         </tr>
                     </thead>

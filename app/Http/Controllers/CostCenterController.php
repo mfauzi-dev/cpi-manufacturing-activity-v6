@@ -139,7 +139,9 @@ class CostCenterController extends Controller
             ],
             'name' => [
                 'required',
-                'unique:cost_centers,name',
+                Rule::unique('cost_centers', 'name')->where(function ($query) use ($request) {
+                    return $query->where('department_id', $request->department_id);
+                }),
             ],
         ]);
 
@@ -179,7 +181,9 @@ class CostCenterController extends Controller
             ],
             'name' => [
                 'required',
-                Rule::unique('cost_centers', 'name')->ignore($id),
+                Rule::unique('cost_centers', 'name')->where(function ($query) use ($request) {
+                    return $query->where('department_id', $request->department_id);
+                })->ignore($costCenter->id),
             ],
         ]);
 

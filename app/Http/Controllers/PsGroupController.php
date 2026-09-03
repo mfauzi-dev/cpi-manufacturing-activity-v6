@@ -127,6 +127,9 @@ class PsGroupController extends Controller
             ],
             'name' => [
                 'required',
+                Rule::unique('ps_groups', 'name')->where(function ($query) use ($request) {
+                    return $query->where('cost_center_id', $request->cost_center_id);
+                }),
             ],
         ]);
 
@@ -162,6 +165,9 @@ class PsGroupController extends Controller
             ],
             'name' => [
                 'required',
+                Rule::unique('ps_groups', 'name')->where(function ($query) use ($request) {
+                    return $query->where('cost_center_id', $request->cost_center_id);
+                })->ignore($psGroup->id),
             ],
         ]);
 

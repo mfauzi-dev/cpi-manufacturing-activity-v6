@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Department;
 use App\Models\Line;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class LineController extends Controller
 {
@@ -126,34 +127,37 @@ class LineController extends Controller
             ],
             'name' => [
                 'required',
+                Rule::unique('lines', 'name')->where(function ($query) use ($request) {
+                    return $query->where('department_id', $request->department_id);
+                }),
             ],
         ]);
- 
+
         Line::create([
             'department_id' => $request->department_id,
             'name'          => $request->name,
         ]);
- 
+
         return redirect()
             ->route('admin.line.index')
             ->with('success', 'Line created successfully.');
     }
- 
+
     public function edit($id)
     {
         $line = Line::findOrFail($id);
         $departmentList = Department::orderBy('name')->get();
- 
+
         return view(
             'pages.admin.line.edit',
             compact('line', 'departmentList')
         );
     }
- 
+
     public function update(Request $request, $id)
     {
         $line = Line::findOrFail($id);
- 
+
         $request->validate([
             'department_id' => [
                 'required',
@@ -161,14 +165,17 @@ class LineController extends Controller
             ],
             'name' => [
                 'required',
+                Rule::unique('lines', 'name')->where(function ($query) use ($request) {
+                    return $query->where('department_id', $request->department_id);
+                })->ignore($line->id),
             ],
         ]);
- 
+
         $line->update([
             'department_id' => $request->department_id,
             'name'          => $request->name,
         ]);
- 
+
         return redirect()
             ->route('admin.line.index')
             ->with('success', 'Line updated successfully.');
