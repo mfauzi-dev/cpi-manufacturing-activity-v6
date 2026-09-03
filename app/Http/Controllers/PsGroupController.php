@@ -21,19 +21,27 @@ class PsGroupController extends Controller
         $costCenterId = $request->input('cost_center_id');
         $size         = $request->input('size', 10);
 
-        $query = PsGroup::with('costCenter');
+        $query = PsGroup::with('costCenter.department')
+            ->join('cost_centers', 'ps_groups.cost_center_id', '=', 'cost_centers.id')
+            ->join('departments', 'cost_centers.department_id', '=', 'departments.id')
+            ->select('ps_groups.*');
 
         if ($search) {
-            $query->where('name', 'like', '%' . $search . '%');
+            $query->where('ps_groups.name', 'like', '%' . $search . '%');
         }
 
         if ($costCenterId) {
-            $query->where('cost_center_id', $costCenterId);
+            $query->where('ps_groups.cost_center_id', $costCenterId);
         }
 
-        $psGroups = $query->latest()->paginate($size)->withQueryString();
+        $psGroups = $query
+            ->orderBy('departments.name')
+            ->orderBy('cost_centers.name')
+            ->orderBy('ps_groups.name')
+            ->paginate($size)
+            ->withQueryString();
 
-        $costCenterList = CostCenter::orderBy('name')->get();
+        $costCenterList = CostCenter::orderBy('code')->orderBy('name')->get();
 
         return view('pages.admin.ps-group.index', compact([
             'psGroups',
@@ -55,19 +63,27 @@ class PsGroupController extends Controller
         $costCenterId = $request->input('cost_center_id');
         $size         = $request->input('size', 10);
 
-        $query = PsGroup::with('costCenter');
+        $query = PsGroup::with('costCenter.department')
+            ->join('cost_centers', 'ps_groups.cost_center_id', '=', 'cost_centers.id')
+            ->join('departments', 'cost_centers.department_id', '=', 'departments.id')
+            ->select('ps_groups.*');
 
         if ($search) {
-            $query->where('name', 'like', '%' . $search . '%');
+            $query->where('ps_groups.name', 'like', '%' . $search . '%');
         }
 
         if ($costCenterId) {
-            $query->where('cost_center_id', $costCenterId);
+            $query->where('ps_groups.cost_center_id', $costCenterId);
         }
 
-        $psGroups = $query->latest()->paginate($size)->withQueryString();
+        $psGroups = $query
+            ->orderBy('departments.name')
+            ->orderBy('cost_centers.name')
+            ->orderBy('ps_groups.name')
+            ->paginate($size)
+            ->withQueryString();
 
-        $costCenterList = CostCenter::orderBy('name')->get();
+        $costCenterList = CostCenter::orderBy('code')->orderBy('name')->get();
 
         return view('pages.general_manager.ps-group.index', compact([
             'psGroups',
@@ -89,19 +105,27 @@ class PsGroupController extends Controller
         $costCenterId = $request->input('cost_center_id');
         $size         = $request->input('size', 10);
 
-        $query = PsGroup::with('costCenter');
+        $query = PsGroup::with('costCenter.department')
+            ->join('cost_centers', 'ps_groups.cost_center_id', '=', 'cost_centers.id')
+            ->join('departments', 'cost_centers.department_id', '=', 'departments.id')
+            ->select('ps_groups.*');
 
         if ($search) {
-            $query->where('name', 'like', '%' . $search . '%');
+            $query->where('ps_groups.name', 'like', '%' . $search . '%');
         }
 
         if ($costCenterId) {
-            $query->where('cost_center_id', $costCenterId);
+            $query->where('ps_groups.cost_center_id', $costCenterId);
         }
 
-        $psGroups = $query->latest()->paginate($size)->withQueryString();
+        $psGroups = $query
+            ->orderBy('departments.name')
+            ->orderBy('cost_centers.name')
+            ->orderBy('ps_groups.name')
+            ->paginate($size)
+            ->withQueryString();
 
-        $costCenterList = CostCenter::orderBy('name')->get();
+        $costCenterList = CostCenter::orderBy('code')->orderBy('name')->get();
 
         return view('pages.manager.ps-group.index', compact([
             'psGroups',
