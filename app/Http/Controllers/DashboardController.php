@@ -11,6 +11,7 @@ use App\Models\DailyActivityDetailFurther;
 use App\Models\DailyActivityDetailSlaughterHouse;
 use App\Models\DailyActivityFurther;
 use App\Models\DailyActivitySlaughterHouse;
+use App\Models\DailyProductionDetail;
 use App\Models\Deduction;
 use App\Models\Department;
 use App\Models\Employee;
@@ -1223,12 +1224,24 @@ class DashboardController extends Controller
             ->where('daily_activities.department_id', $departmentId)
             ->whereDate('daily_activities.tanggal', $today)
             ->sum('daily_activity_details.total_kg');
+        
+        $outputHariIniSosisProduction = DailyProductionDetail::query()
+            ->join('daily_productions', 'daily_productions.id', '=', 'daily_production_details.daily_production_id')
+            ->where('daily_productions.department_id', $departmentId)
+            ->whereDate('daily_productions.tanggal', $today)
+            ->sum('daily_production_details.total_kg');
 
         $outputHariIniFurther = DailyActivityDetailFurther::query()
             ->join('daily_activity_furthers', 'daily_activity_furthers.id', '=', 'daily_activity_detail_furthers.daily_activity_further_id')
             ->where('daily_activity_furthers.department_id', $departmentId)
             ->whereDate('daily_activity_furthers.tanggal', $today)
             ->sum('daily_activity_detail_furthers.total_kg');
+        
+        $outputHariIniSlaughterHouse = DailyActivityDetailSlaughterHouse::query()
+            ->join('daily_activity_slaughter_houses', 'daily_activity_slaughter_houses.id', '=', 'daily_activity_detail_slaughter_houses.daily_activity_slaughter_house_id')
+            ->where('daily_activity_slaughter_houses.department_id', $departmentId)
+            ->whereDate('daily_activity_slaughter_houses.tanggal', $today)
+            ->sum('daily_activity_detail_slaughter_houses.total_kg');
 
         // ===== 2. Tren 7 hari (kehadiran & output) =====
         $startTrend = $today->copy()->subDays(6);
@@ -1277,11 +1290,40 @@ class DashboardController extends Controller
                 return Carbon::parse($row->tanggal)->format('Y-m-d');
             });
 
+        $outputTrendSosisProduction = DailyProductionDetail::query()
+            ->join('daily_productions', 'daily_productions.id', '=', 'daily_production_details.daily_production_id')
+            ->where('daily_productions.department_id', $departmentId)
+            ->whereBetween('daily_productions.tanggal', [$startTrend, $today])
+            ->selectRaw("
+                daily_productions.tanggal as tanggal,
+                SUM(daily_production_details.total_kg) as total_kg
+            ")
+            ->groupBy('daily_productions.tanggal')
+            ->orderBy('daily_productions.tanggal')
+            ->get()
+            ->keyBy(fn ($row) => Carbon::parse($row->tanggal)->format('Y-m-d'));
+        
+        $outputTrendSlaughterHouse = DailyActivityDetailSlaughterHouse::query()
+            ->join('daily_activity_slaughter_houses', 'daily_activity_slaughter_houses.id', '=', 'daily_activity_detail_slaughter_houses.daily_activity_slaughter_house_id')
+            ->where('daily_activity_slaughter_houses.department_id', $departmentId)
+            ->whereBetween('daily_activity_slaughter_houses.tanggal', [$startTrend, $today])
+            ->selectRaw("
+                daily_activity_slaughter_houses.tanggal as tanggal,
+                SUM(daily_activity_detail_slaughter_houses.total_kg) as total_kg
+            ")
+            ->groupBy('daily_activity_slaughter_houses.tanggal')
+            ->orderBy('daily_activity_slaughter_houses.tanggal')
+            ->get()
+            ->keyBy(fn ($row) => Carbon::parse($row->tanggal)->format('Y-m-d'));
+
+
         $trendLabels        = [];
         $trendHadir         = [];
         $trendAlfa          = [];
         $trendOutputKgSosis   = [];
+        $trendOutputKgSosisProduction = [];
         $trendOutputKgFurther = [];
+        $trendOutputKgSlaughterHouse = [];
 
         for ($i = 0; $i < 7; $i++) {
             $date = $startTrend->copy()->addDays($i);
@@ -1291,7 +1333,9 @@ class DashboardController extends Controller
             $trendHadir[]           = (int) ($attendanceTrend[$key]->hadir ?? 0);
             $trendAlfa[]            = (int) ($attendanceTrend[$key]->alfa ?? 0);
             $trendOutputKgSosis[]   = (float) ($outputTrendSosis[$key]->total_kg ?? 0);
+            $trendOutputKgSosisProduction[] = (float) ($outputTrendSosisProduction[$key]->total_kg ?? 0);
             $trendOutputKgFurther[] = (float) ($outputTrendFurther[$key]->total_kg ?? 0);
+            $trendOutputKgSlaughterHouse[] = (float) ($outputTrendSlaughterHouse[$key]->total_kg ?? 0);
         }
 
         // ===== 3. Perlu perhatian: karyawan alfa hari ini =====
@@ -1346,6 +1390,28 @@ class DashboardController extends Controller
                 ->groupBy('cost_centers.id', 'cost_centers.name')
                 ->orderBy('cost_centers.name')
                 ->get();
+            
+            $costCenterSummarySlaughterHouse = DailyActivityDetailSlaughterHouse::query()
+                ->join('daily_activity_slaughter_houses', 'daily_activity_slaughter_houses.id', '=', 'daily_activity_detail_slaughter_houses.daily_activity_slaughter_house_id')
+                ->join('cost_centers', 'cost_centers.id', '=', 'daily_activity_slaughter_houses.cost_center_id')
+                ->where('daily_activity_slaughter_houses.department_id', $departmentId)
+                ->whereDate('daily_activity_slaughter_houses.tanggal', $today)
+                ->selectRaw("
+                    cost_centers.id as cost_center_id,
+                    cost_centers.name as cost_center_name,
+                    SUM(daily_activity_detail_slaughter_houses.total_kg) as total_kg,
+                    SUM(daily_activity_detail_slaughter_houses.total_harga) as total_rupiah
+                ")
+                ->groupBy('cost_centers.id', 'cost_centers.name')
+                ->orderBy('cost_centers.name')
+                ->get()
+                ->map(function ($row) {
+                    $row->harga_per_kg = $row->total_kg > 0
+                        ? $row->total_rupiah / $row->total_kg
+                        : 0;
+
+                    return $row;
+                });
 
         return view('pages.dashboard.admin-production', compact(
             'totalKaryawan',
@@ -1361,7 +1427,12 @@ class DashboardController extends Controller
             'belumDiabsen',
             'costCenterSummary',
             'costCenterSummaryFurther',
-        ));
+            'trendOutputKgSosisProduction',
+            'outputHariIniSosisProduction',
+            'outputHariIniSlaughterHouse',
+            'trendOutputKgSlaughterHouse',
+            'costCenterSummarySlaughterHouse',
+                ));
     }
 
     // private function financeDashboard()

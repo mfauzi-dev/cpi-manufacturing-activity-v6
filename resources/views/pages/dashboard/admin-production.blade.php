@@ -58,8 +58,16 @@
             <div class="col-md-2-4 col-sm-6 col-12 mb-4" style="flex:0 0 20%; max-width:20%;">
                 <div class="card">
                     <div class="card-body">
-                        <small class="text-muted">Output hari ini</small>
+                        <small class="text-muted">Output Production Borongan Hari Ini</small>
                         <h3 class="mb-0">{{ number_format($outputHariIniSosis, 0, ',', '.') }} kg</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2-4 col-sm-6 col-12 mb-4" style="flex:0 0 20%; max-width:20%;">
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Output Production Harian Hari Ini</small>
+                        <h3 class="mb-0">{{ number_format($outputHariIniSosisProduction, 0, ',', '.') }} kg</h3>
                     </div>
                 </div>
             </div>
@@ -69,8 +77,19 @@
             <div class="col-md-2-4 col-sm-6 col-12 mb-4" style="flex:0 0 20%; max-width:20%;">
                 <div class="card">
                     <div class="card-body">
-                        <small class="text-muted">Output hari ini</small>
+                        <small class="text-muted">Output Hari Ini</small>
                         <h3 class="mb-0">{{ number_format($outputHariIniFurther, 0, ',', '.') }} kg</h3>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        @if (strtolower(auth()->user()->department->name) === 'slaughter house')
+            <div class="col-md-2-4 col-sm-6 col-12 mb-4" style="flex:0 0 20%; max-width:20%;">
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-muted">Output Hari Ini</small>
+                        <h3 class="mb-0">{{ number_format($outputHariIniSlaughterHouse, 0, ',', '.') }} kg</h3>
                     </div>
                 </div>
             </div>
@@ -79,7 +98,7 @@
 
     {{-- ===== Chart tren ===== --}}
     <div class="row">
-        <div class="col-md-7 mb-4">
+        <div class="col-md-6 mb-4">
             <div class="card">
                 <div class="card-header">
                     Tren kehadiran 7 hari terakhir
@@ -89,16 +108,28 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-5 mb-4">
+        <div class="col-md-6 mb-4">
             <div class="card">
                 <div class="card-header">
-                    Output produksi (kg)
+                    Output produksi - Daily Activity (kg)
                 </div>
                 <div class="card-body">
                     <canvas id="outputChart" height="100"></canvas>
                 </div>
             </div>
         </div>
+        @if (strtolower(auth()->user()->department->name) === 'sausage')
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        Output produksi - Daily Production Harian (kg)
+                    </div>
+                    <div class="card-body">
+                        <canvas id="outputChartProduction" height="100"></canvas>
+                    </div>
+                </div>
+            </div>
+        @endif
     </div>
 
     {{-- ===== Perlu perhatian & shortcut ===== --}}
@@ -147,15 +178,56 @@
         <div class="col-md-5 mb-4">
             <div class="d-flex flex-column">
                 <a href="{{ route('admin-production.attendance.create') }}" class="btn btn-outline-primary mb-2 text-left">
-                    <i class="fas fa-clipboard-check"></i> Tambah absensi
+                    <i class="fas fa-clipboard-check"></i> Tambah Absensi
                 </a>
-                <a href="{{ route('admin-production.daily-activity.create') }}"
-                    class="btn btn-outline-primary mb-2 text-left">
-                    <i class="fas fa-plus"></i> Tambah daily activity
-                </a>
-                <a href="{{ route('admin-production.daily-activity.index') }}" class="btn btn-outline-primary text-left">
-                    <i class="fas fa-chart-bar"></i> Lihat summary
-                </a>
+                @if (strtolower(auth()->user()->department->name) === 'sausage')
+                    <a href="{{ route('admin-production.daily-activity.create') }}"
+                        class="btn btn-outline-primary mb-2 text-left">
+                        <i class="fas fa-plus"></i> Tambah Daily Activity Borongan
+                    </a>
+                    <a href="{{ route('admin-production.daily-activity.index') }}"
+                        class="btn btn-outline-primary text-left mb-2">
+                        <i class="fas fa-chart-bar"></i> Lihat Summary Borongan
+                    </a>
+                    <a href="{{ route('admin-production.daily-production.create') }}"
+                        class="btn btn-outline-primary mb-2 text-left">
+                        <i class="fas fa-plus"></i> Tambah Daily Production Harian
+                    </a>
+                    <a href="{{ route('admin-production.daily-production.index') }}"
+                        class="btn btn-outline-primary text-left">
+                        <i class="fas fa-chart-bar"></i> Lihat Summary Harian
+                    </a>
+                    <a href="{{ route('admin-production.daily-activity.create') }}"
+                        class="btn btn-outline-primary mb-2 text-left">
+                        <i class="fas fa-plus"></i> Tambah Daily Activity Borongan
+                    </a>
+                    <a href="{{ route('admin-production.daily-activity.index') }}"
+                        class="btn btn-outline-primary text-left mb-2">
+                        <i class="fas fa-chart-bar"></i> Lihat Summary Borongan
+                    </a>
+                @endif
+
+                @if (strtolower(auth()->user()->department->name) === 'further processing')
+                    <a href="{{ route('admin-production.daily-activity-further.create') }}"
+                        class="btn btn-outline-primary mb-2 text-left">
+                        <i class="fas fa-plus"></i> Tambah Daily Production
+                    </a>
+                    <a href="{{ route('admin-production.daily-activity-further.index') }}"
+                        class="btn btn-outline-primary text-left">
+                        <i class="fas fa-chart-bar"></i> Lihat Summary
+                    </a>
+                @endif
+
+                @if (strtolower(auth()->user()->department->name) === 'slaughter house')
+                    <a href="{{ route('admin-production.daily-activity-slaughter-house.create') }}"
+                        class="btn btn-outline-primary mb-2 text-left">
+                        <i class="fas fa-plus"></i> Tambah Daily Production
+                    </a>
+                    <a href="{{ route('admin-production.daily-activity-slaughter-house.index') }}"
+                        class="btn btn-outline-primary text-left">
+                        <i class="fas fa-chart-bar"></i> Lihat Summary
+                    </a>
+                @endif
             </div>
         </div>
     </div>
@@ -208,6 +280,20 @@
                                 @endforelse
 
                             @endif
+
+                            @if (strtolower(auth()->user()->department->name) === 'slaughter house')
+                                @forelse ($costCenterSummarySlaughterHouse as $cc)
+                                    <tr>
+                                        <td>{{ $cc->cost_center_name }}</td>
+                                        <td class="text-right">{{ number_format($cc->total_kg, 0, ',', '.') }}</td>
+                                        <td class="text-right">Rp {{ number_format($cc->harga_per_kg, 0, ',', '.') }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3" class="text-muted">Belum ada data daily activity hari ini.</td>
+                                    </tr>
+                                @endforelse
+                            @endif
                         </tbody>
                     </table>
                 </div>
@@ -229,6 +315,11 @@
 
         @if (strtolower(auth()->user()->department->name) === 'sausage')
             const trendOutputKg = @json($trendOutputKgSosis);
+            const trendOutputKgProduction = @json($trendOutputKgSosisProduction);
+        @endif
+
+        @if (strtolower(auth()->user()->department->name) === 'slaughter house')
+            const trendOutputKg = @json($trendOutputKgSlaughterHouse);
         @endif
 
         new Chart(document.getElementById('attendanceChart'), {
@@ -282,5 +373,26 @@
                 },
             },
         });
+        @if (strtolower(auth()->user()->department->name) === 'sausage')
+            new Chart(document.getElementById('outputChartProduction'), {
+                type: 'bar',
+                data: {
+                    labels: trendLabels,
+                    datasets: [{
+                        label: 'Output Daily Production (kg)',
+                        data: trendOutputKgProduction,
+                        backgroundColor: '#f0ad4e'
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                },
+            });
+        @endif
     </script>
 @endpush
