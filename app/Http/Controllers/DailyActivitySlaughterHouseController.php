@@ -155,7 +155,7 @@ class DailyActivitySlaughterHouseController extends Controller
                             'tanggal' => $tanggal->format('Y-m-d'),
                             'cost_center_id' => $request->cost_center_id,
                             'ps_group_id' => $request->ps_group_id,
-                            'product_group_id' => $product->product_group_id,
+                            'product_group_id' => $product->product_group_id ?? null,
                             'line_id' => $request->line_id,
                         ],
                         [
