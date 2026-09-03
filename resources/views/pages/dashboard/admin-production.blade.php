@@ -197,14 +197,6 @@
                         class="btn btn-outline-primary text-left">
                         <i class="fas fa-chart-bar"></i> Lihat Summary Harian
                     </a>
-                    <a href="{{ route('admin-production.daily-activity.create') }}"
-                        class="btn btn-outline-primary mb-2 text-left">
-                        <i class="fas fa-plus"></i> Tambah Daily Activity Borongan
-                    </a>
-                    <a href="{{ route('admin-production.daily-activity.index') }}"
-                        class="btn btn-outline-primary text-left mb-2">
-                        <i class="fas fa-chart-bar"></i> Lihat Summary Borongan
-                    </a>
                 @endif
 
                 @if (strtolower(auth()->user()->department->name) === 'further processing')
