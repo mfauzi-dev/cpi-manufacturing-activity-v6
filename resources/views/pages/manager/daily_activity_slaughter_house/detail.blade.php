@@ -166,6 +166,10 @@
                             </th>
 
                             <th class="text-right">
+                                Productivity Actual
+                            </th>
+
+                            <th class="text-right">
                                 Harga / Kg
                             </th>
 
@@ -220,6 +224,10 @@
 
                                 <td class="text-right">
                                     {{ number_format($detail->productivity, 2, ',', '.') }}
+                                </td>
+
+                                <td class="text-right">
+                                    {{ number_format($detail->productivity_actual, 2, ',', '.') }}
                                 </td>
 
                                 <td class="text-right">
