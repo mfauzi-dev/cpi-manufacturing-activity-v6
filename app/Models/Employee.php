@@ -67,4 +67,14 @@ class Employee extends Model
     {
         return $this->hasMany(PenggajianHarian::class);
     }
+
+    public function dailyActivityFurthers()
+    {
+        return $this->hasMany(DailyActivityFurther::class);
+    }
+
+    public function dailyActivitySlaughterHouses()
+    {
+        return $this->hasMany(DailyActivitySlaughterHouse::class);
+    }
 }

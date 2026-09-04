@@ -159,8 +159,10 @@
 
                     <label>Department</label>
 
-                    <input type="text" class="form-control" value="{{ auth()->user()->department->name ?? '-' }}"
+                    <input type="text"class="form-control" value="{{ auth()->user()->department->name ?? '-' }}"
                         readonly>
+
+                    <input type="hidden" name="department_id" value="{{ auth()->user()->department_id }}">
 
                     @error('department_id')
                         <div class="invalid-feedback d-block">

@@ -1092,7 +1092,10 @@ class AttendanceController extends Controller
 
                 $managemenFeePercent = 175000 / 25;
 
-                $managemenFee = $workDays * $managemenFeePercent;
+                $managemenFee = min(
+                    $workDays * $managemenFeePercent,
+                    175000
+                );
 
                 $grandTotalUpah = $upahHarian + $jamsostek + $bpjsKesehatan + $bpjsPensiun + $managemenFee;
 
@@ -1198,7 +1201,10 @@ class AttendanceController extends Controller
 
                 $managemenFeePercent = 175000 / 25;
 
-                $managemenFee = $workDays * $managemenFeePercent;
+                $managemenFee = min(
+                    $workDays * $managemenFeePercent,
+                    175000
+                );
 
                 $grandTotalUpah = $upahHarian + $jamsostek + $bpjsKesehatan + $bpjsPensiun + $managemenFee;
 
@@ -1305,7 +1311,10 @@ class AttendanceController extends Controller
 
                 $managemenFeePercent = 175000 / 25;
 
-                $managemenFee = $workDays * $managemenFeePercent;
+                $managemenFee = min(
+                    $workDays * $managemenFeePercent,
+                    175000
+                );
 
                 $grandTotalUpah = $upahHarian + $jamsostek + $bpjsKesehatan + $bpjsPensiun + $managemenFee;
                 PenggajianHarian::updateOrCreate(

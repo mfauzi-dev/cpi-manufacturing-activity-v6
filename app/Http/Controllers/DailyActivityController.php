@@ -215,7 +215,10 @@ class DailyActivityController extends Controller
 
                     $managemenFeePercent = 175000 / 25;
 
-                    $managemenFee = $payroll->total_hari_kerja * $managemenFeePercent;
+                    $managemenFee = min(
+                        $payroll->total_hari_kerja * $managemenFeePercent,
+                        175000
+                    );
 
                     $payroll->managemen_fee = $managemenFee;
 
@@ -605,7 +608,8 @@ class DailyActivityController extends Controller
                 'daily_activity_details.total_harga',
                 'daily_activity_details.productivity'
             )
-            ->orderByDesc('daily_activities.updated_at')
+            ->orderBy('daily_activities.tanggal')
+            ->orderByDesc('daily_activities.created_at')
             ->orderByDesc('daily_activity_details.product_id')
             ->paginate(100)->withQueryString();
 
@@ -650,7 +654,8 @@ class DailyActivityController extends Controller
                 'daily_activity_details.total_harga',
                 'daily_activity_details.productivity'
             )
-            ->orderByDesc('daily_activities.updated_at')
+            ->orderBy('daily_activities.tanggal')
+            ->orderByDesc('daily_activities.created_at')
             ->orderByDesc('daily_activity_details.product_id')
             ->paginate(100)->withQueryString();
 
@@ -699,7 +704,8 @@ class DailyActivityController extends Controller
                 'daily_activity_details.total_harga',
                 'daily_activity_details.productivity'
             )
-            ->orderByDesc('daily_activities.updated_at')
+            ->orderBy('daily_activities.tanggal')
+            ->orderByDesc('daily_activities.created_at')
             ->orderByDesc('daily_activity_details.product_id')
             ->paginate(100)->withQueryString();
 
@@ -970,7 +976,10 @@ class DailyActivityController extends Controller
 
             $managemenFeePerDay = 175000 / 25;
 
-            $managemenFee = $totalHariKerja * $managemenFeePerDay;
+            $managemenFee = min(
+                $totalHariKerja * $managemenFeePerDay,
+                175000
+            );
 
             $grandTotalUpah =
                 $totalUpah
