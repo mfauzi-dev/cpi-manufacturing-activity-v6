@@ -168,7 +168,7 @@
 
             let harga = $('#product').find(':selected').data('price') || 0;
 
-            let total = kg * lamaPacking * harga;
+            let total = kg * harga;
 
             $('#total_rupiah_display').val('Rp ' + Number(total).toLocaleString('id-ID'));
 

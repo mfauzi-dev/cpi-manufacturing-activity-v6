@@ -583,9 +583,7 @@ class DailyActivityFurtherController extends Controller
                 'daily_activity_detail_furthers.lama_packing',
                 'daily_activity_detail_furthers.productivity'
             )
-            ->orderByDesc('daily_activity_furthers.tanggal')
-            ->orderByDesc('daily_activity_detail_furthers.product_id')
-            ->orderByDesc('daily_activity_detail_furthers.id')
+            ->orderByDesc('daily_activity_furthers.updated_at')
             ->paginate(100)->withQueryString();
  
         return view('pages.admin_production.daily_activity_further.detail', compact(
@@ -633,7 +631,7 @@ class DailyActivityFurtherController extends Controller
                 'daily_activity_detail_furthers.lama_packing',
                 'daily_activity_detail_furthers.productivity'
             )
-            ->orderByDesc('daily_activity_furthers.tanggal')
+            ->orderByDesc('daily_activity_furthers.updated_at')
             ->paginate(100)->withQueryString();
  
         return view('pages.general_manager.daily_activity_further.detail', compact(
@@ -685,7 +683,7 @@ class DailyActivityFurtherController extends Controller
                 'daily_activity_detail_furthers.lama_packing',
                 'daily_activity_detail_furthers.productivity'
             )
-            ->orderByDesc('daily_activity_furthers.tanggal')
+            ->orderByDesc('daily_activity_furthers.updated_at')
             ->paginate(100)->withQueryString();
  
         return view('pages.manager.daily_activity_further.detail', compact(

@@ -689,8 +689,7 @@ class DailyActivitySlaughterHouseController extends Controller
                 'daily_activity_detail_slaughter_houses.lama_packing',
                 'daily_activity_detail_slaughter_houses.productivity'
             )
-            ->orderByDesc('daily_activity_slaughter_houses.tanggal')
-            ->orderByDesc('daily_activity_detail_slaughter_houses.id')
+            ->orderByDesc('daily_activity_slaughter_houses.updated_at')
             ->paginate(50)->withQueryString();
  
         return view('pages.admin_production.daily_activity_slaughter_house.detail', compact(
@@ -735,7 +734,7 @@ class DailyActivitySlaughterHouseController extends Controller
                 'daily_activity_detail_slaughter_houses.lama_packing',
                 'daily_activity_detail_slaughter_houses.productivity'
             )
-            ->orderByDesc('daily_activity_slaughter_houses.tanggal')
+            ->orderByDesc('daily_activity_slaughter_houses.updated_at')
             ->paginate(50)->withQueryString();
  
         return view('pages.general_manager.daily_activity_slaughter_house.detail', compact(
@@ -783,7 +782,7 @@ class DailyActivitySlaughterHouseController extends Controller
                 'daily_activity_detail_slaughter_houses.lama_packing',
                 'daily_activity_detail_slaughter_houses.productivity'
             )
-            ->orderByDesc('daily_activity_slaughter_houses.tanggal')
+            ->orderByDesc('daily_activity_slaughter_houses.updated_at')
             ->paginate(50)->withQueryString();
  
         return view('pages.manager.daily_activity_slaughter_house.detail', compact(

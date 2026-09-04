@@ -271,6 +271,7 @@ class DailyProductionController extends Controller
                 'daily_production_details.total_harga'
             )
             ->orderByDesc('daily_productions.updated_at')
+            ->orderByDesc('daily_production_details.product_id')
             ->paginate(100)->withQueryString();
 
         return view('pages.admin_production.daily_production.detail', compact(
@@ -611,6 +612,7 @@ class DailyProductionController extends Controller
                 'daily_production_details.total_harga'
             )
             ->orderByDesc('daily_productions.tanggal')
+            ->orderByDesc('daily_production_details.product_id')
             ->paginate(100)
             ->withQueryString();
 
@@ -849,6 +851,7 @@ class DailyProductionController extends Controller
                 'daily_production_details.total_harga'
             )
             ->orderByDesc('daily_productions.tanggal')
+            ->orderByDesc('daily_production_details.product_id')
             ->paginate(100)
             ->withQueryString();
 

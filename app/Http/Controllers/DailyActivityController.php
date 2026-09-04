@@ -606,6 +606,7 @@ class DailyActivityController extends Controller
                 'daily_activity_details.productivity'
             )
             ->orderByDesc('daily_activities.updated_at')
+            ->orderByDesc('daily_activity_details.product_id')
             ->paginate(100)->withQueryString();
 
         return view('pages.admin_production.daily_activity.detail', compact(
@@ -649,7 +650,8 @@ class DailyActivityController extends Controller
                 'daily_activity_details.total_harga',
                 'daily_activity_details.productivity'
             )
-            ->orderByDesc('daily_activities.tanggal')
+            ->orderByDesc('daily_activities.updated_at')
+            ->orderByDesc('daily_activity_details.product_id')
             ->paginate(100)->withQueryString();
 
         return view('pages.general_manager.daily-activity.detail', compact(
@@ -697,7 +699,8 @@ class DailyActivityController extends Controller
                 'daily_activity_details.total_harga',
                 'daily_activity_details.productivity'
             )
-            ->orderByDesc('daily_activities.tanggal')
+            ->orderByDesc('daily_activities.updated_at')
+            ->orderByDesc('daily_activity_details.product_id')
             ->paginate(100)->withQueryString();
 
         return view('pages.manager.daily-activity.detail', compact(
