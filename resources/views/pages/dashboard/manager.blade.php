@@ -2,14 +2,12 @@
 
 @section('content')
 
-
     <div class="section-header">
         <h1>Dashboard</h1>
     </div>
 
     <div class="section-body">
 
-        {{-- FILTER --}}
         <div class="card">
             <div class="card-body">
                 <form method="GET">
@@ -65,7 +63,6 @@
         </div>
 
 
-        {{-- EMPLOYEE --}}
         <div class="row">
 
             <div class="col-lg-6 col-md-6">
@@ -112,11 +109,9 @@
         </div>
 
 
-        {{-- OUTPUT CARDS --}}
         <div class="row">
 
             @if (strtolower(auth()->user()->department->name) === 'further processing')
-                {{-- FURTHER --}}
                 <div class="col-lg-12 col-md-12">
                     <div class="card card-statistic-2">
 
@@ -137,9 +132,6 @@
                     </div>
                 </div>
             @elseif (strtolower(auth()->user()->department->name) === 'slaughter house')
-                {{-- SLAUGHTER HOUSE --}}
-
-                {{-- AVERAGE RP/KG --}}
                 <div class="col-lg-4 col-md-6">
                     <div class="card card-statistic-2">
 
@@ -161,7 +153,6 @@
                 </div>
 
 
-                {{-- TOTAL RUPIAH --}}
                 <div class="col-lg-4 col-md-6">
                     <div class="card card-statistic-1">
 
@@ -183,7 +174,6 @@
                 </div>
 
 
-                {{-- TOTAL KG --}}
                 <div class="col-lg-4 col-md-6">
                     <div class="card card-statistic-2">
 
@@ -204,9 +194,6 @@
                     </div>
                 </div>
             @else
-                {{-- SOSIS --}}
-
-                {{-- AVERAGE RP/KG --}}
                 <div class="col-lg-4 col-md-6">
                     <div class="card card-statistic-2">
 
@@ -228,7 +215,6 @@
                 </div>
 
 
-                {{-- TOTAL RUPIAH --}}
                 <div class="col-lg-4 col-md-6">
                     <div class="card card-statistic-1">
 
@@ -250,7 +236,6 @@
                 </div>
 
 
-                {{-- TOTAL KG --}}
                 <div class="col-lg-4 col-md-6">
                     <div class="card card-statistic-2">
 
@@ -275,10 +260,8 @@
         </div>
 
 
-        {{-- CHART --}}
         <div class="row">
 
-            {{-- KG CHART --}}
             <div class="col-lg-6">
 
                 <div class="card">
@@ -286,7 +269,7 @@
                     <div class="card-header">
                         <h4>
                             <i class="fas fa-chart-bar mr-2"></i>
-                            Output KG per Department
+                            Output KG per Cost Center (Borongan)
                         </h4>
                     </div>
 
@@ -299,7 +282,6 @@
             </div>
 
 
-            {{-- RUPIAH CHART --}}
             @if (strtolower(auth()->user()->department->name) !== 'further processing')
                 <div class="col-lg-6">
 
@@ -308,7 +290,7 @@
                         <div class="card-header">
                             <h4>
                                 <i class="fas fa-chart-line mr-2"></i>
-                                Total Rupiah per Department
+                                Total Rupiah per Cost Center
                             </h4>
                         </div>
 
@@ -322,7 +304,29 @@
             @endif
 
 
-            {{-- TREND --}}
+            @if (strtolower(auth()->user()->department->name) !== 'further processing' &&
+                    strtolower(auth()->user()->department->name) !== 'slaughter house')
+                <div class="col-lg-6">
+
+                    <div class="card">
+
+                        <div class="card-header">
+                            <h4>
+                                <i class="fas fa-chart-bar mr-2"></i>
+                                Output KG per Cost Center (Production Harian)
+                            </h4>
+                        </div>
+
+                        <div class="card-body">
+                            <canvas id="kgChartProductionHarian" height="180"></canvas>
+                        </div>
+
+                    </div>
+
+                </div>
+            @endif
+
+
             <div class="col-lg-6">
 
                 <div class="card">
@@ -345,10 +349,8 @@
         </div>
 
 
-        {{-- PROGRESS --}}
         <div class="row">
 
-            {{-- ATTENDANCE --}}
             <div class="col-lg-6">
 
                 <div class="card">
@@ -428,7 +430,6 @@
             </div>
 
 
-            {{-- DAILY ACTIVITY --}}
             <div class="col-lg-6">
 
                 <div class="card">
@@ -440,8 +441,6 @@
                     <div class="card-body">
 
                         @if (strtolower(auth()->user()->department->name) === 'further processing')
-                            {{-- FURTHER --}}
-
                             <div class="mb-2 d-flex justify-content-between">
 
                                 <span>
@@ -478,8 +477,6 @@
 
                             </div>
                         @elseif (strtolower(auth()->user()->department->name) === 'slaughter house')
-                            {{-- SLAUGHTER HOUSE --}}
-
                             <div class="mb-2 d-flex justify-content-between">
 
                                 <span>
@@ -524,8 +521,6 @@
 
                             </div>
                         @else
-                            {{-- SOSIS --}}
-
                             <div class="mb-2 d-flex justify-content-between">
 
                                 <span>
@@ -580,35 +575,32 @@
         </div>
 
 
-        {{-- SUMMARY DEPARTMENT --}}
         <div class="card">
 
             <div class="card-header">
-                <h4>Summary Department</h4>
+                <h4>Summary Cost Center (Borongan)</h4>
             </div>
 
             <div class="card-body table-responsive">
 
                 @if (strtolower(auth()->user()->department->name) === 'further processing')
-                    {{-- FURTHER --}}
-
                     <table class="table table-bordered table-striped">
 
                         <thead>
                             <tr>
-                                <th>Department</th>
+                                <th>Cost Center</th>
                                 <th class="text-right">KG</th>
                             </tr>
                         </thead>
 
                         <tbody>
 
-                            @forelse($departmentSummaryFurther as $department)
+                            @forelse($costCenterSummaryFurther as $costCenter)
                                 <tr>
-                                    <td>{{ $department->name }}</td>
+                                    <td>{{ $costCenter->name }}</td>
 
                                     <td class="text-right">
-                                        {{ number_format($department->total_kg, 2, ',', '.') }}
+                                        {{ number_format($costCenter->total_kg, 2, ',', '.') }}
                                     </td>
                                 </tr>
 
@@ -625,13 +617,11 @@
 
                     </table>
                 @elseif (strtolower(auth()->user()->department->name) === 'slaughter house')
-                    {{-- SLAUGHTER HOUSE --}}
-
                     <table class="table table-bordered table-striped">
 
                         <thead>
                             <tr>
-                                <th>Department</th>
+                                <th>Cost Center</th>
                                 <th class="text-right">KG</th>
                                 <th class="text-right">Rp/KG</th>
                                 <th class="text-right">Total Rupiah</th>
@@ -640,23 +630,23 @@
 
                         <tbody>
 
-                            @forelse($departmentSummarySlaughterHouse as $department)
+                            @forelse($costCenterSummarySlaughterHouse as $costCenter)
                                 <tr>
 
                                     <td>
-                                        {{ $department->name }}
+                                        {{ $costCenter->name }}
                                     </td>
 
                                     <td class="text-right">
-                                        {{ number_format($department->total_kg, 2, ',', '.') }}
+                                        {{ number_format($costCenter->total_kg, 2, ',', '.') }}
                                     </td>
 
                                     <td class="text-right">
-                                        Rp {{ number_format($department->harga_per_kg, 2, ',', '.') }}
+                                        Rp {{ number_format($costCenter->harga_per_kg, 2, ',', '.') }}
                                     </td>
 
                                     <td class="text-right font-weight-bold">
-                                        Rp {{ number_format($department->total_rupiah, 0, ',', '.') }}
+                                        Rp {{ number_format($costCenter->total_rupiah, 0, ',', '.') }}
                                     </td>
 
                                 </tr>
@@ -674,13 +664,11 @@
 
                     </table>
                 @else
-                    {{-- SOSIS --}}
-
                     <table class="table table-bordered table-striped">
 
                         <thead>
                             <tr>
-                                <th>Department</th>
+                                <th>Cost Center</th>
                                 <th class="text-right">KG</th>
                                 <th class="text-right">Rp/KG</th>
                                 <th class="text-right">Total Rupiah</th>
@@ -689,23 +677,23 @@
 
                         <tbody>
 
-                            @forelse($departmentSummarySosis as $department)
+                            @forelse($costCenterSummarySosis as $costCenter)
                                 <tr>
 
                                     <td>
-                                        {{ $department->name }}
+                                        {{ $costCenter->name }}
                                     </td>
 
                                     <td class="text-right">
-                                        {{ number_format($department->total_kg, 2, ',', '.') }}
+                                        {{ number_format($costCenter->total_kg, 2, ',', '.') }}
                                     </td>
 
                                     <td class="text-right">
-                                        Rp {{ number_format($department->harga_per_kg, 2, ',', '.') }}
+                                        Rp {{ number_format($costCenter->harga_per_kg, 2, ',', '.') }}
                                     </td>
 
                                     <td class="text-right font-weight-bold">
-                                        Rp {{ number_format($department->total_rupiah, 0, ',', '.') }}
+                                        Rp {{ number_format($costCenter->total_rupiah, 0, ',', '.') }}
                                     </td>
 
                                 </tr>
@@ -729,7 +717,69 @@
         </div>
 
 
-        {{-- NOT INPUT DAILY ACTIVITY --}}
+        @if (strtolower(auth()->user()->department->name) !== 'further processing' &&
+                strtolower(auth()->user()->department->name) !== 'slaughter house')
+            <div class="card">
+
+                <div class="card-header">
+                    <h4>Summary Cost Center (Production Harian)</h4>
+                </div>
+
+                <div class="card-body table-responsive">
+
+                    <table class="table table-bordered table-striped">
+
+                        <thead>
+                            <tr>
+                                <th>Cost Center</th>
+                                <th class="text-right">KG</th>
+                                <th class="text-right">Rp/KG</th>
+                                <th class="text-right">Total Rupiah</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            @forelse($costCenterSummaryProductionHarian as $costCenter)
+                                <tr>
+
+                                    <td>
+                                        {{ $costCenter->name }}
+                                    </td>
+
+                                    <td class="text-right">
+                                        {{ number_format($costCenter->total_kg, 2, ',', '.') }}
+                                    </td>
+
+                                    <td class="text-right">
+                                        Rp {{ number_format($costCenter->harga_per_kg, 2, ',', '.') }}
+                                    </td>
+
+                                    <td class="text-right font-weight-bold">
+                                        Rp {{ number_format($costCenter->total_rupiah, 0, ',', '.') }}
+                                    </td>
+
+                                </tr>
+
+                            @empty
+
+                                <tr>
+                                    <td colspan="4" class="text-center">
+                                        Tidak ada data
+                                    </td>
+                                </tr>
+                            @endforelse
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+        @endif
+
+
         <div class="row">
 
             <div class="col-lg-12">
@@ -877,7 +927,6 @@
         </div>
 
 
-        {{-- RECENT DAILY ACTIVITY --}}
         <div class="card">
 
             <div class="card-header">
@@ -1035,14 +1084,14 @@
         @if (strtolower(auth()->user()->department->name) === 'further processing')
 
             const labels = [
-                @foreach ($departmentSummaryFurther as $department)
-                    '{{ $department->name }}',
+                @foreach ($costCenterSummaryFurther as $costCenter)
+                    '{{ $costCenter->name }}',
                 @endforeach
             ];
 
             const kgData = [
-                @foreach ($departmentSummaryFurther as $department)
-                    {{ $department->total_kg ?? 0 }},
+                @foreach ($costCenterSummaryFurther as $costCenter)
+                    {{ $costCenter->total_kg ?? 0 }},
                 @endforeach
             ];
 
@@ -1051,51 +1100,63 @@
         @elseif (strtolower(auth()->user()->department->name) === 'slaughter house')
 
             const labels = [
-                @foreach ($departmentSummarySlaughterHouse as $department)
-                    '{{ $department->name }}',
+                @foreach ($costCenterSummarySlaughterHouse as $costCenter)
+                    '{{ $costCenter->name }}',
                 @endforeach
             ];
 
             const kgData = [
-                @foreach ($departmentSummarySlaughterHouse as $department)
-                    {{ $department->total_kg ?? 0 }},
+                @foreach ($costCenterSummarySlaughterHouse as $costCenter)
+                    {{ $costCenter->total_kg ?? 0 }},
                 @endforeach
             ];
 
             const rupiahData = [
-                @foreach ($departmentSummarySlaughterHouse as $department)
-                    {{ $department->total_rupiah ?? 0 }},
+                @foreach ($costCenterSummarySlaughterHouse as $costCenter)
+                    {{ $costCenter->total_rupiah ?? 0 }},
                 @endforeach
             ];
 
             const trendLabels = @json($trendLabels);
             const trendOutputKg = @json($trendOutputKgSlaughterHouse);
-        @else
+        @elseif (strtolower(auth()->user()->department->name) === 'sausage')
 
             const labels = [
-                @foreach ($departmentSummarySosis as $department)
-                    '{{ $department->name }}',
+                @foreach ($costCenterSummarySosis as $costCenter)
+                    '{{ $costCenter->name }}',
                 @endforeach
             ];
 
             const kgData = [
-                @foreach ($departmentSummarySosis as $department)
-                    {{ $department->total_kg ?? 0 }},
+                @foreach ($costCenterSummarySosis as $costCenter)
+                    {{ $costCenter->total_kg ?? 0 }},
                 @endforeach
             ];
 
             const rupiahData = [
-                @foreach ($departmentSummarySosis as $department)
-                    {{ $department->total_rupiah ?? 0 }},
+                @foreach ($costCenterSummarySosis as $costCenter)
+                    {{ $costCenter->total_rupiah ?? 0 }},
+                @endforeach
+            ];
+
+            const labelsProductionHarian = [
+                @foreach ($costCenterSummaryProductionHarian as $costCenter)
+                    '{{ $costCenter->name }}',
+                @endforeach
+            ];
+
+            const kgDataProductionHarian = [
+                @foreach ($costCenterSummaryProductionHarian as $costCenter)
+                    {{ $costCenter->total_kg ?? 0 }},
                 @endforeach
             ];
 
             const trendLabels = @json($trendLabels);
             const trendOutputKg = @json($trendOutputKgSosis);
+            const trendOutputKgProductionHarian = @json($trendOutputKgProductionHarian);
         @endif
 
 
-        // KG CHART
         new Chart(document.getElementById('kgChart'), {
 
             type: 'bar',
@@ -1105,7 +1166,7 @@
                 labels: labels,
 
                 datasets: [{
-                    label: 'Output KG',
+                    label: 'Output KG (Borongan)',
                     data: kgData,
                     backgroundColor: '#4e73df'
                 }]
@@ -1129,7 +1190,6 @@
         });
 
 
-        // RUPIAH CHART
         @if (strtolower(auth()->user()->department->name) !== 'further processing')
 
             new Chart(document.getElementById('rupiahChart'), {
@@ -1176,7 +1236,44 @@
         @endif
 
 
-        // TREND OUTPUT
+        @if (strtolower(auth()->user()->department->name) !== 'further processing' &&
+                strtolower(auth()->user()->department->name) !== 'slaughter house')
+
+            new Chart(document.getElementById('kgChartProductionHarian'), {
+
+                type: 'bar',
+
+                data: {
+
+                    labels: labelsProductionHarian,
+
+                    datasets: [{
+                        label: 'Output KG (Production Harian)',
+                        data: kgDataProductionHarian,
+                        backgroundColor: '#52A77A'
+                    }]
+
+                },
+
+                options: {
+
+                    responsive: true,
+                    // maintainAspectRatio: false,
+
+                    plugins: {
+
+                        legend: {
+                            display: false
+                        }
+
+                    }
+
+                }
+
+            });
+        @endif
+
+
         new Chart(document.getElementById('outputChart'), {
 
             type: 'bar',
@@ -1186,14 +1283,18 @@
                 labels: trendLabels,
 
                 datasets: [{
-
-                    label: 'Output (kg)',
-
-                    data: trendOutputKg,
-
-                    backgroundColor: '#36a9e1'
-
-                }]
+                        label: 'Output KG - Karyawan Borongan',
+                        data: trendOutputKg,
+                        backgroundColor: '#3FA7D6'
+                    },
+                    @if (strtolower(auth()->user()->department->name) === 'sausage')
+                        {
+                            label: 'Output KG - Karyawan Harian',
+                            data: trendOutputKgProductionHarian,
+                            backgroundColor: '#52A77A'
+                        }
+                    @endif
+                ]
 
             },
 
@@ -1204,7 +1305,7 @@
                 plugins: {
 
                     legend: {
-                        display: false
+                        display: {{ strtolower(auth()->user()->department->name) === 'sausage' ? 'true' : 'false' }}
                     }
 
                 }

@@ -6,7 +6,6 @@
     </div>
 
     <div class="section-body">
-        {{-- FILTER --}}
         <div class="card">
             <div class="card-body">
                 <form method="GET">
@@ -76,7 +75,6 @@
         </div>
 
 
-        {{-- ATTENDANCE --}}
         <div class="row">
 
             <div class="col-lg-6 col-md-6">
@@ -123,94 +121,116 @@
         </div>
 
 
-        {{-- DAILY ACTIVITY --}}
         <div class="row">
 
-            {{-- TOTAL KG --}}
+            {{-- TOTAL KG SAUSAGE BORONGAN --}}
             <div class="col-lg-4 col-md-6">
                 <div class="card card-statistic-2">
-
-                    <div class="card-icon shadow-success bg-success">
+                    <div class="card-icon shadow-primary bg-primary">
                         <i class="fas fa-weight"></i>
                     </div>
 
                     <div class="card-wrap">
-
                         <div class="card-header">
-                            <h4>Total KG</h4>
+                            <h4>Total KG Sausage Borongan</h4>
                         </div>
-
                         <div class="card-body">
-                            {{ number_format($totalKg, 2, ',', '.') }}
+                            {{ number_format($totalKgBorongan, 2, ',', '.') }}
                         </div>
-
                     </div>
-
                 </div>
             </div>
 
-
-            {{-- TOTAL RUPIAH --}}
-            <div class="col-lg-4 col-md-6">
-                <div class="card card-statistic-1">
-
-                    <div class="card-icon bg-danger">
-                        <i class="fas fa-money-bill-wave"></i>
-                    </div>
-
-                    <div class="card-wrap">
-
-                        <div class="card-header">
-                            <h4>Total Rupiah</h4>
-                        </div>
-
-                        <div class="card-body">
-                            Rp {{ number_format($totalRupiah, 0, ',', '.') }}
-                        </div>
-
-                    </div>
-
-                </div>
-            </div>
-
-
-            {{-- RUPIAH PER KG --}}
+            {{-- TOTAL KG SAUSAGE HARIAN --}}
             <div class="col-lg-4 col-md-6">
                 <div class="card card-statistic-2">
-
-                    <div class="card-icon shadow-warning bg-warning">
-                        <i class="fas fa-tags"></i>
+                    <div class="card-icon shadow-primary bg-success">
+                        <i class="fas fa-weight"></i>
                     </div>
 
                     <div class="card-wrap">
-
                         <div class="card-header">
-                            <h4>Rupiah per KG Aktual</h4>
+                            <h4>Total KG Sausage Harian</h4>
                         </div>
-
                         <div class="card-body">
-                            Rp {{ number_format($averageHargaKg, 2, ',', '.') }}
+                            {{ number_format($totalKgHarian, 2, ',', '.') }}
                         </div>
+                    </div>
+                </div>
+            </div>
 
+            {{-- TOTAL KG FURTHER PROCESSING --}}
+            <div class="col-lg-4 col-md-6">
+                <div class="card card-statistic-2">
+                    <div class="card-icon shadow-primary bg-warning">
+                        <i class="fas fa-weight"></i>
                     </div>
 
+                    <div class="card-wrap">
+                        <div class="card-header">
+                            <h4>Total KG Further Processing</h4>
+                        </div>
+                        <div class="card-body">
+                            {{ number_format($totalKgFurther, 2, ',', '.') }}
+                        </div>
+                    </div>
                 </div>
             </div>
 
         </div>
 
 
-        {{-- CHART DEPARTMENT --}}
+        {{-- CARD BAWAH --}}
+        <div class="row justify-content-center">
+
+            {{-- TOTAL KG SLAUGHTER HOUSE --}}
+            <div class="col-lg-4 col-md-6">
+                <div class="card card-statistic-2">
+                    <div class="card-icon shadow-primary bg-danger">
+                        <i class="fas fa-weight"></i>
+                    </div>
+
+                    <div class="card-wrap">
+                        <div class="card-header">
+                            <h4>Total KG Slaughter House</h4>
+                        </div>
+                        <div class="card-body">
+                            {{ number_format($totalKgSlaughterHouse, 2, ',', '.') }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- TOTAL RUPIAH --}}
+            <div class="col-lg-4 col-md-6">
+                <div class="card card-statistic-2">
+                    <div class="card-icon shadow-primary bg-info">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+
+                    <div class="card-wrap">
+                        <div class="card-header">
+                            <h4>Total Rupiah</h4>
+                        </div>
+                        <div class="card-body">
+                            Rp {{ number_format($totalRupiah, 0, ',', '.') }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+
         <div class="row">
 
-            {{-- OUTPUT KG --}}
             <div class="col-lg-6">
                 <div class="card">
 
                     <div class="card-header">
                         <h4>
                             <i class="fas fa-chart-bar mr-2"></i>
-                            Output KG per Department
+                            Output KG per {{ $chartMode === 'cost_center' ? 'Cost Center' : 'Department' }}
                         </h4>
                     </div>
 
@@ -222,7 +242,6 @@
             </div>
 
 
-            {{-- RUPIAH --}}
             <div class="col-lg-6">
 
                 <div class="card">
@@ -230,7 +249,7 @@
                     <div class="card-header">
                         <h4>
                             <i class="fas fa-chart-line mr-2"></i>
-                            Total Rupiah per Department
+                            Total Rupiah per {{ $chartMode === 'cost_center' ? 'Cost Center' : 'Department' }}
                         </h4>
                     </div>
 
@@ -245,7 +264,6 @@
         </div>
 
 
-        {{-- TREND OUTPUT HARIAN --}}
         <div class="row">
 
             <div class="col-lg-6">
@@ -255,6 +273,9 @@
                         <h4>
                             <i class="fas fa-chart-area mr-2"></i>
                             Tren Output Harian (kg)
+                            @if ($chartMode === 'cost_center')
+                                <small class="text-muted d-block">per Cost Center</small>
+                            @endif
                         </h4>
                     </div>
 
@@ -286,10 +307,8 @@
         </div>
 
 
-        {{-- PROGRESS --}}
         <div class="row">
 
-            {{-- ATTENDANCE --}}
             <div class="col-lg-6">
 
                 <div class="card">
@@ -385,7 +404,6 @@
             </div>
 
 
-            {{-- DAILY ACTIVITY --}}
             <div class="col-lg-6">
 
                 <div class="card">
@@ -463,11 +481,10 @@
         </div>
 
 
-        {{-- SUMMARY DEPARTMENT --}}
         <div class="card">
 
             <div class="card-header">
-                <h4>Summary Department</h4>
+                <h4>Summary {{ $chartMode === 'cost_center' ? 'Cost Center' : 'Department' }}</h4>
             </div>
 
             <div class="card-body table-responsive">
@@ -478,7 +495,7 @@
 
                         <tr>
 
-                            <th>Department</th>
+                            <th>{{ $chartMode === 'cost_center' ? 'Cost Center' : 'Department' }}</th>
 
                             <th class="text-right">
                                 KG
@@ -499,30 +516,30 @@
 
                     <tbody>
 
-                        @forelse($departmentSummary as $department)
+                        @forelse($summaryTable as $item)
                             <tr>
 
                                 <td>
-                                    {{ $department->name }}
+                                    {{ $item->name }}
                                 </td>
 
 
                                 <td class="text-right">
 
-                                    {{ number_format($department->total_kg ?? 0, 2, ',', '.') }}
+                                    {{ number_format($item->total_kg ?? 0, 2, ',', '.') }}
 
                                 </td>
 
 
                                 <td class="text-right">
 
-                                    @if (is_null($department->harga_per_kg))
+                                    @if (is_null($item->harga_per_kg))
                                         <span class="text-muted">
                                             -
                                         </span>
                                     @else
                                         Rp
-                                        {{ number_format($department->harga_per_kg, 2, ',', '.') }}
+                                        {{ number_format($item->harga_per_kg, 2, ',', '.') }}
                                     @endif
 
                                 </td>
@@ -530,13 +547,13 @@
 
                                 <td class="text-right font-weight-bold">
 
-                                    @if (is_null($department->total_rupiah))
+                                    @if (is_null($item->total_rupiah))
                                         <span class="text-muted">
                                             -
                                         </span>
                                     @else
                                         Rp
-                                        {{ number_format($department->total_rupiah, 0, ',', '.') }}
+                                        {{ number_format($item->total_rupiah, 0, ',', '.') }}
                                     @endif
 
                                 </td>
@@ -565,7 +582,6 @@
         </div>
 
 
-        {{-- ALERT --}}
         <div class="row">
 
             <div class="col-lg-12">
@@ -673,7 +689,6 @@
         </div>
 
 
-        {{-- RECENT ACTIVITY --}}
         <div class="card">
 
             <div class="card-header">
@@ -758,193 +773,265 @@
 
             </div>
 
-        </div </div>
-    @endsection
+        </div>
+    </div>
+@endsection
 
-    @push('scripts')
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+@push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-        {{-- FILTER COST CENTER --}}
+    <script>
+        const department =
+            document.getElementById('department_id');
 
-        <script>
-            const department =
-                document.getElementById('department_id');
+        const costCenter =
+            document.getElementById('cost_center_id');
 
-            const costCenter =
-                document.getElementById('cost_center_id');
-
-            const selectedCostCenter =
-                "{{ request('cost_center_id') }}";
-
-
-            function loadCostCenters(departmentId, selected = null) {
-
-                if (!departmentId) {
-
-                    costCenter.innerHTML =
-                        '<option value="">Semua Cost Center</option>';
-
-                    return;
-                }
+        const selectedCostCenter =
+            "{{ request('cost_center_id') }}";
 
 
-                fetch(`/dashboard/cost-centers/${departmentId}`)
+        function loadCostCenters(departmentId, selected = null) {
 
-                    .then(response => {
+            if (!departmentId) {
 
-                        if (!response.ok) {
+                costCenter.innerHTML =
+                    '<option value="">Semua Cost Center</option>';
 
-                            throw new Error(
-                                'Gagal mengambil data Cost Center'
-                            );
-
-                        }
-
-                        return response.json();
-
-                    })
-
-
-                    .then(data => {
-
-                        costCenter.innerHTML =
-                            '<option value="">Semua Cost Center</option>';
-
-
-                        data.forEach(item => {
-
-                            const option =
-                                document.createElement('option');
-
-                            option.value = item.id;
-
-                            option.textContent = item.name;
-
-
-                            if (selected &&
-                                selected == item.id) {
-
-                                option.selected = true;
-
-                            }
-
-
-                            costCenter.appendChild(option);
-
-                        });
-
-                    })
-
-
-                    .catch(error => {
-
-                        console.error(error);
-
-                        costCenter.innerHTML =
-                            '<option value="">Gagal memuat Cost Center</option>';
-
-                    });
-
+                return;
             }
 
 
-            department.addEventListener(
-                'change',
-                function() {
+            fetch(`/dashboard/cost-centers/${departmentId}`)
 
-                    loadCostCenters(this.value);
+                .then(response => {
 
-                }
-            );
+                    if (!response.ok) {
 
-
-            window.addEventListener(
-                'DOMContentLoaded',
-                function() {
-
-                    if (department.value) {
-
-                        loadCostCenters(
-                            department.value,
-                            selectedCostCenter
+                        throw new Error(
+                            'Gagal mengambil data Cost Center'
                         );
 
                     }
 
+                    return response.json();
+
+                })
+
+
+                .then(data => {
+
+                    costCenter.innerHTML =
+                        '<option value="">Semua Cost Center</option>';
+
+
+                    data.forEach(item => {
+
+                        const option =
+                            document.createElement('option');
+
+                        option.value = item.id;
+
+                        option.textContent = item.name;
+
+
+                        if (selected &&
+                            selected == item.id) {
+
+                            option.selected = true;
+
+                        }
+
+
+                        costCenter.appendChild(option);
+
+                    });
+
+                })
+
+
+                .catch(error => {
+
+                    console.error(error);
+
+                    costCenter.innerHTML =
+                        '<option value="">Gagal memuat Cost Center</option>';
+
+                });
+
+        }
+
+
+        department.addEventListener(
+            'change',
+            function() {
+
+                loadCostCenters(this.value);
+
+            }
+        );
+
+
+        window.addEventListener(
+            'DOMContentLoaded',
+            function() {
+
+                if (department.value) {
+
+                    loadCostCenters(
+                        department.value,
+                        selectedCostCenter
+                    );
+
+                }
+
+            }
+        );
+    </script>
+
+    <script>
+        const chartColors = [
+            '#4e73df',
+            '#1cc88a',
+            '#f6c23e',
+            '#9B8AFB',
+            '#36b9cc',
+            '#858796'
+        ];
+
+        const chartLabels = @json($chartLabels);
+        const chartDatasets = @json($chartDatasets);
+
+        const summaryTable = @json($summaryTable);
+
+        const trendLabels = @json($trendLabels);
+        const trendDatasets = @json($trendDatasets);
+
+
+        const kgChartElement =
+            document.getElementById('kgChart');
+
+
+        if (kgChartElement) {
+
+            new Chart(
+                kgChartElement, {
+                    type: 'bar',
+
+                    data: {
+
+                        labels: chartLabels,
+
+                        datasets: chartDatasets.map((ds, i) => ({
+
+                            label: ds.label,
+
+                            data: ds.data,
+
+                            backgroundColor: chartColors[i % chartColors.length],
+
+                            barPercentage: 0.85,
+
+                            categoryPercentage: 0.75
+
+
+                        }))
+
+                    },
+
+                    options: {
+
+                        responsive: true,
+
+                        scales: {
+
+                            y: {
+
+                                beginAtZero: true
+
+                            }
+
+                        }
+
+                    }
+
                 }
             );
-        </script>
 
-        {{-- CHART --}}
-
-        <script>
-            /*
-                        |--------------------------------------------------------------------------
-                        | DEPARTMENT SUMMARY
-                        |--------------------------------------------------------------------------
-                        */
-
-            const labels = [
-
-                @foreach ($departmentSummary as $department)
-
-                    @json($department->name),
-                @endforeach
-
-            ];
+        }
 
 
-            const kgData = [
+        const rupiahLabels = summaryTable
+            .filter(item => item.total_rupiah !== null)
+            .map(item => item.name);
 
-                @foreach ($departmentSummary as $department)
-
-                    {{ $department->total_kg ?? 0 }},
-                @endforeach
-
-            ];
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | KG CHART
-            |--------------------------------------------------------------------------
-            */
-
-            const kgChartElement =
-                document.getElementById('kgChart');
+        const rupiahData = summaryTable
+            .filter(item => item.total_rupiah !== null)
+            .map(item => item.total_rupiah);
 
 
-            if (kgChartElement) {
+        const rupiahChartElement =
+            document.getElementById('rupiahChart');
 
-                new Chart(
-                    kgChartElement, {
-                        type: 'bar',
 
-                        data: {
+        if (rupiahChartElement) {
 
-                            labels: labels,
+            new Chart(
+                rupiahChartElement, {
+                    type: 'line',
 
-                            datasets: [{
+                    data: {
 
-                                label: 'Output KG',
+                        labels: rupiahLabels,
 
-                                data: kgData,
+                        datasets: [{
 
-                                backgroundColor: '#4e73df'
+                            label: 'Total Rupiah',
 
-                            }]
+                            data: rupiahData,
+
+                            borderColor: '#6777ef',
+
+                            backgroundColor: 'rgba(103,119,239,.15)',
+
+                            fill: true,
+
+                            tension: 0.3
+
+                        }]
+
+                    },
+
+                    options: {
+
+                        responsive: true,
+
+                        plugins: {
+
+                            legend: {
+
+                                display: false
+
+                            }
 
                         },
 
-                        options: {
+                        scales: {
 
-                            responsive: true,
+                            y: {
 
-                            plugins: {
+                                beginAtZero: true,
 
-                                legend: {
+                                ticks: {
 
-                                    display: false
+                                    callback: function(value) {
+
+                                        return 'Rp ' +
+                                            new Intl.NumberFormat(
+                                                'id-ID'
+                                            ).format(value);
+
+                                    }
 
                                 }
 
@@ -953,322 +1040,143 @@
                         }
 
                     }
-                );
 
-            }
+                }
+            );
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | RUPIAH CHART
-            |--------------------------------------------------------------------------
-            */
-
-            const rupiahLabels = [
-
-                @foreach ($departmentSummary as $department)
-
-                    @if (!is_null($department->total_rupiah))
-
-                        @json($department->name),
-                    @endif
-                @endforeach
-
-            ];
+        }
 
 
-            const rupiahData = [
+        const outputChartElement =
+            document.getElementById('outputChart');
 
-                @foreach ($departmentSummary as $department)
+        if (outputChartElement) {
+            new Chart(
+                outputChartElement, {
+                    type: 'bar',
 
-                    @if (!is_null($department->total_rupiah))
+                    data: {
+                        labels: trendLabels,
 
-                        {{ $department->total_rupiah ?? 0 }},
-                    @endif
-                @endforeach
+                        datasets: trendDatasets.map((ds, i) => ({
 
-            ];
+                            label: ds.label === 'Karyawan Borongan' ?
+                                'Sausage - Karyawan Borongan' : ds.label === 'Karyawan Harian' ?
+                                'Sausage - Karyawan Harian' : ds.label,
 
+                            data: ds.data,
 
-            const rupiahChartElement =
-                document.getElementById('rupiahChart');
+                            backgroundColor: chartColors[i % chartColors.length],
 
+                            barPercentage: 0.85,
+                            categoryPercentage: 0.75
+                        }))
+                    },
 
-            if (rupiahChartElement) {
+                    options: {
+                        responsive: true,
 
-                new Chart(
-                    rupiahChartElement, {
-                        type: 'line',
-
-                        data: {
-
-                            labels: rupiahLabels,
-
-                            datasets: [{
-
-                                label: 'Total Rupiah',
-
-                                data: rupiahData,
-
-                                borderColor: '#6777ef',
-
-                                backgroundColor: 'rgba(103,119,239,.15)',
-
-                                fill: true,
-
-                                tension: 0.3
-
-                            }]
-
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
                         },
 
-                        options: {
+                        plugins: {
+                            legend: {
+                                display: true
+                            }
+                        }
+                    }
+                }
+            );
+        }
 
-                            responsive: true,
 
-                            plugins: {
+        const hargaPerKgLabels = summaryTable
+            .filter(item => item.harga_per_kg !== null && item.harga_per_kg > 0)
+            .map(item => item.name);
 
-                                legend: {
+        const hargaPerKgData = summaryTable
+            .filter(item => item.harga_per_kg !== null && item.harga_per_kg > 0)
+            .map(item => item.harga_per_kg);
 
-                                    display: false
 
-                                }
+        const hargaPerKgChartElement =
+            document.getElementById('hargaPerKgChart');
+
+
+        if (hargaPerKgChartElement) {
+
+            new Chart(
+                hargaPerKgChartElement, {
+                    type: 'bar',
+
+                    data: {
+
+                        labels: hargaPerKgLabels,
+
+                        datasets: [{
+
+                            label: 'Rupiah / KG Aktual',
+
+                            data: hargaPerKgData,
+
+                            backgroundColor: '#36b9cc'
+
+                        }]
+
+                    },
+
+                    options: {
+
+                        responsive: true,
+
+                        plugins: {
+
+                            legend: {
+
+                                display: false
 
                             },
 
-                            scales: {
+                            tooltip: {
 
-                                y: {
+                                callbacks: {
 
-                                    beginAtZero: true,
+                                    label: function(context) {
 
-                                    ticks: {
+                                        return 'Rp ' +
 
-                                        callback: function(value) {
+                                            new Intl.NumberFormat(
+                                                'id-ID'
+                                            ).format(context.raw) +
 
-                                            return 'Rp ' +
-                                                new Intl.NumberFormat(
-                                                    'id-ID'
-                                                ).format(value);
-
-                                        }
+                                            ' / KG';
 
                                     }
 
                                 }
 
                             }
-
-                        }
-
-                    }
-                );
-
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | TREND OUTPUT
-            |--------------------------------------------------------------------------
-            */
-
-            const trendLabels =
-                @json($trendLabels);
-
-            const trendOutputKgSosis =
-                @json($trendOutputKgSosis);
-
-            const trendOutputKgFurther =
-                @json($trendOutputKgFurther);
-
-            const trendOutputKgSlaughter =
-                @json($trendOutputKgSlaughterHouse);
-
-
-            const outputChartElement =
-                document.getElementById('outputChart');
-
-
-            if (outputChartElement) {
-
-                new Chart(
-                    outputChartElement, {
-                        type: 'line',
-
-                        data: {
-
-                            labels: trendLabels,
-
-                            datasets: [
-
-                                {
-                                    label: 'Sosis',
-
-                                    data: trendOutputKgSosis,
-
-                                    fill: false,
-
-                                    tension: 0.3
-                                },
-
-                                {
-                                    label: 'Further Processing',
-
-                                    data: trendOutputKgFurther,
-
-                                    fill: false,
-
-                                    tension: 0.3
-                                },
-
-                                {
-                                    label: 'Slaughter House',
-
-                                    data: trendOutputKgSlaughter,
-
-                                    fill: false,
-
-                                    tension: 0.3
-                                }
-
-                            ]
 
                         },
 
-                        options: {
+                        scales: {
 
-                            responsive: true,
+                            y: {
 
-                            maintainAspectRatio: false,
+                                beginAtZero: true,
 
-                            scales: {
+                                ticks: {
 
-                                y: {
+                                    callback: function(value) {
 
-                                    beginAtZero: true
+                                        return 'Rp ' +
 
-                                }
-
-                            }
-
-                        }
-
-                    }
-                );
-
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | HARGA PER KG
-            |--------------------------------------------------------------------------
-            */
-
-            const hargaPerKgLabels = [
-
-                @foreach ($departmentSummary as $department)
-
-                    @if (($department->harga_per_kg ?? 0) > 0)
-
-                        @json($department->name),
-                    @endif
-                @endforeach
-
-            ];
-
-
-            const hargaPerKgData = [
-
-                @foreach ($departmentSummary as $department)
-
-                    @if (($department->harga_per_kg ?? 0) > 0)
-
-                        {{ $department->harga_per_kg }},
-                    @endif
-                @endforeach
-
-            ];
-
-
-            const hargaPerKgChartElement =
-                document.getElementById('hargaPerKgChart');
-
-
-            if (hargaPerKgChartElement) {
-
-                new Chart(
-                    hargaPerKgChartElement, {
-                        type: 'bar',
-
-                        data: {
-
-                            labels: hargaPerKgLabels,
-
-                            datasets: [{
-
-                                label: 'Rupiah / KG Aktual',
-
-                                data: hargaPerKgData,
-
-                                backgroundColor: '#36b9cc'
-
-                            }]
-
-                        },
-
-                        options: {
-
-                            responsive: true,
-
-                            plugins: {
-
-                                legend: {
-
-                                    display: false
-
-                                },
-
-                                tooltip: {
-
-                                    callbacks: {
-
-                                        label: function(context) {
-
-                                            return 'Rp ' +
-
-                                                new Intl.NumberFormat(
-                                                    'id-ID'
-                                                ).format(context.raw) +
-
-                                                ' / KG';
-
-                                        }
-
-                                    }
-
-                                }
-
-                            },
-
-                            scales: {
-
-                                y: {
-
-                                    beginAtZero: true,
-
-                                    ticks: {
-
-                                        callback: function(value) {
-
-                                            return 'Rp ' +
-
-                                                new Intl.NumberFormat(
-                                                    'id-ID'
-                                                ).format(value);
-
-                                        }
+                                            new Intl.NumberFormat(
+                                                'id-ID'
+                                            ).format(value);
 
                                     }
 
@@ -1279,8 +1187,10 @@
                         }
 
                     }
-                );
 
-            }
-        </script>
-    @endpush
+                }
+            );
+
+        }
+    </script>
+@endpush
