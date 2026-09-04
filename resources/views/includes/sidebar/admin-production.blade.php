@@ -39,6 +39,13 @@
                 </ul>
             </li>
 
+            <li class="{{ Request::is('admin-production/employee-productivity*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('admin-production.employee-productivity.list') }}">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Produktivitas Karyawan</span>
+                </a>
+            </li>
+
             @if (strtolower(auth()->user()->department->name) === 'sausage' ||
                     strtolower(auth()->user()->department->name) === 'slaughter house')
                 <li class="{{ Request::is('admin-production/penggajian-borongan*') ? 'active' : '' }}">

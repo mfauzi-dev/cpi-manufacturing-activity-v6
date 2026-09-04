@@ -220,6 +220,10 @@
                                     Productivity
                                 </th>
 
+                                <th width="150">
+                                    Productivity Actual
+                                </th>
+
                                 <th width="170">
                                     Harga / KG
                                 </th>
@@ -279,6 +283,14 @@
                                     <span class="productivity">
                                         -
                                     </span>
+
+                                </td>
+
+                                {{-- PRODUCTIVITY ACTUAL --}}
+                                <td>
+
+                                    <input type="number" step="0.01" min="0"
+                                        name="details[0][productivity_actual]" class="form-control productivity-actual">
 
                                 </td>
 
@@ -701,6 +713,17 @@
                     <span class="productivity">
                         -
                     </span>
+
+                </td>
+
+                <td>
+
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        name="details[${rowIndex}][productivity_actual]"
+                        class="form-control productivity-actual">
 
                 </td>
 

@@ -93,6 +93,13 @@
                 </ul>
             </li>
 
+            <li class="{{ Request::is('general-manager/employee-productivity*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('general-manager.employee-productivity.list') }}">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Produktivitas Karyawan</span>
+                </a>
+            </li>
+
             <li class="{{ Request::is('general-manager/penggajian-borongan*') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('general-manager.penggajian-borongan.index') }}">
                     <i class="fas fa-money-bill-wave"></i>

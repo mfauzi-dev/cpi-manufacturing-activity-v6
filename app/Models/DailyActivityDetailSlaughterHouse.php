@@ -15,6 +15,7 @@ class DailyActivityDetailSlaughterHouse extends Model
         'total_kg',
         'lama_packing',
         'productivity',
+        'productivity_actual',
         'harga_per_kg',
         'total_harga',
     ];
@@ -23,6 +24,7 @@ class DailyActivityDetailSlaughterHouse extends Model
         'total_kg'     => 'decimal:2',  
         'lama_packing' => 'decimal:2',
         'productivity' => 'decimal:2',
+        'productivity_actual'  => 'decimal:2',
         'harga_per_kg' => 'decimal:2',
         'total_harga'  => 'decimal:2',
     ];

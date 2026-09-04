@@ -60,6 +60,13 @@
                 </ul>
             </li>
 
+            <li class="{{ Request::is('manager/employee-productivity*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('manager.employee-productivity.list') }}">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Produktivitas Karyawan</span>
+                </a>
+            </li>
+
             @if (strtolower(auth()->user()->department->name) === 'sausage' ||
                     strtolower(auth()->user()->department->name) === 'slaughter house')
                 <li class="{{ Request::is('manager/penggajian-borongan*') ? 'active' : '' }}">

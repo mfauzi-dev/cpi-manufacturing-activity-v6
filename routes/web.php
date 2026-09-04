@@ -10,6 +10,7 @@ use App\Http\Controllers\DailyProductionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\EmployeeProductivityController;
 use App\Http\Controllers\LineController;
 use App\Http\Controllers\OutsourcingController;
 use App\Http\Controllers\PenggajianBoronganController;
@@ -197,6 +198,9 @@ Route::prefix('admin-production')->middleware(['auth', 'role:Admin Production'])
         Route::get('/export-pdf', [PenggajianBoronganController::class, 'exportPdf'])->name('admin-production.penggajian-borongan.export-pdf');
         Route::get('/export-excel', [PenggajianBoronganController::class, 'exportExcel'])->name('admin-production.penggajian-borongan.export-excel');    
     });
+
+    Route::get('employee-productivity', [EmployeeProductivityController::class, 'list'])->name('admin-production.employee-productivity.list');
+    Route::get('employee-productivity/{employee_id}', [EmployeeProductivityController::class, 'detail'])->name('admin-production.employee-productivity.detail');
 });
 
 Route::prefix('admin')->middleware(['auth', 'role:Admin'])->group(function() {
@@ -302,38 +306,6 @@ Route::prefix('admin')->middleware(['auth', 'role:Admin'])->group(function() {
         Route::put('/{id}/update', [WageConfigController::class, 'update'])->name('admin.wage-config.update');
         Route::delete('/{id}/delete', [WageConfigController::class, 'destroy'])->name('admin.wage-config.destroy');
     });
-
-    // Route::prefix('payrolls')->group(function () {
-        // Route::prefix('harian')->group(function () {
-        //     Route::get('/', [PayrollHarianController::class, 'getAllByAdmin'])->name('admin.payroll.harian.index');
-        //     Route::get('/preview', [PayrollHarianController::class, 'preview'])->name('admin.payroll.harian.preview');
-        //     Route::get('/detail/{month}/{year}', [PayrollHarianController::class, 'getDetailByAdmin'])->name('admin.payroll.harian.detail');
-        //     Route::get('{id}/show', [PayrollHarianController::class, 'show'])->name('admin.payroll.harian.show');
-        //     Route::get('/generate', [PayrollHarianController::class, 'generateForm'])->name('admin.payroll.harian.generate.form');
-        //     Route::post('/generate', [PayrollHarianController::class, 'generate'])->name('admin.payroll.harian.generate');
-        //     Route::patch('{id}/finalize', [PayrollHarianController::class, 'finalize'])->name('admin.payroll.harian.finalize');
-        //     Route::patch('/finalize/{month}/{year}', [PayrollHarianController::class, 'finalizePeriod'])->name('admin.payroll.harian.finalize.period');
-        //     Route::delete('{id}/delete', [PayrollHarianController::class, 'destroy'])->name('admin.payroll.harian.destroy');
-        //     Route::delete('/destroy/{month}/{year}', [PayrollHarianController::class, 'destroyPeriod'])->name('admin.payroll.harian.destroy.period');
-        //     Route::get('/export', [PayrollHarianController::class, 'export'])->name('admin.payroll.harian.export');
-        //     Route::get('{id}/print', [PayrollHarianController::class, 'print'])->name('admin.payroll.harian.print');
-        // });
-
-    //     Route::prefix('borongan')->group(function () {
-    //         Route::get('/', [PayrollBoronganController::class, 'index'])->name('admin.payroll.borongan.index');
-    //         Route::get('/preview', [PayrollBoronganController::class, 'preview'])->name('admin.payroll.borongan.preview');
-    //         Route::get('/detail/{month}/{year}', [PayrollBoronganController::class, 'detail'])->name('admin.payroll.borongan.detail');
-    //         Route::get('{id}/show', [PayrollBoronganController::class, 'show'])->name('admin.payroll.borongan.show');
-    //         Route::get('/generate', [PayrollBoronganController::class, 'generateForm'])->name('admin.payroll.borongan.generate.form');
-    //         Route::post('/generate', [PayrollBoronganController::class, 'generate'])->name('admin.payroll.borongan.generate');
-    //         Route::patch('{id}/finalize', [PayrollBoronganController::class, 'finalize'])->name('admin.payroll.borongan.finalize');
-    //         Route::patch('/finalize/{month}/{year}', [PayrollBoronganController::class, 'finalizePeriod'])->name('admin.payroll.borongan.finalize.period');
-    //         Route::delete('{id}/delete', [PayrollBoronganController::class, 'destroy']) ->name('admin.payroll.borongan.destroy');
-    //         Route::delete('/destroy/{month}/{year}', [PayrollBoronganController::class, 'destroyPeriod'])->name('admin.payroll.borongan.destroy.period');
-    //         Route::get('/export', [PayrollBoronganController::class, 'export'])->name('admin.payroll.borongan.export');
-    //         Route::get('{id}/print', [PayrollBoronganController::class, 'print'])->name('admin.payroll.borongan.print');
-    //     });
-    // });
 });
 
 Route::prefix('general-manager')->middleware(['auth', 'role:General Manager'])->group(function() {
@@ -417,6 +389,9 @@ Route::prefix('general-manager')->middleware(['auth', 'role:General Manager'])->
         Route::get('/export-pdf', [PenggajianBoronganController::class, 'exportPdfGeneralManager'])->name('general-manager.penggajian-borongan.export-pdf');
         Route::get('/export-excel', [PenggajianBoronganController::class, 'exportExcelGeneralManager'])->name('general-manager.penggajian-borongan.export-excel');    
     });
+
+    Route::get('employee-productivity', [EmployeeProductivityController::class, 'generalManagerList'])->name('general-manager.employee-productivity.list');
+    Route::get('employee-productivity/{employee_id}', [EmployeeProductivityController::class, 'generalManagerDetail'])->name('general-manager.employee-productivity.detail');
 });
 
 Route::prefix('manager')->middleware(['auth', 'role:Manager'])->group(function() {
@@ -479,4 +454,7 @@ Route::prefix('manager')->middleware(['auth', 'role:Manager'])->group(function()
         Route::get('/export-pdf', [PenggajianBoronganController::class, 'exportPdfManager'])->name('manager.penggajian-borongan.export-pdf');
         Route::get('/export-excel', [PenggajianBoronganController::class, 'exportExcelManager'])->name('manager.penggajian-borongan.export-excel');    
     });
+
+    Route::get('employee-productivity', [EmployeeProductivityController::class, 'managerList'])->name('manager.employee-productivity.list');
+    Route::get('employee-productivity/{employee_id}', [EmployeeProductivityController::class, 'managerDetail'])->name('manager.employee-productivity.detail');
 });

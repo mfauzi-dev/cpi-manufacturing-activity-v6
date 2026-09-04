@@ -125,6 +125,7 @@ class DailyActivitySlaughterHouseController extends Controller
             'details.*.product_id' => ['required', 'exists:products,id'],
             'details.*.output_kg' => ['required', 'numeric', 'min:0'],
             'details.*.lama_packing' => ['required', 'numeric', 'min:0'],
+            'details.*.productivity_actual' => ['required', 'numeric', 'min:0'],
         ]);
 
         DB::beginTransaction();
@@ -147,6 +148,8 @@ class DailyActivitySlaughterHouseController extends Controller
                     ? $outputKg / $lamaPacking
                     : 0;
 
+                $productivityActual = (float) $detail['productivity_actual'];
+                
                 foreach ($detail['employee_id'] as $employeeId) {
 
                     $dailyActivitySlaughterHouse = DailyActivitySlaughterHouse::firstOrCreate(
@@ -171,6 +174,7 @@ class DailyActivitySlaughterHouseController extends Controller
                         'total_harga' => $totalHarga,
                         'lama_packing' => $lamaPacking,
                         'productivity' => $productivity,
+                        'productivity_actual' => $productivityActual
                     ]);
 
                     $payroll = PenggajianBorongan::firstOrCreate(
@@ -690,7 +694,8 @@ class DailyActivitySlaughterHouseController extends Controller
                 'daily_activity_detail_slaughter_houses.harga_per_kg',
                 'daily_activity_detail_slaughter_houses.total_harga',
                 'daily_activity_detail_slaughter_houses.lama_packing',
-                'daily_activity_detail_slaughter_houses.productivity'
+                'daily_activity_detail_slaughter_houses.productivity',
+                'daily_activity_detail_slaughter_houses.productivity_actual'
             )
             ->orderBy('daily_activity_slaughter_houses.tanggal')
             ->orderBy('daily_activity_slaughter_houses.created_at')
@@ -737,7 +742,8 @@ class DailyActivitySlaughterHouseController extends Controller
                 'daily_activity_detail_slaughter_houses.harga_per_kg',
                 'daily_activity_detail_slaughter_houses.total_harga',
                 'daily_activity_detail_slaughter_houses.lama_packing',
-                'daily_activity_detail_slaughter_houses.productivity'
+                'daily_activity_detail_slaughter_houses.productivity',
+                'daily_activity_detail_slaughter_houses.productivity_actual'
             )
             ->orderBy('daily_activity_slaughter_houses.tanggal')
             ->orderBy('daily_activity_slaughter_houses.created_at')
@@ -787,7 +793,8 @@ class DailyActivitySlaughterHouseController extends Controller
                 'daily_activity_detail_slaughter_houses.harga_per_kg',
                 'daily_activity_detail_slaughter_houses.total_harga',
                 'daily_activity_detail_slaughter_houses.lama_packing',
-                'daily_activity_detail_slaughter_houses.productivity'
+                'daily_activity_detail_slaughter_houses.productivity',
+                'daily_activity_detail_slaughter_houses.productivity_actual'
             )
             ->orderBy('daily_activity_slaughter_houses.tanggal')
             ->orderBy('daily_activity_slaughter_houses.created_at')
