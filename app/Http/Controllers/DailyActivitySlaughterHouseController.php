@@ -693,7 +693,7 @@ class DailyActivitySlaughterHouseController extends Controller
                 'daily_activity_detail_slaughter_houses.productivity'
             )
             ->orderBy('daily_activity_slaughter_houses.tanggal')
-            ->orderByDesc('daily_activity_slaughter_houses.created_at')
+            ->orderBy('daily_activity_slaughter_houses.created_at')
             ->orderByDesc('daily_activity_detail_slaughter_houses.product_id')
             ->paginate(50)->withQueryString();
  
@@ -740,7 +740,7 @@ class DailyActivitySlaughterHouseController extends Controller
                 'daily_activity_detail_slaughter_houses.productivity'
             )
             ->orderBy('daily_activity_slaughter_houses.tanggal')
-            ->orderByDesc('daily_activity_slaughter_houses.created_at')
+            ->orderBy('daily_activity_slaughter_houses.created_at')
             ->orderByDesc('daily_activity_detail_slaughter_houses.product_id')
             ->paginate(50)->withQueryString();
  
@@ -790,7 +790,7 @@ class DailyActivitySlaughterHouseController extends Controller
                 'daily_activity_detail_slaughter_houses.productivity'
             )
             ->orderBy('daily_activity_slaughter_houses.tanggal')
-            ->orderByDesc('daily_activity_slaughter_houses.created_at')
+            ->orderBy('daily_activity_slaughter_houses.created_at')
             ->orderByDesc('daily_activity_detail_slaughter_houses.product_id')
             ->paginate(50)->withQueryString();
  

@@ -609,7 +609,7 @@ class DailyActivityController extends Controller
                 'daily_activity_details.productivity'
             )
             ->orderBy('daily_activities.tanggal')
-            ->orderByDesc('daily_activities.created_at')
+            ->orderBy('daily_activities.created_at')
             ->orderByDesc('daily_activity_details.product_id')
             ->paginate(100)->withQueryString();
 
@@ -655,7 +655,7 @@ class DailyActivityController extends Controller
                 'daily_activity_details.productivity'
             )
             ->orderBy('daily_activities.tanggal')
-            ->orderByDesc('daily_activities.created_at')
+            ->orderBy('daily_activities.created_at')
             ->orderByDesc('daily_activity_details.product_id')
             ->paginate(100)->withQueryString();
 
@@ -705,7 +705,7 @@ class DailyActivityController extends Controller
                 'daily_activity_details.productivity'
             )
             ->orderBy('daily_activities.tanggal')
-            ->orderByDesc('daily_activities.created_at')
+            ->orderBy('daily_activities.created_at')
             ->orderByDesc('daily_activity_details.product_id')
             ->paginate(100)->withQueryString();
 
