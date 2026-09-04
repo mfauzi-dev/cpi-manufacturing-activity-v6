@@ -270,8 +270,7 @@ class DailyProductionController extends Controller
                 'daily_production_details.harga_per_kg',
                 'daily_production_details.total_harga'
             )
-            ->orderByDesc('daily_productions.tanggal')
-            ->orderByDesc('daily_production_details.id')
+            ->orderByDesc('daily_productions.updated_at')
             ->paginate(100)->withQueryString();
 
         return view('pages.admin_production.daily_production.detail', compact(
