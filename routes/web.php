@@ -70,6 +70,9 @@ Route::middleware(['auth'])->group(function() {
     Route::get('/daily-activity-slaughter-house/ps-groups/{costCenterId}', [DailyActivitySlaughterHouseController::class, 'getPsGroups'])->name('daily-activity-slaughter-house.ps-groups');
     Route::get('/daily-activity-slaughter-house/products/{departmentIdId}', [DailyActivitySlaughterHouseController::class, 'getProducts'])->name('daily-activity-slaughter-house.products');
     Route::get('/daily-activity-slaughter-house/lines/{departmentId}', [DailyActivitySlaughterHouseController::class, 'getLines'])->name('daily-activity-slaughter-house.lines');
+    
+    Route::get('/employee-productivity/cost-centers/{departmentId}', [EmployeeProductivityController::class, 'getCostCenters'])->name('employee-productivity.cost-centers');
+    Route::get('/penggajian-borongan/cost-centers/{departmentId}', [PenggajianBoronganController::class, 'getCostCenters'])->name('penggajian-borongan.cost-centers');
 });
 
 
@@ -105,6 +108,17 @@ Route::prefix('admin-production')->middleware(['auth', 'role:Admin Production'])
         Route::post('/upload', [ProductController::class, 'uploadFurther'])->name('admin-production.product-further.upload');
     });
 
+    Route::prefix('products-slaughter-house')->group(function() {
+        Route::get('/', [ProductController::class, 'indexSlaughterHouse'])->name('admin-production.product-slaughter-house.index');
+        Route::get('/create', [ProductController::class, 'createSlaughterHouse'])->name('admin-production.product-slaughter-house.create');
+        Route::post('/store', [ProductController::class, 'storeSlaughterHouse'])->name('admin-production.product-slaughter-house.store');
+        Route::get('{id}/edit', [ProductController::class, 'editSlaughterHouse'])->name('admin-production.product-slaughter-house.edit');
+        Route::put('{id}/update', [ProductController::class, 'updateSlaughterHouse'])->name('admin-production.product-slaughter-house.update');
+        Route::delete('{id}/delete', [ProductController::class, 'destroySlaughterHouse'])->name('admin-production.product-slaughter-house.destroy');
+        Route::get('/import', [ProductController::class, 'importPageSlaughterHouse'])->name('admin-production.product-slaughter-house.import');
+        Route::post('/upload', [ProductController::class, 'uploadSlaughterHouse'])->name('admin-production.product-slaughter-house.upload');
+    });
+
     Route::prefix('attendances')->group(function(){
         Route::get('/', [AttendanceController::class, 'index'])->name('admin-production.attendance.index');
         Route::get('/create', [AttendanceController::class, 'create'])->name('admin-production.attendance.create');
@@ -134,6 +148,7 @@ Route::prefix('admin-production')->middleware(['auth', 'role:Admin Production'])
         Route::get('/{id}/edit', [DailyActivityController::class, 'edit'])->name('admin-production.daily-activity.edit');
         Route::put('/{id}/update', [DailyActivityController::class, 'update'])->name('admin-production.daily-activity.update');
         Route::delete('/{id}/delete', [DailyActivityController::class, 'destroy'])->name('admin-production.daily-activity.destroy');
+        Route::delete('/bulk-destroy', [DailyActivityController::class, 'bulkDestroy'])->name('admin-production.daily-activity.bulk-destroy');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel', [DailyActivityController::class, 'exportExcel'])->name('daily-activity.export-excel');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf', [DailyActivityController::class, 'exportPdf'])->name('daily-activity.export-pdf');    
     });
@@ -184,7 +199,7 @@ Route::prefix('admin-production')->middleware(['auth', 'role:Admin Production'])
         Route::delete('/{id}/delete', [DailyActivitySlaughterHouseController::class, 'destroy'])->name('admin-production.daily-activity-slaughter-house.destroy');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel', [DailyActivitySlaughterHouseController::class, 'exportExcel'])->name('admin-production.daily-activity-slaughter-house.export-excel');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf',[DailyActivitySlaughterHouseController::class, 'exportPdf'])->name('admin-production.daily-activity-slaughter-house.export-pdf');
-
+        Route::delete('/bulk-destroy',[DailyActivitySlaughterHouseController::class, 'bulkDestroy'])->name('admin-production.daily-activity-slaughter-house.bulk-destroy');
     });
 
     Route::prefix('penggajian-harian')->group(function () {
@@ -199,8 +214,12 @@ Route::prefix('admin-production')->middleware(['auth', 'role:Admin Production'])
         Route::get('/export-excel', [PenggajianBoronganController::class, 'exportExcel'])->name('admin-production.penggajian-borongan.export-excel');    
     });
 
-    Route::get('employee-productivity', [EmployeeProductivityController::class, 'list'])->name('admin-production.employee-productivity.list');
-    Route::get('employee-productivity/{employee_id}', [EmployeeProductivityController::class, 'detail'])->name('admin-production.employee-productivity.detail');
+   Route::prefix('employee-productivity')->group(function () {
+        Route::get('/', [EmployeeProductivityController::class, 'list'])->name('admin-production.employee-productivity.list');
+        Route::get('/{employee_id}/detail', [EmployeeProductivityController::class, 'detail'])->name('admin-production.employee-productivity.detail');
+        Route::get('/export-excel', [EmployeeProductivityController::class, 'exportExcel'])->name('admin-production.employee-productivity.export-excel');
+        Route::get('/export-pdf', [EmployeeProductivityController::class, 'exportPdf'])->name('admin-production.employee-productivity.export-pdf');
+    });
 });
 
 Route::prefix('admin')->middleware(['auth', 'role:Admin'])->group(function() {
@@ -390,8 +409,12 @@ Route::prefix('general-manager')->middleware(['auth', 'role:General Manager'])->
         Route::get('/export-excel', [PenggajianBoronganController::class, 'exportExcelGeneralManager'])->name('general-manager.penggajian-borongan.export-excel');    
     });
 
-    Route::get('employee-productivity', [EmployeeProductivityController::class, 'generalManagerList'])->name('general-manager.employee-productivity.list');
-    Route::get('employee-productivity/{employee_id}', [EmployeeProductivityController::class, 'generalManagerDetail'])->name('general-manager.employee-productivity.detail');
+    Route::prefix('employee-productivity')->group(function () {
+        Route::get('/', [EmployeeProductivityController::class, 'generalManagerList'])->name('general-manager.employee-productivity.list');
+        Route::get('/{employee_id}/detail', [EmployeeProductivityController::class, 'generalManagerDetail'])->name('general-manager.employee-productivity.detail');
+        Route::get('/export-excel', [EmployeeProductivityController::class, 'exportExcelGeneralManager'])->name('general-manager.employee-productivity.export-excel');
+        Route::get('/export-pdf', [EmployeeProductivityController::class, 'exportPdfGeneralManager'])->name('general-manager.employee-productivity.export-pdf');
+    });
 });
 
 Route::prefix('manager')->middleware(['auth', 'role:Manager'])->group(function() {
@@ -455,6 +478,11 @@ Route::prefix('manager')->middleware(['auth', 'role:Manager'])->group(function()
         Route::get('/export-excel', [PenggajianBoronganController::class, 'exportExcelManager'])->name('manager.penggajian-borongan.export-excel');    
     });
 
-    Route::get('employee-productivity', [EmployeeProductivityController::class, 'managerList'])->name('manager.employee-productivity.list');
-    Route::get('employee-productivity/{employee_id}', [EmployeeProductivityController::class, 'managerDetail'])->name('manager.employee-productivity.detail');
+    Route::prefix('employee-productivity')->group(function () {
+        Route::get('/', [EmployeeProductivityController::class, 'managerList'])->name('manager.employee-productivity.list');
+        Route::get('/cost-centers/{departmentId}', [EmployeeProductivityController::class, 'getCostCenters'])->name('manager.employee-productivity.cost-centers');
+        Route::get('/{employee_id}/detail', [EmployeeProductivityController::class, 'managerDetail'])->name('manager.employee-productivity.detail');
+        Route::get('/export-excel', [EmployeeProductivityController::class, 'exportExcelManager'])->name('manager.employee-productivity.export-excel');
+        Route::get('/export-pdf', [EmployeeProductivityController::class, 'exportPdfManager'])->name('manager.employee-productivity.export-pdf');
+    });
 });

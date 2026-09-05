@@ -1,7 +1,33 @@
 @extends('layouts.master')
 
+@push('addon-style')
+    <style>
+        .payroll-table {
+            border-collapse: collapse;
+        }
+
+        .payroll-table th,
+        .payroll-table td {
+            border: 1px solid #dee2e6 !important;
+        }
+
+        .payroll-table thead th {
+            border: 1px solid #dee2e6 !important;
+            text-align: center;
+            vertical-align: middle;
+            background: #f8f9fa;
+        }
+
+        .cost-center-name {
+            white-space: nowrap;
+        }
+    </style>
+@endpush
+
 @section('content')
+
     <div class="section-header">
+
         <h1>Penggajian Borongan</h1>
 
         <div class="section-header-breadcrumb">
@@ -9,19 +35,20 @@
                 Penggajian Borongan
             </div>
         </div>
+
     </div>
 
-    {{-- SUMMARY --}}
     <div class="row">
 
-        {{-- TOTAL KARYAWAN --}}
         <div class="col-lg-4 col-md-6 col-sm-6 col-12">
             <div class="card card-statistic-1">
+
                 <div class="card-icon bg-primary">
                     <i class="fas fa-users"></i>
                 </div>
 
                 <div class="card-wrap">
+
                     <div class="card-header">
                         <h4>Total Karyawan</h4>
                     </div>
@@ -29,18 +56,21 @@
                     <div class="card-body">
                         {{ $payrolls->total() }} orang
                     </div>
+
                 </div>
+
             </div>
         </div>
 
-        {{-- TOTAL KG --}}
         <div class="col-lg-4 col-md-6 col-sm-6 col-12">
             <div class="card card-statistic-1">
+
                 <div class="card-icon bg-info">
                     <i class="fas fa-weight-hanging"></i>
                 </div>
 
                 <div class="card-wrap">
+
                     <div class="card-header">
                         <h4>Total Produksi</h4>
                     </div>
@@ -48,18 +78,21 @@
                     <div class="card-body">
                         {{ number_format($grandTotalKg, 2, ',', '.') }} Kg
                     </div>
+
                 </div>
+
             </div>
         </div>
 
-        {{-- TOTAL UPAH --}}
         <div class="col-lg-4 col-md-6 col-sm-6 col-12">
             <div class="card card-statistic-1">
+
                 <div class="card-icon bg-warning">
                     <i class="fas fa-wallet"></i>
                 </div>
 
                 <div class="card-wrap">
+
                     <div class="card-header">
                         <h4>Total Upah</h4>
                     </div>
@@ -67,13 +100,14 @@
                     <div class="card-body">
                         Rp {{ number_format($grandTotalUpah, 0, ',', '.') }}
                     </div>
+
                 </div>
+
             </div>
         </div>
 
     </div>
 
-    {{-- FILTER --}}
     <div class="card">
 
         <div class="card-header">
@@ -86,42 +120,57 @@
 
                 <div class="row">
 
-                    {{-- MONTH --}}
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+
                         <div class="form-group">
+
                             <label>Bulan</label>
 
                             <select name="month" class="form-control">
+
                                 @foreach (range(1, 12) as $m)
                                     <option value="{{ $m }}" {{ (int) $month === $m ? 'selected' : '' }}>
+
                                         {{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}
+
                                     </option>
                                 @endforeach
+
                             </select>
+
                         </div>
+
                     </div>
 
-                    {{-- YEAR --}}
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+
                         <div class="form-group">
+
                             <label>Tahun</label>
 
                             <select name="year" class="form-control">
+
                                 @foreach (range(now()->year, now()->year - 3) as $y)
                                     <option value="{{ $y }}" {{ (int) $year === $y ? 'selected' : '' }}>
+
                                         {{ $y }}
+
                                     </option>
                                 @endforeach
+
                             </select>
+
                         </div>
+
                     </div>
 
-                    {{-- DEPARTMENT --}}
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+
                         <div class="form-group">
+
                             <label>Department</label>
 
-                            <select name="department_id" class="form-control">
+                            <select name="department_id" id="department_id" class="form-control">
 
                                 <option value="">
                                     Semua Department
@@ -129,13 +178,71 @@
 
                                 @foreach ($departments as $department)
                                     <option value="{{ $department->id }}"
-                                        {{ $departmentId == $department->id ? 'selected' : '' }}>
+                                        {{ (string) $departmentId === (string) $department->id ? 'selected' : '' }}>
+
                                         {{ $department->name }}
+
                                     </option>
                                 @endforeach
 
                             </select>
+
                         </div>
+
+                    </div>
+
+                    <div class="col-md-3">
+
+                        <div class="form-group">
+
+                            <label>Cost Center</label>
+
+                            <select name="cost_center_id" id="cost_center_id" class="form-control">
+
+                                <option value="">
+                                    Semua Cost Center
+                                </option>
+
+                                @foreach ($costCenters as $costCenter)
+                                    <option value="{{ $costCenter->id }}"
+                                        {{ (string) $costCenterId === (string) $costCenter->id ? 'selected' : '' }}>
+
+                                        {{ $costCenter->name }}
+
+                                    </option>
+                                @endforeach
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-3">
+
+                        <div class="form-group">
+
+                            <label>Outsourcing</label>
+
+                            <select name="outsourcing_id" class="form-control">
+
+                                <option value="">
+                                    Semua Outsourcing
+                                </option>
+
+                                @foreach ($outsourcings as $outsourcing)
+                                    <option value="{{ $outsourcing->id }}"
+                                        {{ (string) $outsourcingId === (string) $outsourcing->id ? 'selected' : '' }}>
+
+                                        {{ $outsourcing->name }}
+
+                                    </option>
+                                @endforeach
+
+                            </select>
+
+                        </div>
+
                     </div>
 
                 </div>
@@ -143,12 +250,16 @@
                 <div class="mt-3">
 
                     <button type="submit" class="btn btn-primary">
+
                         <i class="fas fa-search"></i>
                         Filter
+
                     </button>
 
                     <a href="{{ route('general-manager.penggajian-borongan.index') }}" class="btn btn-secondary">
+
                         Reset
+
                     </a>
 
                 </div>
@@ -156,9 +267,9 @@
             </form>
 
         </div>
+
     </div>
 
-    {{-- TABLE --}}
     <div class="card">
 
         <div class="card-header">
@@ -167,14 +278,14 @@
 
         <div class="card-body">
 
-            {{-- EXPORT --}}
             <div class="mb-3">
 
-                {{-- EXCEL --}}
                 <a href="{{ route('general-manager.penggajian-borongan.export-excel', [
                     'month' => $month,
                     'year' => $year,
                     'department_id' => $departmentId,
+                    'outsourcing_id' => $outsourcingId,
+                    'cost_center_id' => $costCenterId,
                 ]) }}"
                     class="btn btn-success">
 
@@ -183,11 +294,12 @@
 
                 </a>
 
-                {{-- PDF --}}
                 <a href="{{ route('general-manager.penggajian-borongan.export-pdf', [
                     'month' => $month,
                     'year' => $year,
                     'department_id' => $departmentId,
+                    'outsourcing_id' => $outsourcingId,
+                    'cost_center_id' => $costCenterId,
                 ]) }}"
                     class="btn btn-danger" target="_blank">
 
@@ -198,69 +310,86 @@
 
             </div>
 
-
             <div class="table-responsive">
 
-                <table class="table table-striped table-bordered mb-0">
+                <table class="table table-striped table-bordered payroll-table mb-0">
 
                     <thead>
+
                         <tr>
 
-                            <th class="text-center" width="50">
+                            <th rowspan="2" class="text-center" width="50">
                                 No.
                             </th>
 
-                            <th>
+                            <th rowspan="2">
                                 No. KTP
                             </th>
 
-                            <th>
+                            <th rowspan="2">
                                 NIK
                             </th>
 
-                            <th>
+                            <th rowspan="2">
                                 Nama
                             </th>
 
-                            <th>
+                            <th rowspan="2">
                                 Department
                             </th>
 
-                            <th class="text-center">
+                            <th rowspan="2" class="text-center">
                                 Hasil Proses (Kg)/Jam
                             </th>
 
-                            <th class="text-center">
+                            <th rowspan="2" class="text-center">
                                 Total Hari
                             </th>
 
-                            <th class="text-center">
+                            <th colspan="{{ $costCenters->count() }}" class="text-center">
+                                UPAH YANG DITERIMA
+                            </th>
+
+                            <th rowspan="2" class="text-center">
                                 Total Upah yang Diterima
                             </th>
 
-                            <th class="text-center">
+                            <th rowspan="2" class="text-center">
                                 Jamsostek (4.89%)
                             </th>
 
-                            <th class="text-center">
+                            <th rowspan="2" class="text-center">
                                 BPJS Kesehatan (4%)
                             </th>
 
-                            <th class="text-center">
+                            <th rowspan="2" class="text-center">
                                 BPJS Pensiun (2%)
                             </th>
 
-                            <th class="text-center">
+                            <th rowspan="2" class="text-center">
                                 Managemen Fee
                                 <br>
                                 (175000/25)
                             </th>
 
-                            <th class="text-center">
+                            <th rowspan="2" class="text-center">
                                 Grand Total Upah Diterima
                             </th>
 
                         </tr>
+
+                        <tr>
+
+                            @foreach ($costCenters as $costCenter)
+                                <th class="text-center">
+                                    {{ $costCenter->code }}
+                                    <br>
+                                    <small class="cost-center-name">{{ $costCenter->name }}</small>
+                                </th>
+                            @endforeach
+
+                        </tr>
+
                     </thead>
 
                     <tbody>
@@ -268,69 +397,84 @@
                         @forelse ($payrolls as $i => $payroll)
                             <tr>
 
-                                {{-- NO --}}
                                 <td class="text-center">
                                     {{ $payrolls->firstItem() + $i }}
                                 </td>
 
-                                {{-- NO KTP --}}
                                 <td>
                                     {{ $payroll->employee->ktp_number ?? '-' }}
                                 </td>
 
-                                {{-- NIK --}}
                                 <td>
                                     {{ $payroll->employee->nik ?? '-' }}
                                 </td>
 
-                                {{-- NAMA --}}
                                 <td>
                                     {{ $payroll->employee->name ?? '-' }}
                                 </td>
 
-                                {{-- DEPARTMENT --}}
                                 <td>
                                     {{ $payroll->employee->department->name ?? '-' }}
                                 </td>
 
-                                {{-- HASIL PROSES KG/JAM --}}
                                 <td class="text-center">
                                     {{ number_format($payroll->total_kg ?? 0, 2, ',', '.') }}
                                 </td>
 
-                                {{-- TOTAL HARI --}}
                                 <td class="text-center">
                                     {{ $payroll->total_hari_kerja ?? 0 }}
                                 </td>
 
-                                {{-- TOTAL UPAH --}}
+                                @foreach ($costCenters as $costCenter)
+                                    <td class="text-right">
+
+                                        @php
+                                            $upahCostCenter = $payroll->cost_center_upah[$costCenter->id] ?? 0;
+                                        @endphp
+
+                                        @if ($upahCostCenter > 0)
+                                            Rp {{ number_format($upahCostCenter, 0, ',', '.') }}
+                                        @else
+                                            -
+                                        @endif
+
+                                    </td>
+                                @endforeach
+
                                 <td class="text-right">
+
                                     Rp {{ number_format($payroll->total_upah ?? 0, 0, ',', '.') }}
+
                                 </td>
 
-                                {{-- JAMSOSTEK --}}
                                 <td class="text-right">
+
                                     Rp {{ number_format($payroll->jamsostek ?? 0, 0, ',', '.') }}
+
                                 </td>
 
-                                {{-- BPJS KESEHATAN --}}
                                 <td class="text-right">
+
                                     Rp {{ number_format($payroll->bpjs_kesehatan ?? 0, 0, ',', '.') }}
+
                                 </td>
 
-                                {{-- BPJS PENSIUN --}}
                                 <td class="text-right">
+
                                     Rp {{ number_format($payroll->bpjs_pensiun ?? 0, 0, ',', '.') }}
+
                                 </td>
 
-                                {{-- MANAGEMENT FEE --}}
                                 <td class="text-right">
+
                                     Rp {{ number_format($payroll->managemen_fee ?? 0, 0, ',', '.') }}
+
                                 </td>
 
-                                {{-- GRAND TOTAL --}}
                                 <td class="text-right font-weight-bold text-success">
+
                                     Rp {{ number_format($payroll->grand_total_upah ?? 0, 0, ',', '.') }}
+
                                 </td>
 
                             </tr>
@@ -338,11 +482,13 @@
                         @empty
 
                             <tr>
-                                <td colspan="13" class="text-center py-4 text-muted">
+
+                                <td colspan="{{ 14 + $costCenters->count() }}" class="text-center py-4 text-muted">
 
                                     Belum ada penggajian borongan untuk periode ini.
 
                                 </td>
+
                             </tr>
                         @endforelse
 
@@ -351,11 +497,117 @@
                 </table>
 
             </div>
+
         </div>
 
         <div class="card-footer text-right">
+
             {{ $payrolls->withQueryString()->links() }}
+
         </div>
 
     </div>
+
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+
+            const departmentSelect =
+                document.getElementById('department_id');
+
+            const costCenterSelect =
+                document.getElementById('cost_center_id');
+
+            function loadCostCenters(
+                departmentId,
+                selectedCostCenterId = ''
+            ) {
+
+                costCenterSelect.innerHTML =
+                    '<option value="">Semua Cost Center</option>';
+
+                if (!departmentId) {
+                    return;
+                }
+
+                fetch(
+                        `{{ url('/penggajian-borongan/cost-centers') }}/${departmentId}`
+                    )
+                    .then(response => {
+
+                        if (!response.ok) {
+                            throw new Error(
+                                'Gagal mengambil Cost Center'
+                            );
+                        }
+
+                        return response.json();
+
+                    })
+                    .then(data => {
+
+                        data.forEach(costCenter => {
+
+                            const option =
+                                document.createElement('option');
+
+                            option.value =
+                                costCenter.id;
+
+                            option.textContent =
+                                costCenter.name;
+
+                            if (
+                                String(costCenter.id) ===
+                                String(selectedCostCenterId)
+                            ) {
+
+                                option.selected = true;
+
+                            }
+
+                            costCenterSelect.appendChild(option);
+
+                        });
+
+                    })
+                    .catch(error => {
+
+                        console.error(error);
+
+                        costCenterSelect.innerHTML =
+                            '<option value="">Gagal memuat Cost Center</option>';
+
+                    });
+
+            }
+
+            departmentSelect.addEventListener(
+                'change',
+                function() {
+
+                    loadCostCenters(this.value);
+
+                }
+            );
+
+            const departmentId =
+                departmentSelect.value;
+
+            const selectedCostCenterId =
+                @json($costCenterId);
+
+            if (departmentId) {
+
+                loadCostCenters(
+                    departmentId,
+                    selectedCostCenterId
+                );
+
+            }
+
+        });
+    </script>
+@endpush

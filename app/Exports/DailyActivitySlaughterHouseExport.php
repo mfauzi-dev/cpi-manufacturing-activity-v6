@@ -81,6 +81,7 @@ class DailyActivitySlaughterHouseExport implements FromQuery, WithHeadings, With
             'Kg',
             'Lama Packing',
             'Productivity',
+            'Productivity Actual',
             'Harga/kg',
             'Rupiah',
             'Diinput Oleh',
@@ -109,6 +110,8 @@ class DailyActivitySlaughterHouseExport implements FromQuery, WithHeadings, With
             (float) $row->lama_packing,
 
             (float) $row->productivity,
+
+            (float) $row->productivity_actual,
 
             (float) $row->harga_per_kg,
 

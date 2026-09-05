@@ -124,6 +124,31 @@
                 </div>
 
                 <div class="form-group">
+                    <label>Productivity Actual</label>
+
+                    <input type="text" id="productivity_actual_display" class="form-control" readonly
+                        value="{{ number_format($detail->productivity_actual, 2, ',', '.') }}">
+
+                    <small class="form-text text-muted">
+                        Otomatis dihitung dari Output KG ÷ Lama Packing.
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label>Productivity</label>
+
+                    <input type="number" step="0.01" min="0" name="productivity" id="productivity"
+                        value="{{ old('productivity', $detail->productivity) }}"
+                        class="form-control @error('productivity') is-invalid @enderror">
+
+                    @error('productivity')
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
+                    @enderror
+                </div>
+
+                <div class="form-group">
                     <label>Harga per KG</label>
 
                     <input type="text" id="harga_per_kg_display" class="form-control"
@@ -193,13 +218,15 @@
 
         });
 
-        $(document).on('keyup change', '#total_kg', function() {
+        $(document).on('keyup change', '#total_kg, #lama_packing', function() {
             hitungTotal();
         });
 
         function hitungTotal() {
 
             let kg = parseFloat($('#total_kg').val()) || 0;
+
+            let lamaPacking = parseFloat($('#lama_packing').val()) || 0;
 
             let harga = $('#product').find(':selected').data('price') || 0;
 
@@ -211,6 +238,23 @@
                     maximumFractionDigits: 2
                 })
             );
+
+            if (lamaPacking > 0) {
+
+                let productivityActual = kg / lamaPacking;
+
+                $('#productivity_actual_display').val(
+                    productivityActual.toLocaleString('id-ID', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    })
+                );
+
+            } else {
+
+                $('#productivity_actual_display').val('-');
+
+            }
 
         }
     </script>

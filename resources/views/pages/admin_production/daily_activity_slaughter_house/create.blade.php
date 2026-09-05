@@ -27,47 +27,36 @@
 
         <form action="{{ route('admin-production.daily-activity-slaughter-house.store') }}" method="POST"
             id="dailyActivityForm">
-
             @csrf
 
-            {{-- HEADER --}}
             <div class="card">
                 <div class="card-body">
 
                     <div class="row">
 
-                        {{-- TANGGAL --}}
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label>Tanggal</label>
-
                                 <input type="date" name="tanggal" class="form-control"
                                     value="{{ old('tanggal', date('Y-m-d')) }}">
                             </div>
                         </div>
 
-                        {{-- DEPARTMENT --}}
                         <div class="col-md-3">
                             <div class="form-group">
-
                                 <label>Department</label>
-
                                 <input type="text" class="form-control" value="{{ $department->name }}" readonly>
 
                                 <input type="hidden" id="department_id" value="{{ $department->id }}">
-
                             </div>
                         </div>
 
-                        {{-- COST CENTER --}}
                         <div class="col-md-3">
                             <div class="form-group">
-
                                 <label>Cost Center</label>
 
                                 <select name="cost_center_id" id="cost_center"
                                     class="form-control @error('cost_center_id') is-invalid @enderror">
-
                                     <option value="">
                                         Pilih Cost Center
                                     </option>
@@ -75,13 +64,10 @@
                                     @foreach ($costCenterList as $costCenter)
                                         <option value="{{ $costCenter->id }}"
                                             {{ old('cost_center_id') == $costCenter->id ? 'selected' : '' }}>
-
                                             {{ $costCenter->code }} -
                                             {{ $costCenter->name }}
-
                                         </option>
                                     @endforeach
-
                                 </select>
 
                                 @error('cost_center_id')
@@ -89,23 +75,18 @@
                                         {{ $message }}
                                     </div>
                                 @enderror
-
                             </div>
                         </div>
 
-                        {{-- GROUP --}}
                         <div class="col-md-3">
                             <div class="form-group">
-
                                 <label>Group</label>
 
                                 <select name="ps_group_id" id="ps_group"
                                     class="form-control @error('ps_group_id') is-invalid @enderror">
-
                                     <option value="">
                                         Pilih Group
                                     </option>
-
                                 </select>
 
                                 @error('ps_group_id')
@@ -113,19 +94,15 @@
                                         {{ $message }}
                                     </div>
                                 @enderror
-
                             </div>
                         </div>
 
-                        {{-- LINE --}}
                         <div class="col-md-3">
                             <div class="form-group">
-
                                 <label>Line</label>
 
                                 <select name="line_id" id="line_id"
                                     class="form-control @error('line_id') is-invalid @enderror">
-
                                     <option value="">
                                         Pilih Line
                                     </option>
@@ -133,13 +110,10 @@
                                     @foreach ($lineList as $line)
                                         <option value="{{ $line->id }}"
                                             {{ old('line_id') == $line->id ? 'selected' : '' }}>
-
                                             {{ $line->code ? $line->code . ' - ' : '' }}
                                             {{ $line->name }}
-
                                         </option>
                                     @endforeach
-
                                 </select>
 
                                 @error('line_id')
@@ -147,27 +121,21 @@
                                         {{ $message }}
                                     </div>
                                 @enderror
-
                             </div>
                         </div>
 
-                        {{-- EMPLOYEE --}}
                         <div class="col-md-3">
                             <div class="form-group">
-
                                 <label>Nama Karyawan</label>
 
                                 <select id="employee_id_group" multiple class="form-control select2">
-
                                     @foreach ($employeeList as $employee)
                                         <option value="{{ $employee->id }}"
                                             {{ collect(old('employee_id', []))->contains($employee->id) ? 'selected' : '' }}>
-
-                                            {{ $employee->name }} - {{ $employee->outsourcing?->name ?? '-' }}
-
+                                            {{ $employee->name }} -
+                                            {{ $employee->outsourcing?->name ?? '-' }}
                                         </option>
                                     @endforeach
-
                                 </select>
 
                                 @error('details.*.employee_id')
@@ -175,7 +143,6 @@
                                         {{ $message }}
                                     </div>
                                 @enderror
-
                             </div>
                         </div>
 
@@ -184,8 +151,6 @@
                 </div>
             </div>
 
-
-            {{-- DETAIL --}}
             <div class="card">
 
                 <div class="card-header">
@@ -209,19 +174,21 @@
                                 </th>
 
                                 <th width="150">
-                                    Output KG
+                                    Output KG / Jam / Ekor
                                 </th>
 
                                 <th width="150">
                                     Lama Packing
+                                    <br>
+                                    ( Jam )
                                 </th>
 
                                 <th width="130">
-                                    Productivity
+                                    Productivity Actual
                                 </th>
 
                                 <th width="150">
-                                    Productivity Actual
+                                    Productivity
                                 </th>
 
                                 <th width="170">
@@ -248,7 +215,6 @@
                                     1
                                 </td>
 
-                                {{-- PRODUCT --}}
                                 <td>
 
                                     <select name="details[0][product_id]" class="form-control select2 product">
@@ -261,7 +227,6 @@
 
                                 </td>
 
-                                {{-- OUTPUT --}}
                                 <td>
 
                                     <input type="number" step="0.01" min="0" name="details[0][output_kg]"
@@ -269,7 +234,6 @@
 
                                 </td>
 
-                                {{-- LAMA PACKING --}}
                                 <td>
 
                                     <input type="number" step="0.01" min="0" name="details[0][lama_packing]"
@@ -277,24 +241,24 @@
 
                                 </td>
 
-                                {{-- PRODUCTIVITY --}}
+                                <td class="text-right align-middle">
+
+                                    <span class="productivity-actual">
+                                        -
+                                    </span>
+
+                                </td>
+
                                 <td class="text-right align-middle">
 
                                     <span class="productivity">
                                         -
                                     </span>
 
-                                </td>
-
-                                {{-- PRODUCTIVITY ACTUAL --}}
-                                <td>
-
-                                    <input type="number" step="0.01" min="0"
-                                        name="details[0][productivity_actual]" class="form-control productivity-actual">
+                                    <input type="hidden" name="details[0][productivity]" class="productivity-value">
 
                                 </td>
 
-                                {{-- HARGA --}}
                                 <td class="text-right align-middle">
 
                                     <span class="harga-per-kg">
@@ -303,7 +267,6 @@
 
                                 </td>
 
-                                {{-- RUPIAH --}}
                                 <td class="text-right align-middle">
 
                                     <strong class="rupiah">
@@ -312,13 +275,10 @@
 
                                 </td>
 
-                                {{-- AKSI --}}
                                 <td class="text-center">
 
                                     <button type="button" class="btn btn-danger btn-sm removeRow">
-
                                         <i class="fas fa-trash"></i>
-
                                     </button>
 
                                 </td>
@@ -336,17 +296,13 @@
                     <div class="d-flex justify-content-between align-items-center">
 
                         <button type="button" id="btnAddRow" class="btn btn-success">
-
                             <i class="fas fa-plus"></i>
                             Tambah Baris
-
                         </button>
 
                         <button type="submit" class="btn btn-primary">
-
                             <i class="fas fa-save"></i>
                             Simpan
-
                         </button>
 
                     </div>
@@ -360,7 +316,6 @@
     </div>
 @endsection
 
-
 @push('styles')
     <style>
         #detailTable td {
@@ -372,25 +327,16 @@
         }
 
         #detailTable .select2-container .select2-selection__rendered {
-
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-
         }
     </style>
 @endpush
 
-
 @push('scripts')
     <script>
         $(document).ready(function() {
-
-            /*
-            |--------------------------------------------------------------------------
-            | SELECT2
-            |--------------------------------------------------------------------------
-            */
 
             $('.select2').select2({
                 width: '100%'
@@ -399,10 +345,8 @@
             let costCenterId = $('#cost_center').val();
 
             if (costCenterId) {
-
                 loadPsGroups(costCenterId);
                 loadProducts(costCenterId);
-
             }
 
             $('#cost_center').change(function() {
@@ -428,11 +372,9 @@
 
             });
 
-
             function loadPsGroups(costCenterId) {
 
                 $.get(
-
                     "{{ route('daily-activity-slaughter-house.ps-groups', ':id') }}"
                     .replace(':id', costCenterId),
 
@@ -453,13 +395,9 @@
                                 '';
 
                             html += `
-
                         <option value="${item.id}" ${selected}>
-
                             ${item.name}
-
                         </option>
-
                     `;
 
                         });
@@ -467,17 +405,13 @@
                         $('#ps_group').html(html);
 
                     }
-
                 );
 
             }
 
-
-
             function loadProducts(costCenterId) {
 
                 $.get(
-
                     "{{ route('daily-activity-slaughter-house.products', ':id') }}"
                     .replace(':id', costCenterId),
 
@@ -491,21 +425,22 @@
                             let price =
                                 item.harga_per_kg ?? 0;
 
+                            let productivity =
+                                item.productivity ?? 0;
+
                             let codePart =
                                 item.material_code ?
                                 ' - ' + item.material_code :
                                 '';
 
                             options += `
-
                         <option
                             value="${item.id}"
-                            data-price="${price}">
-
+                            data-price="${price}"
+                            data-productivity="${productivity}"
+                        >
                             ${item.material_name}${codePart}
-
                         </option>
-
                     `;
 
                         });
@@ -515,12 +450,9 @@
                         resetProductInfo();
 
                     }
-
                 );
 
             }
-
-
 
             $(document).on(
                 'change',
@@ -530,24 +462,43 @@
                     let row =
                         $(this).closest('tr');
 
+                    let selectedOption =
+                        $(this).find(':selected');
+
                     let harga =
-                        $(this)
-                        .find(':selected')
-                        .data('price') || 0;
+                        Number(
+                            selectedOption.data('price')
+                        ) || 0;
+
+                    let productivity =
+                        Number(
+                            selectedOption.data('productivity')
+                        ) || 0;
 
                     row.find('.harga-per-kg')
                         .text(
                             'Rp ' +
-                            Number(harga)
-                            .toLocaleString('id-ID')
+                            harga.toLocaleString('id-ID', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            })
                         );
+
+                    row.find('.productivity')
+                        .text(
+                            productivity.toLocaleString('id-ID', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            })
+                        );
+
+                    row.find('.productivity-value')
+                        .val(productivity);
 
                     hitungRupiah(row);
 
                 }
             );
-
-
 
             $(document).on(
                 'keyup change',
@@ -560,7 +511,6 @@
 
                 }
             );
-
 
             function hitungRupiah(row) {
 
@@ -575,10 +525,10 @@
                     ) || 0;
 
                 let harga =
-                    row.find('.product option:selected')
-                    .data('price') || 0;
-
-
+                    Number(
+                        row.find('.product option:selected')
+                        .data('price')
+                    ) || 0;
 
                 let total =
                     kg * harga;
@@ -586,39 +536,36 @@
                 row.find('.rupiah')
                     .text(
                         'Rp ' +
-                        Number(total)
-                        .toLocaleString('id-ID')
+                        total.toLocaleString('id-ID', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        })
                     );
 
-
-                let productivityEl =
-                    row.find('.productivity');
+                let productivityActualEl =
+                    row.find('.productivity-actual');
 
                 if (lamaPacking > 0) {
 
-                    let productivity =
+                    let productivityActual =
                         kg / lamaPacking;
 
-                    productivityEl.text(
-
-                        productivity.toLocaleString(
+                    productivityActualEl.text(
+                        productivityActual.toLocaleString(
                             'id-ID', {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2
                             }
                         )
-
                     );
 
                 } else {
 
-                    productivityEl.text('-');
+                    productivityActualEl.text('-');
 
                 }
 
             }
-
-
 
             function resetProductInfo() {
 
@@ -630,18 +577,24 @@
                             .text('-');
 
                         $(this)
+                            .find('.productivity')
+                            .text('-');
+
+                        $(this)
+                            .find('.productivity-value')
+                            .val('');
+
+                        $(this)
                             .find('.rupiah')
                             .text('-');
 
                         $(this)
-                            .find('.productivity')
+                            .find('.productivity-actual')
                             .text('-');
 
                     });
 
             }
-
-
 
             let rowIndex = 1;
 
@@ -653,19 +606,16 @@
                     .each(function() {
 
                         productOptions += `
-
                     <option
                         value="${$(this).val()}"
-                        data-price="${$(this).data('price') ?? ''}">
-
+                        data-price="${$(this).data('price') ?? ''}"
+                        data-productivity="${$(this).data('productivity') ?? ''}"
+                    >
                         ${$(this).text()}
-
                     </option>
-
                 `;
 
                     });
-
 
                 let html = `
 
@@ -678,7 +628,8 @@
 
                     <select
                         name="details[${rowIndex}][product_id]"
-                        class="form-control select2 product">
+                        class="form-control select2 product"
+                    >
 
                         ${productOptions}
 
@@ -693,7 +644,8 @@
                         step="0.01"
                         min="0"
                         name="details[${rowIndex}][output_kg]"
-                        class="form-control output-kg">
+                        class="form-control output-kg"
+                    >
 
                 </td>
 
@@ -704,7 +656,16 @@
                         step="0.01"
                         min="0"
                         name="details[${rowIndex}][lama_packing]"
-                        class="form-control lama-packing">
+                        class="form-control lama-packing"
+                    >
+
+                </td>
+
+                <td class="text-right align-middle">
+
+                    <span class="productivity-actual">
+                        -
+                    </span>
 
                 </td>
 
@@ -714,16 +675,11 @@
                         -
                     </span>
 
-                </td>
-
-                <td>
-
                     <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        name="details[${rowIndex}][productivity_actual]"
-                        class="form-control productivity-actual">
+                        type="hidden"
+                        name="details[${rowIndex}][productivity]"
+                        class="productivity-value"
+                    >
 
                 </td>
 
@@ -747,10 +703,9 @@
 
                     <button
                         type="button"
-                        class="btn btn-danger btn-sm removeRow">
-
+                        class="btn btn-danger btn-sm removeRow"
+                    >
                         <i class="fas fa-trash"></i>
-
                     </button>
 
                 </td>
@@ -759,23 +714,19 @@
 
         `;
 
-
                 $('#detailTable tbody')
                     .append(html);
-
 
                 $('#detailTable tbody tr:last .select2')
                     .select2({
                         width: '100%'
                     });
 
-
                 renumberRows();
 
                 rowIndex++;
 
             });
-
 
             $(document).on(
                 'click',
@@ -803,7 +754,6 @@
                 }
             );
 
-
             function renumberRows() {
 
                 $('#detailTable tbody tr')
@@ -824,7 +774,6 @@
                     let employeeIds =
                         $('#employee_id_group').val() || [];
 
-
                     if (employeeIds.length === 0) {
 
                         e.preventDefault();
@@ -837,7 +786,6 @@
 
                     }
 
-
                     $('#detailTable tbody tr')
                         .each(function() {
 
@@ -847,26 +795,19 @@
                             let idx =
                                 row.data('row-index');
 
-
                             row.find(
                                 'input.hidden-employee'
                             ).remove();
-
 
                             employeeIds.forEach(
                                 function(empId) {
 
                                     $('<input>')
                                         .attr({
-
                                             type: 'hidden',
-
                                             class: 'hidden-employee',
-
                                             name: `details[${idx}][employee_id][]`,
-
                                             value: empId
-
                                         })
                                         .appendTo(row);
 

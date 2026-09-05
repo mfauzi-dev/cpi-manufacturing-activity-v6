@@ -15,6 +15,7 @@ use App\Models\Employee;
 use App\Models\PenggajianBorongan;
 use App\Models\Product;
 use App\Models\PsGroup;
+use App\Models\WageConfig;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -198,36 +199,41 @@ class DailyActivityController extends Controller
                         ->distinct()
                         ->count('tanggal');
 
-                    $payroll->jamsostek = round(
-                        $payroll->total_upah * 0.0489,
-                        2
-                    );
+                    $wageConfig = WageConfig::where('tahun', $tanggal->year)->first();
 
-                    $payroll->bpjs_kesehatan = round(
-                        $payroll->total_upah * 0.04,
-                        2
-                    );
+                    if (!$wageConfig) {
+                        throw new \Exception(
+                            'Wage Config untuk tahun ' . $tanggal->year . ' belum tersedia.'
+                        );
+                    }
 
-                    $payroll->bpjs_pensiun = round(
-                        $payroll->total_upah * 0.02,
-                        2
-                    );
+                    $ump = (float) $wageConfig->ump;
+                    $hariKerjaStandar = $wageConfig->hari_kerja_standar;
 
-                    $managemenFeePercent = 175000 / 25;
+                    $jamsostek = round($ump * 0.0489, 2);
+
+                    $bpjsKesehatan = round($ump * 0.04, 2);
+
+                    $bpjsPensiun = round($ump * 0.02, 2);
+
+                    $managemenFeePerDay = 175000 / $hariKerjaStandar;
 
                     $managemenFee = min(
-                        $payroll->total_hari_kerja * $managemenFeePercent,
+                        $payroll->total_hari_kerja * $managemenFeePerDay,
                         175000
                     );
 
+                    $payroll->jamsostek = $jamsostek;
+                    $payroll->bpjs_kesehatan = $bpjsKesehatan;
+                    $payroll->bpjs_pensiun = $bpjsPensiun;
                     $payroll->managemen_fee = $managemenFee;
 
                     $payroll->grand_total_upah =
                         $payroll->total_upah
-                        + $payroll->jamsostek
-                        + $payroll->bpjs_kesehatan
-                        + $payroll->bpjs_pensiun
-                        + $payroll->managemen_fee;
+                        + $jamsostek
+                        + $bpjsKesehatan
+                        + $bpjsPensiun
+                        + $managemenFee;
 
                     $payroll->save();
                 }
@@ -718,62 +724,6 @@ class DailyActivityController extends Controller
         ));
     }
 
-    // public function importPage()
-    // {
-    //     $departmentId = auth()->user()->department_id;
-
-    //     $department = Department::where('id', $departmentId)->firstOrFail();
-
-    //     $costCenterList = CostCenter::where('department_id', $departmentId)->orderBy('name')->get();
-
-    //     return view('pages.admin_production.daily_activity.import', compact(
-    //         'department',
-    //         'costCenterList',
-    //     ));
-    // }
-
-    // public function upload(Request $request)
-    // {
-    //     $request->validate([
-    //         'tanggal'        => 'required|date',
-    //         'cost_center_id' => 'required|exists:cost_centers,id',
-    //         'ps_group_id'    => 'required|exists:ps_groups,id',
-    //         'file'           => 'required|mimes:xlsx,xls',
-    //     ]);
-
-    //     try {
-    //         $costCenter = CostCenter::findOrFail($request->cost_center_id);
-    //         $psGroup    = PsGroup::findOrFail($request->ps_group_id);
-
-    //         $import = new DailyActivityDetailImport(
-    //             $request->tanggal,
-    //             $costCenter,
-    //             $psGroup,
-    //             auth()->user()->department_id,
-    //             auth()->id()
-    //         );
-
-    //         Excel::import($import, $request->file('file'));
-
-    //         $summary = "Karyawan baru: {$import->headersCreated}, update: {$import->headersUpdated}. "
-    //                 . "Detail baru: {$import->detailsCreated}, update: {$import->detailsUpdated}.";
-
-    //         if (!empty($import->errors)) {
-    //             return back()
-    //                 ->withInput()
-    //                 ->with('warning', "Import selesai dengan catatan. {$summary}")
-    //                 ->with('import_errors', $import->errors);
-    //         }
-
-    //         return redirect()
-    //             ->route('admin-production.daily-activity.index')
-    //             ->with('success', "Daily activity berhasil diimport. {$summary}");
-
-    //     } catch (\Throwable $e) {
-    //         return back()->withInput()->with('error', $e->getMessage());
-    //     }
-    // }
-
     public function destroy($id)
     {
         DB::beginTransaction();
@@ -832,21 +782,42 @@ class DailyActivityController extends Controller
                     }
                 }
 
-                // Hitung ulang potongan
-                $jamsostek = round($totalUpah * 0.0489, 2);
+            $wageConfig = WageConfig::where('tahun', $periodYear)->first();
 
-                $bpjsKesehatan = round($totalUpah * 0.04, 2);
+            if (!$wageConfig) {
+                throw new \Exception(
+                    'Wage Config untuk tahun ' . $periodYear . ' belum tersedia.'
+                );
+            }
 
-                $bpjsPensiun = round($totalUpah * 0.02, 2);
+            $ump = (float) $wageConfig->ump;
+            $hariKerjaStandar = $wageConfig->hari_kerja_standar;
 
-                $managemenFee = $totalHariKerja * 6800;
+            if ($hariKerjaStandar <= 0) {
+                throw new \Exception(
+                    'Hari kerja standar untuk tahun ' . $periodYear . ' harus lebih dari 0.'
+                );
+            }
 
-                $grandTotalUpah =
-                    $totalUpah
-                    + $jamsostek
-                    + $bpjsKesehatan
-                    + $bpjsPensiun
-                    + $managemenFee;
+            $jamsostek = round($ump * 0.0489, 2);
+
+            $bpjsKesehatan = round($ump * 0.04, 2);
+
+            $bpjsPensiun = round($ump * 0.02, 2);
+
+            $managemenFeePerDay = 175000 / $hariKerjaStandar;
+
+            $managemenFee = min(
+                $totalHariKerja * $managemenFeePerDay,
+                175000
+            );
+
+            $grandTotalUpah =
+                $totalUpah
+                + $jamsostek
+                + $bpjsKesehatan
+                + $bpjsPensiun
+                + $managemenFee;
 
                 // Update Penggajian Borongan
                 PenggajianBorongan::updateOrCreate(
@@ -968,13 +939,30 @@ class DailyActivityController extends Controller
                 ->distinct()
                 ->count('tanggal');
 
-            $jamsostek = round($totalUpah * 0.0489, 2);
+            $wageConfig = WageConfig::where('tahun', $tanggal->year)->first();
 
-            $bpjsKesehatan = round($totalUpah * 0.04, 2);
+            if (!$wageConfig) {
+                throw new \Exception(
+                    'Wage Config untuk tahun ' . $tanggal->year . ' belum tersedia.'
+                );
+            }
 
-            $bpjsPensiun = round($totalUpah * 0.02, 2);
+            $ump = (float) $wageConfig->ump;
+            $hariKerjaStandar = $wageConfig->hari_kerja_standar;
 
-            $managemenFeePerDay = 175000 / 25;
+            if ($hariKerjaStandar <= 0) {
+                throw new \Exception(
+                    'Hari kerja standar untuk tahun ' . $tanggal->year . ' harus lebih dari 0.'
+                );
+            }
+
+            $jamsostek = round($ump * 0.0489, 2);
+
+            $bpjsKesehatan = round($ump * 0.04, 2);
+
+            $bpjsPensiun = round($ump * 0.02, 2);
+
+            $managemenFeePerDay = 175000 / $hariKerjaStandar;
 
             $managemenFee = min(
                 $totalHariKerja * $managemenFeePerDay,
@@ -1029,7 +1017,185 @@ class DailyActivityController extends Controller
                 ->back()
                 ->with('error', 'Gagal mengupdate data: ' . $e->getMessage());
         }
-    }            
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['required', 'integer', 'exists:daily_activity_details,id'],
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $details = DailyActivityDetail::with('dailyActivity')
+                ->whereIn('id', $request->ids)
+                ->get();
+
+            if ($details->isEmpty()) {
+                throw new \Exception('Data yang dipilih tidak ditemukan.');
+            }
+
+            $affected = [];
+
+            foreach ($details as $detail) {
+                $dailyActivity = $detail->dailyActivity;
+
+                if (!$dailyActivity) {
+                    continue;
+                }
+
+                $tanggal = Carbon::parse($dailyActivity->tanggal);
+
+                $affected[] = [
+                    'employee_id' => $dailyActivity->employee_id,
+                    'month' => $tanggal->month,
+                    'year' => $tanggal->year,
+                ];
+
+                $detail->delete();
+            }
+
+            $parentIds = $details
+                ->pluck('daily_activity_id')
+                ->unique();
+
+            foreach ($parentIds as $dailyActivityId) {
+                $remaining = DailyActivityDetail::where(
+                    'daily_activity_id',
+                    $dailyActivityId
+                )->count();
+
+                if ($remaining === 0) {
+                    DailyActivity::where('id', $dailyActivityId)->delete();
+                }
+            }
+
+            $affected = collect($affected)
+                ->unique(function ($item) {
+                    return $item['employee_id'] . '-' .
+                        $item['month'] . '-' .
+                        $item['year'];
+                });
+
+            foreach ($affected as $item) {
+
+                $employeeId = $item['employee_id'];
+                $month = $item['month'];
+                $year = $item['year'];
+
+                $activities = DailyActivity::with('details')
+                    ->where('employee_id', $employeeId)
+                    ->whereMonth('tanggal', $month)
+                    ->whereYear('tanggal', $year)
+                    ->get();
+
+                if ($activities->isEmpty()) {
+
+                    PenggajianBorongan::where('employee_id', $employeeId)
+                        ->where('period_month', $month)
+                        ->where('period_year', $year)
+                        ->delete();
+
+                    continue;
+                }
+
+                $totalKg = 0;
+                $totalUpah = 0;
+
+                $totalHariKerja = $activities
+                    ->pluck('tanggal')
+                    ->unique()
+                    ->count();
+
+                foreach ($activities as $activity) {
+
+                    foreach ($activity->details as $activityDetail) {
+
+                        $totalKg += (float) $activityDetail->total_kg;
+
+                        $totalUpah += (float) $activityDetail->total_harga;
+                    }
+                }
+
+                $wageConfig = WageConfig::where('tahun', $year)->first();
+
+                if (!$wageConfig) {
+                    throw new \Exception(
+                        'Wage Config untuk tahun ' . $year . ' belum tersedia.'
+                    );
+                }
+
+                $ump = (float) $wageConfig->ump;
+                $hariKerjaStandar = $wageConfig->hari_kerja_standar;
+
+                if ($hariKerjaStandar <= 0) {
+                    throw new \Exception(
+                        'Hari kerja standar untuk tahun ' . $year . ' harus lebih dari 0.'
+                    );
+                }
+
+                $jamsostek = round($ump * 0.0489, 2);
+                $bpjsKesehatan = round($ump * 0.04, 2);
+                $bpjsPensiun = round($ump * 0.02, 2);
+
+                $managemenFeePerDay = 175000 / $hariKerjaStandar;
+
+                $managemenFee = min(
+                    $totalHariKerja * $managemenFeePerDay,
+                    175000
+                );
+
+                $grandTotalUpah =
+                    $totalUpah
+                    + $jamsostek
+                    + $bpjsKesehatan
+                    + $bpjsPensiun
+                    + $managemenFee;
+
+                PenggajianBorongan::updateOrCreate(
+                    [
+                        'employee_id' => $employeeId,
+                        'period_month' => $month,
+                        'period_year' => $year,
+                    ],
+                    [
+                        'total_kg' => $totalKg,
+                        'total_hari_kerja' => $totalHariKerja,
+                        'total_upah' => $totalUpah,
+                        'jamsostek' => $jamsostek,
+                        'bpjs_kesehatan' => $bpjsKesehatan,
+                        'bpjs_pensiun' => $bpjsPensiun,
+                        'managemen_fee' => $managemenFee,
+                        'grand_total_upah' => $grandTotalUpah,
+                    ]
+                );
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->back()
+                ->with(
+                    'success',
+                    'Data yang dipilih berhasil dihapus.'
+                );
+
+        } catch (\Throwable $e) {
+
+            DB::rollBack();
+
+            return redirect()
+                ->back()
+                ->with(
+                    'error',
+                    'Gagal menghapus data: ' . $e->getMessage()
+                );
+        }
+    }
+    
+    
 
     public function exportExcelGeneralManager(Request $request, $costCenterId, $psGroupId)
     {

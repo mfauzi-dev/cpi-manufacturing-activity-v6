@@ -1,7 +1,33 @@
 @extends('layouts.master')
 
+@push('addon-style')
+    <style>
+        .payroll-table {
+            border-collapse: collapse;
+        }
+
+        .payroll-table th,
+        .payroll-table td {
+            border: 1px solid #dee2e6 !important;
+        }
+
+        .payroll-table thead th {
+            border: 1px solid #dee2e6 !important;
+            text-align: center;
+            vertical-align: middle;
+            background: #f8f9fa;
+        }
+
+        .cost-center-name {
+            white-space: nowrap;
+        }
+    </style>
+@endpush
+
 @section('content')
+
     <div class="section-header">
+
         <h1>Penggajian Borongan</h1>
 
         <div class="section-header-breadcrumb">
@@ -9,12 +35,11 @@
                 Penggajian Borongan
             </div>
         </div>
+
     </div>
 
-    {{-- SUMMARY --}}
     <div class="row">
 
-        {{-- TOTAL KARYAWAN --}}
         <div class="col-lg-4 col-md-6 col-sm-6 col-12">
             <div class="card card-statistic-1">
 
@@ -33,10 +58,10 @@
                     </div>
 
                 </div>
+
             </div>
         </div>
 
-        {{-- TOTAL KG --}}
         <div class="col-lg-4 col-md-6 col-sm-6 col-12">
             <div class="card card-statistic-1">
 
@@ -55,10 +80,10 @@
                     </div>
 
                 </div>
+
             </div>
         </div>
 
-        {{-- TOTAL UPAH --}}
         <div class="col-lg-4 col-md-6 col-sm-6 col-12">
             <div class="card card-statistic-1">
 
@@ -77,13 +102,12 @@
                     </div>
 
                 </div>
+
             </div>
         </div>
 
     </div>
 
-
-    {{-- FILTER --}}
     <div class="card">
 
         <div class="card-header">
@@ -96,8 +120,7 @@
 
                 <div class="row">
 
-                    {{-- MONTH --}}
-                    <div class="col-md-6">
+                    <div class="col-md-3">
 
                         <div class="form-group">
 
@@ -119,9 +142,7 @@
 
                     </div>
 
-
-                    {{-- YEAR --}}
-                    <div class="col-md-6">
+                    <div class="col-md-3">
 
                         <div class="form-group">
 
@@ -143,8 +164,61 @@
 
                     </div>
 
-                </div>
+                    <div class="col-md-3">
 
+                        <div class="form-group">
+
+                            <label>Outsourcing</label>
+
+                            <select name="outsourcing_id" class="form-control">
+
+                                <option value="">
+                                    Semua Outsourcing
+                                </option>
+
+                                @foreach ($outsourcings as $outsourcing)
+                                    <option value="{{ $outsourcing->id }}"
+                                        {{ (string) $outsourcingId === (string) $outsourcing->id ? 'selected' : '' }}>
+
+                                        {{ $outsourcing->name }}
+
+                                    </option>
+                                @endforeach
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-3">
+
+                        <div class="form-group">
+
+                            <label>Cost Center</label>
+
+                            <select name="cost_center_id" class="form-control">
+
+                                <option value="">
+                                    Semua Cost Center
+                                </option>
+
+                                @foreach ($costCenters as $costCenter)
+                                    <option value="{{ $costCenter->id }}"
+                                        {{ (string) $costCenterId === (string) $costCenter->id ? 'selected' : '' }}>
+
+                                        {{ $costCenter->name }}
+
+                                    </option>
+                                @endforeach
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                </div>
 
                 <div class="mt-3">
 
@@ -154,9 +228,7 @@
                     </button>
 
                     <a href="{{ route('manager.penggajian-borongan.index') }}" class="btn btn-secondary">
-
                         Reset
-
                     </a>
 
                 </div>
@@ -167,8 +239,6 @@
 
     </div>
 
-
-    {{-- TABLE --}}
     <div class="card">
 
         <div class="card-header">
@@ -177,12 +247,13 @@
 
         <div class="card-body">
 
-            {{-- EXPORT --}}
             <div class="mb-3">
 
                 <a href="{{ route('manager.penggajian-borongan.export-excel', [
                     'month' => $month,
                     'year' => $year,
+                    'outsourcing_id' => $outsourcingId,
+                    'cost_center_id' => $costCenterId,
                 ]) }}"
                     class="btn btn-success">
 
@@ -191,10 +262,11 @@
 
                 </a>
 
-
                 <a href="{{ route('manager.penggajian-borongan.export-pdf', [
                     'month' => $month,
                     'year' => $year,
+                    'outsourcing_id' => $outsourcingId,
+                    'cost_center_id' => $costCenterId,
                 ]) }}"
                     class="btn btn-danger" target="_blank">
 
@@ -205,165 +277,159 @@
 
             </div>
 
-
-
             <div class="table-responsive">
 
-                <table class="table table-striped table-bordered mb-0">
+                <table class="table table-striped table-bordered payroll-table mb-0">
 
                     <thead>
 
                         <tr>
 
-                            <th class="text-center" width="50">
+                            <th rowspan="2" class="text-center" width="50">
                                 No.
                             </th>
 
-                            <th>
+                            <th rowspan="2">
                                 No. KTP
                             </th>
 
-                            <th>
+                            <th rowspan="2">
                                 NIK
                             </th>
 
-                            <th>
+                            <th rowspan="2">
                                 Nama
                             </th>
 
-                            <th class="text-center">
+                            <th rowspan="2" class="text-center">
                                 Hasil Proses (Kg)/Jam
                             </th>
 
-                            <th class="text-center">
+                            <th rowspan="2" class="text-center">
                                 Total Hari
                             </th>
 
-                            <th class="text-center">
+                            <th colspan="{{ $costCenters->count() }}" class="text-center">
+                                UPAH YANG DITERIMA
+                            </th>
+
+                            <th rowspan="2" class="text-center">
                                 Total Upah yang Diterima
                             </th>
 
-                            <th class="text-center">
+                            <th rowspan="2" class="text-center">
                                 Jamsostek (4.89%)
                             </th>
 
-                            <th class="text-center">
+                            <th rowspan="2" class="text-center">
                                 BPJS Kesehatan (4%)
                             </th>
 
-                            <th class="text-center">
+                            <th rowspan="2" class="text-center">
                                 BPJS Pensiun (2%)
                             </th>
 
-                            <th class="text-center">
+                            <th rowspan="2" class="text-center">
                                 Managemen Fee
                                 <br>
                                 (175000/25)
                             </th>
 
-                            <th class="text-center">
+                            <th rowspan="2" class="text-center">
                                 Grand Total Upah Diterima
                             </th>
 
                         </tr>
 
-                    </thead>
+                        <tr>
 
+                            @foreach ($costCenters as $costCenter)
+                                <th class="text-center">
+                                    {{ $costCenter->code }}
+                                    <br>
+                                    <small class="cost-center-name">{{ $costCenter->name }}</small>
+                                </th>
+                            @endforeach
+
+                        </tr>
+
+                    </thead>
 
                     <tbody>
 
                         @forelse ($payrolls as $i => $payroll)
                             <tr>
 
-                                {{-- NO --}}
                                 <td class="text-center">
-
                                     {{ $payrolls->firstItem() + $i }}
-
                                 </td>
 
-
-                                {{-- NO KTP --}}
                                 <td>
-
                                     {{ $payroll->employee->ktp_number ?? '-' }}
-
                                 </td>
 
-
-                                {{-- NIK --}}
                                 <td>
-
                                     {{ $payroll->employee->nik ?? '-' }}
-
                                 </td>
 
-
-                                {{-- NAMA --}}
                                 <td>
-
                                     {{ $payroll->employee->name ?? '-' }}
-
                                 </td>
 
-
-                                {{-- HASIL PROSES --}}
                                 <td class="text-center">
-
                                     {{ number_format($payroll->total_kg ?? 0, 2, ',', '.') }}
-
                                 </td>
 
-
-                                {{-- TOTAL HARI --}}
                                 <td class="text-center">
-
                                     {{ $payroll->total_hari_kerja ?? 0 }}
-
                                 </td>
 
+                                @foreach ($costCenters as $costCenter)
+                                    <td class="text-right">
 
-                                {{-- TOTAL UPAH --}}
+                                        @php
+                                            $upahCostCenter = $payroll->cost_center_upah[$costCenter->id] ?? 0;
+                                        @endphp
+
+                                        @if ($upahCostCenter > 0)
+                                            Rp {{ number_format($upahCostCenter, 0, ',', '.') }}
+                                        @else
+                                            -
+                                        @endif
+
+                                    </td>
+                                @endforeach
+
                                 <td class="text-right">
 
                                     Rp {{ number_format($payroll->total_upah ?? 0, 0, ',', '.') }}
 
                                 </td>
 
-
-                                {{-- JAMSOSTEK --}}
                                 <td class="text-right">
 
                                     Rp {{ number_format($payroll->jamsostek ?? 0, 0, ',', '.') }}
 
                                 </td>
 
-
-                                {{-- BPJS KESEHATAN --}}
                                 <td class="text-right">
 
                                     Rp {{ number_format($payroll->bpjs_kesehatan ?? 0, 0, ',', '.') }}
 
                                 </td>
 
-
-                                {{-- BPJS PENSIUN --}}
                                 <td class="text-right">
 
                                     Rp {{ number_format($payroll->bpjs_pensiun ?? 0, 0, ',', '.') }}
 
                                 </td>
 
-
-                                {{-- MANAGEMENT FEE --}}
                                 <td class="text-right">
 
                                     Rp {{ number_format($payroll->managemen_fee ?? 0, 0, ',', '.') }}
 
                                 </td>
 
-
-                                {{-- GRAND TOTAL --}}
                                 <td class="text-right font-weight-bold text-success">
 
                                     Rp {{ number_format($payroll->grand_total_upah ?? 0, 0, ',', '.') }}
@@ -376,7 +442,7 @@
 
                             <tr>
 
-                                <td colspan="12" class="text-center py-4 text-muted">
+                                <td colspan="{{ 13 + $costCenters->count() }}" class="text-center py-4 text-muted">
 
                                     Belum ada penggajian borongan untuk periode ini.
 
@@ -391,11 +457,8 @@
 
             </div>
 
-
         </div>
 
-
-        {{-- PAGINATION --}}
         <div class="card-footer text-right">
 
             {{ $payrolls->withQueryString()->links() }}
@@ -403,4 +466,5 @@
         </div>
 
     </div>
+
 @endsection

@@ -131,7 +131,7 @@
                                 <th width="100">No</th>
                                 <th width="350">Nama Material</th>
                                 <th width="150">Output KG</th>
-                                <th width="150">Lama Packing</th>
+                                <th width="150">Lama Packing <br> ( Jam )</th>
                                 <th width="130">Productivity</th>
                                 <th width="170">Harga / KG</th>
                                 <th width="170">Rupiah</th>

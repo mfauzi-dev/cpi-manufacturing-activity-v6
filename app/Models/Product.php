@@ -9,7 +9,7 @@ class Product extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['material_code', 'material_name', 'department_id', 'cost_center_id', 'product_group_id', 'process_type_id', 'harga_per_kg'];
+    protected $fillable = ['material_code', 'material_name', 'department_id', 'cost_center_id', 'product_group_id', 'process_type_id', 'harga_per_kg', 'productivity'];
 
     public function costCenter()
     {

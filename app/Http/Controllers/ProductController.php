@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProductUpdateRequest;
 use App\Imports\ProductFurtherImport;
 use App\Imports\ProductImport;
+use App\Imports\ProductSlaughterHouseImport;
 use App\Models\CostCenter;
 use App\Models\Department;
 use App\Models\ProcessType;
@@ -422,5 +423,177 @@ class ProductController extends Controller
         return redirect()
             ->route('admin-production.product-further.index')
             ->with('success', 'Product berhasil dihapus.');
+    }
+
+     public function indexSlaughterHouse(Request $request)
+    {
+        $request->validate([
+            'search' => ['nullable', 'string'],
+            'size' => ['nullable', 'integer'],
+            'cost_center_id' => ['nullable', 'exists:cost_centers,id'],
+            'product_group_id' => ['nullable', 'exists:product_groups,id'],
+        ]);
+
+        $search = $request->search;
+        $size = $request->size ?? 50;
+        $costCenterId = $request->input('cost_center_id');
+        $productGroupId = $request->input('product_group_id');
+
+        $query = Product::query();
+
+        if ($search) {
+            $query->where('material_name', 'like', "%{$search}%")
+                ->orWhere('material_code', 'like', "%{$search}%");
+        }
+
+        if ($costCenterId) {
+            $query->where('cost_center_id', $costCenterId);
+        }
+
+        if ($productGroupId) {
+            $query->where('product_group_id', $productGroupId);
+        }
+
+        $departmentId = Auth::user()->department_id;
+
+        $costCenterList = CostCenter::where('department_id', $departmentId)->orderBy('name')->get();
+
+        $productGroupList = ProductGroup::where('department_id', $departmentId)->orderBy('name')->get();
+
+        $products = $query->where('department_id', $departmentId)->orderBy('department_id')->paginate($size)->withQueryString();
+
+        return view('pages.admin_production.product-slaughter-house.index', compact([
+            'products',
+            'search',
+            'costCenterId',
+            'productGroupId',
+            'costCenterList',
+            'productGroupList',
+        ]));
+    }
+
+    public function createSlaughterHouse()
+    {
+        $departmentId = auth()->user()->department_id;
+
+        $costCenterList = CostCenter::where('department_id', $departmentId)->orderBy('name')->get();
+        $productGroupList = ProductGroup::where('department_id', $departmentId)->orderBy('name')->get();
+
+        return view('pages.admin_production.product-slaughter-house.create', compact([
+            'costCenterList',
+            'productGroupList',
+        ]));
+    }
+
+    public function storeSlaughterHouse(Request $request)
+    {
+        $request->validate([
+            'nama_material'    => ['required'],
+            'kode_material'    => ['nullable'],
+            'cost_center_id'   => ['required'],
+            'product_group_id' => ['nullable'],
+            'harga_per_kg'     => ['nullable', 'numeric'],
+            'productivity'     => ['required', 'numeric'],
+        ]);
+
+        Product::create([
+            'material_code'    => $request->kode_material,
+            'material_name'    => $request->nama_material,
+            'cost_center_id'   => $request->cost_center_id,
+            'product_group_id' => $request->product_group_id,
+            'harga_per_kg'     => $request->harga_per_kg,
+            'productivity'     => $request->productivity,
+            'department_id'    => auth()->user()->department_id,
+        ]);
+
+        return redirect()
+            ->route('admin-production.product-slaughter-house.index')
+            ->with('success', 'Product berhasil ditambahkan.');
+    }
+
+    public function editSlaughterHouse($id)
+    {
+        $product = Product::findOrFail($id);
+        $departmentId = auth()->user()->department_id;
+
+        $costCenterList = CostCenter::where('department_id', $departmentId)->orderBy('name')->get();
+        $productGroupList = ProductGroup::where('department_id', $departmentId)->orderBy('name')->get();
+
+        return view('pages.admin_production.product-slaughter-house.edit', compact([
+            'product',
+            'costCenterList',
+            'productGroupList',
+        ]));
+    }
+
+    public function updateSlaughterHouse(Request $request, $id)
+    {
+        $product = Product::findOrFail($id);
+
+        $request->validate([
+            'nama_material'    => ['required'],
+            'kode_material'    => ['nullable'],
+            'cost_center_id'   => ['required'],
+            'product_group_id' => ['nullable'],
+            'harga_per_kg'     => ['nullable', 'numeric'],
+            'productivity'     => ['required', 'numeric'],
+        ]);
+
+        $product->update([
+            'material_code'    => $request->kode_material,
+            'material_name'    => $request->nama_material,
+            'cost_center_id'   => $request->cost_center_id,
+            'product_group_id' => $request->product_group_id,
+            'harga_per_kg'     => $request->harga_per_kg,
+            'productivity'     => $request->productivity,
+            'department_id'    => auth()->user()->department_id,
+        ]);
+
+        return redirect()
+            ->route('admin-production.product-slaughter-house.index')
+            ->with('success', 'Product berhasil diupdate.');
+    }
+
+    public function destroySlaughterHouse($id)
+    {
+        $product = Product::findOrFail($id);
+
+        $product->delete();
+
+        return redirect()
+            ->route('admin-production.product-slaughter-house.index')
+            ->with('success', 'Product berhasil dihapus.');
+    }
+
+    public function importPageSlaughterHouse()
+    {
+        $department = auth()->user()->department;
+
+        $costCenterList = CostCenter::where('department_id', $department->id)
+            ->orderBy('name')
+            ->get();
+
+        return view('pages.admin_production.product-slaughter-house.import', compact([
+            'department',
+            'costCenterList',
+        ]));
+    }
+
+    public function uploadSlaughterHouse(Request $request)
+    {
+        try {
+            $costCenter = CostCenter::findOrFail($request->cost_center_id);
+
+            Excel::import(
+                new ProductSlaughterHouseImport($costCenter),
+                $request->file('file')
+            );
+
+            return redirect()->route('admin-production.product-slaughter-house.index')->with('success', 'Data produk slaughter house berhasil diimport.');
+        } catch (\Throwable $e) {
+            return back()
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
     }
 }

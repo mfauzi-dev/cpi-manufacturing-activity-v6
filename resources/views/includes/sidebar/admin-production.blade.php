@@ -166,37 +166,32 @@
             @if (strtolower(auth()->user()->department->name) === 'slaughter house')
                 <li class="menu-header">SLAUGHTER HOUSE</li>
 
-                <!-- PRODUCTS -->
-
-                <li class="dropdown {{ Request::is('admin-production/products*') ? 'active' : '' }}">
-
+                <li class="dropdown {{ Request::is('admin-production/products-slaughter-house*') ? 'active' : '' }}">
                     <a href="#" class="nav-link has-dropdown" data-toggle="dropdown">
                         <i class="fas fa-calendar-check"></i>
                         <span>Products</span>
                     </a>
-
                     <ul class="dropdown-menu">
-
-                        <li class="{{ Request::is('admin-production/products') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('admin-production.product.index') }}">
+                        <li class="{{ Request::is('admin-production/products-slaughter-house') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('admin-production.product-slaughter-house.index') }}">
                                 Table Product
                             </a>
                         </li>
-
-                        <li class="{{ Request::is('admin-production/products/create') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('admin-production.product.create') }}">
+                        <li
+                            class="{{ Request::is('admin-production/products-slaughter-house/create') ? 'active' : '' }}">
+                            <a class="nav-link"
+                                href="{{ route('admin-production.product-slaughter-house.create') }}">
                                 Tambah Product
                             </a>
                         </li>
-
-                        <li class="{{ Request::is('admin-production/products/import') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('admin-production.product.import') }}">
+                        <li
+                            class="{{ Request::is('admin-production/products-slaughter-house/import') ? 'active' : '' }}">
+                            <a class="nav-link"
+                                href="{{ route('admin-production.product-slaughter-house.import') }}">
                                 Import Product
                             </a>
                         </li>
-
                     </ul>
-
                 </li>
 
                 <!-- DAILY ACTIVITY SLAUGHTER HOUSE -->

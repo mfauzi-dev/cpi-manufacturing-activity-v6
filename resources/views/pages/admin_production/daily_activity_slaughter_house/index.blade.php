@@ -214,7 +214,7 @@
                         @empty
 
                             <tr>
-                                <td colspan="8" class="text-center">
+                                <td colspan="10" class="text-center">
                                     Belum ada data
                                 </td>
                             </tr>

@@ -74,6 +74,9 @@
                 <th>Nama Material</th>
                 <th>Nama Karyawan</th>
                 <th class="text-right">Kg</th>
+                <th class="text-right">Lama Packing</th>
+                <th class="text-right">Productivity</th>
+                <th class="text-right">Productivity Actual</th>
                 <th class="text-right">Harga / KG</th>
                 <th class="text-right">Rupiah</th>
                 <th>Diinput Oleh</th>
@@ -114,6 +117,18 @@
                     </td>
 
                     <td class="text-right">
+                        {{ number_format($row->lama_packing, 2, ',', '.') }}
+                    </td>
+
+                    <td class="text-right">
+                        {{ number_format($row->productivity, 2, ',', '.') }}
+                    </td>
+
+                    <td class="text-right">
+                        {{ number_format($row->productivity_actual, 2, ',', '.') }}
+                    </td>
+
+                    <td class="text-right">
                         Rp {{ number_format($row->harga_per_kg, 2, ',', '.') }}
                     </td>
 
@@ -130,7 +145,7 @@
             @empty
 
                 <tr>
-                    <td colspan="9" style="text-align:center;">
+                    <td colspan="12" style="text-align:center;">
                         Tidak ada data
                     </td>
                 </tr>

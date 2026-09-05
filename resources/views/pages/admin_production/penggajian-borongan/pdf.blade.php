@@ -6,9 +6,14 @@
     <title>Penggajian Borongan</title>
 
     <style>
+        @page {
+            margin: 20px 15px;
+        }
+
         body {
             font-family: Arial, sans-serif;
-            font-size: 9px;
+            font-size: 8px;
+            color: #000;
         }
 
         .header {
@@ -19,46 +24,44 @@
         .header h2 {
             margin: 0;
             font-size: 16px;
+            font-weight: bold;
         }
 
         .header h3 {
             margin: 5px 0 0;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: normal;
         }
 
         .info {
+            width: 100%;
             margin-bottom: 10px;
         }
 
-        .info table {
-            width: 100%;
-            border: none;
-        }
-
         .info td {
+            padding: 2px 0;
             border: none;
-            padding: 2px;
         }
 
-        table.data {
+        .data {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
         }
 
-        table.data th,
-        table.data td {
+        .data th,
+        .data td {
             border: 1px solid #000;
-            padding: 5px 4px;
+            padding: 4px 3px;
         }
 
-        table.data th {
+        .data th {
             text-align: center;
             vertical-align: middle;
             font-weight: bold;
         }
 
-        table.data td {
+        .data td {
             vertical-align: middle;
         }
 
@@ -75,8 +78,15 @@
         }
 
         .total {
-            background-color: #f2f2f2;
             font-weight: bold;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        tr {
+            page-break-inside: avoid;
         }
     </style>
 </head>
@@ -100,6 +110,13 @@
                 <tr>
                     <td width="15%"><strong>Outsourcing</strong></td>
                     <td>: {{ $outsourcingName }}</td>
+                </tr>
+            @endisset
+
+            @isset($costCenterName)
+                <tr>
+                    <td width="15%"><strong>Cost Center</strong></td>
+                    <td>: {{ $costCenterName }}</td>
                 </tr>
             @endisset
         </table>

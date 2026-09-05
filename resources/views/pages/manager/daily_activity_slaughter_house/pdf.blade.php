@@ -89,6 +89,18 @@
                 </th>
 
                 <th class="text-right">
+                    Lama Packing
+                </th>
+
+                <th class="text-right">
+                    Productivity
+                </th>
+
+                <th class="text-right">
+                    Productivity Actual
+                </th>
+
+                <th class="text-right">
                     Harga / Kg
                 </th>
 
@@ -142,6 +154,18 @@
                     </td>
 
                     <td class="text-right">
+                        {{ number_format($row->lama_packing, 2, ',', '.') }}
+                    </td>
+
+                    <td class="text-right">
+                        {{ number_format($row->productivity, 2, ',', '.') }}
+                    </td>
+
+                    <td class="text-right">
+                        {{ number_format($row->productivity_actual, 2, ',', '.') }}
+                    </td>
+
+                    <td class="text-right">
                         Rp {{ number_format($row->harga_per_kg, 0, ',', '.') }}
                     </td>
 
@@ -159,7 +183,7 @@
 
                 <tr>
 
-                    <td colspan="10" style="text-align:center;">
+                    <td colspan="13" style="text-align:center;">
                         Tidak ada data
                     </td>
 

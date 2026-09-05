@@ -1,21 +1,20 @@
 <!DOCTYPE html>
-
 <html>
 
 <head>
     <meta charset="utf-8">
-
     <title>Penggajian Borongan</title>
 
     <style>
         @page {
-            size: A4 landscape;
-            margin: 15px;
+            /* size: A4 landscape; */
+            margin: 20px 15px;
         }
 
         body {
             font-family: Arial, sans-serif;
-            font-size: 9px;
+            font-size: 8px;
+            color: #000;
         }
 
         .header {
@@ -26,40 +25,60 @@
         .header h2 {
             margin: 0;
             font-size: 16px;
+            font-weight: bold;
         }
 
         .header h3 {
-            margin: 5px 0 0 0;
-            font-size: 12px;
+            margin: 5px 0 0;
+            font-size: 11px;
             font-weight: normal;
         }
 
-        table {
+        .info {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .info td {
+            padding: 2px 0;
+            border: none;
+        }
+
+        .data {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
         }
 
-        th,
-        td {
+        .data th,
+        .data td {
             border: 1px solid #000;
-            padding: 5px;
+            padding: 4px 3px;
         }
 
-        th {
+        .data th {
             text-align: center;
+            vertical-align: middle;
             font-weight: bold;
-            background-color: #f2f2f2;
         }
 
-        td.center {
+        .data td {
+            vertical-align: middle;
+        }
+
+        .text-center {
             text-align: center;
         }
 
-        td.right {
+        .text-right {
             text-align: right;
         }
 
-        .grand-total {
+        .bold {
+            font-weight: bold;
+        }
+
+        .total {
             font-weight: bold;
         }
 
@@ -71,186 +90,214 @@
             page-break-inside: avoid;
         }
     </style>
-
 </head>
 
 <body>
 
-    {{-- HEADER PDF --}}
     <div class="header">
-
         <h2>PENGGAJIAN BORONGAN</h2>
-
-        <h3>
-            Periode: {{ $periodLabel }}
-        </h3>
-
+        <h3>Periode {{ $periodLabel }}</h3>
     </div>
 
+    <table class="info">
+        <tr>
+            <td width="15%">
+                <strong>Department</strong>
+            </td>
+            <td>
+                : {{ $departmentName }}
+            </td>
+        </tr>
 
-    {{-- TABLE --}}
-    <table>
-
-        <thead>
-
+        @isset($outsourcingName)
             <tr>
+                <td width="15%">
+                    <strong>Outsourcing</strong>
+                </td>
+                <td>
+                    : {{ $outsourcingName }}
+                </td>
+            </tr>
+        @endisset
 
-                <th width="4%">
-                    No.
+        @isset($costCenterName)
+            <tr>
+                <td width="15%">
+                    <strong>Cost Center</strong>
+                </td>
+                <td>
+                    : {{ $costCenterName }}
+                </td>
+            </tr>
+        @endisset
+    </table>
+
+    <table class="data">
+        <thead>
+            <tr>
+                <th style="width: 4%;">
+                    NO
                 </th>
 
-                <th width="9%">
-                    No. KTP
+                <th style="width: 9%;">
+                    NO. KTP
                 </th>
 
-                <th width="8%">
-                    NIK
+                <th style="width: 8%;">
+                    NIK AML
                 </th>
 
-                <th width="15%">
-                    Nama
+                <th style="width: 15%;">
+                    NAMA
                 </th>
 
-                <th width="8%">
-                    Hasil Proses
+                <th style="width: 8%;">
+                    HASIL PROSES
                     <br>
-                    (Kg)/Jam
+                    (Kg)
                 </th>
 
-                <th width="6%">
-                    Total Hari
+                <th style="width: 6%;">
+                    TOTAL HARI
                 </th>
 
-                <th width="10%">
-                    Total Upah
+                <th style="width: 10%;">
+                    TOTAL UPAH
+                    <br>
+                    YANG DITERIMA
                 </th>
 
-                <th width="9%">
-                    Jamsostek
+                <th style="width: 9%;">
+                    JAMSOSTEK
                     <br>
                     (4.89%)
                 </th>
 
-                <th width="9%">
-                    BPJS Kesehatan
+                <th style="width: 9%;">
+                    BPJS KESEHATAN
                     <br>
                     (4%)
                 </th>
 
-                <th width="9%">
-                    BPJS Pensiun
+                <th style="width: 9%;">
+                    BPJS PENSIUN
                     <br>
                     (2%)
                 </th>
 
-                <th width="10%">
-                    Managemen Fee
+                <th style="width: 10%;">
+                    MANAGEMEN FEE
                     <br>
                     (175000/25)
                 </th>
 
-                <th width="11%">
-                    Grand Total
+                <th style="width: 11%;">
+                    GRAND TOTAL
                     <br>
-                    Upah Diterima
+                    UPAH DITERIMA
                 </th>
-
             </tr>
-
         </thead>
 
-
         <tbody>
-
             @forelse ($payrolls as $i => $payroll)
                 <tr>
-
-                    {{-- NO --}}
-                    <td class="center">
+                    <td class="text-center">
                         {{ $i + 1 }}
                     </td>
 
-
-                    {{-- NO KTP --}}
                     <td>
                         {{ $payroll->employee->ktp_number ?? '-' }}
                     </td>
 
-
-                    {{-- NIK --}}
                     <td>
                         {{ $payroll->employee->nik ?? '-' }}
                     </td>
 
-
-                    {{-- NAMA --}}
                     <td>
                         {{ $payroll->employee->name ?? '-' }}
                     </td>
 
-
-                    {{-- PRODUKTIVITAS --}}
-                    <td class="center">
+                    <td class="text-right">
                         {{ number_format($payroll->total_kg ?? 0, 2, ',', '.') }}
                     </td>
 
-
-                    {{-- TOTAL HARI --}}
-                    <td class="center">
+                    <td class="text-center">
                         {{ $payroll->total_hari_kerja ?? 0 }}
                     </td>
 
-
-                    {{-- TOTAL UPAH --}}
-                    <td class="right">
+                    <td class="text-right">
                         Rp {{ number_format($payroll->total_upah ?? 0, 0, ',', '.') }}
                     </td>
 
-
-                    {{-- JAMSOSTEK --}}
-                    <td class="right">
+                    <td class="text-right">
                         Rp {{ number_format($payroll->jamsostek ?? 0, 0, ',', '.') }}
                     </td>
 
-
-                    {{-- BPJS KESEHATAN --}}
-                    <td class="right">
+                    <td class="text-right">
                         Rp {{ number_format($payroll->bpjs_kesehatan ?? 0, 0, ',', '.') }}
                     </td>
 
-
-                    {{-- BPJS PENSIUN --}}
-                    <td class="right">
+                    <td class="text-right">
                         Rp {{ number_format($payroll->bpjs_pensiun ?? 0, 0, ',', '.') }}
                     </td>
 
-
-                    {{-- MANAGEMENT FEE --}}
-                    <td class="right">
+                    <td class="text-right">
                         Rp {{ number_format($payroll->managemen_fee ?? 0, 0, ',', '.') }}
                     </td>
 
-
-                    {{-- GRAND TOTAL --}}
-                    <td class="right grand-total">
+                    <td class="text-right bold">
                         Rp {{ number_format($payroll->grand_total_upah ?? 0, 0, ',', '.') }}
                     </td>
-
                 </tr>
-
             @empty
-
                 <tr>
-
-                    <td colspan="12" style="text-align: center;">
+                    <td colspan="12" class="text-center">
                         Belum ada penggajian borongan untuk periode ini.
                     </td>
-
                 </tr>
             @endforelse
-
         </tbody>
 
+        @if ($payrolls->count() > 0)
+            <tfoot>
+                <tr class="total">
+                    <td colspan="4" class="text-right">
+                        TOTAL
+                    </td>
+
+                    <td class="text-right">
+                        {{ number_format($grandTotalKg ?? 0, 2, ',', '.') }}
+                    </td>
+
+                    <td></td>
+
+                    <td class="text-right">
+                        Rp {{ number_format($grandTotalUpah ?? 0, 0, ',', '.') }}
+                    </td>
+
+                    <td class="text-right">
+                        Rp {{ number_format($payrolls->sum('jamsostek'), 0, ',', '.') }}
+                    </td>
+
+                    <td class="text-right">
+                        Rp {{ number_format($payrolls->sum('bpjs_kesehatan'), 0, ',', '.') }}
+                    </td>
+
+                    <td class="text-right">
+                        Rp {{ number_format($payrolls->sum('bpjs_pensiun'), 0, ',', '.') }}
+                    </td>
+
+                    <td class="text-right">
+                        Rp {{ number_format($payrolls->sum('managemen_fee'), 0, ',', '.') }}
+                    </td>
+
+                    <td class="text-right">
+                        Rp {{ number_format($payrolls->sum('grand_total_upah'), 0, ',', '.') }}
+                    </td>
+                </tr>
+            </tfoot>
+        @endif
     </table>
 
 </body>

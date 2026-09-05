@@ -101,6 +101,18 @@ blade
                 : {{ $departmentName }}
             </td>
         </tr>
+        @isset($outsourcingName)
+            <tr>
+                <td width="15%"><strong>Outsourcing</strong></td>
+                <td>: {{ $outsourcingName }}</td>
+            </tr>
+        @endisset
+        @isset($costCenterName)
+            <tr>
+                <td width="15%"><strong>Cost Center</strong></td>
+                <td>: {{ $costCenterName }}</td>
+            </tr>
+        @endisset
     </table>
 
     {{-- TABLE --}}
