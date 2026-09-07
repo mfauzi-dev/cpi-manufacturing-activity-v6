@@ -21,6 +21,7 @@ class PenggajianHarian extends Model
         'bpjs_kesehatan',
         'bpjs_pensiun',
         'managemen_fee',
+        'overtime_total',
         'grand_total_upah',
         'net_salary',
     ];
@@ -32,6 +33,7 @@ class PenggajianHarian extends Model
         'bpjs_kesehatan' => 'decimal:2',
         'bpjs_pensiun' => 'decimal:2',
         'managemen_fee' => 'decimal:2',
+        'overtime_total' => 'decimal:2',
         'grand_total_upah' => 'decimal:2',
         'net_salary' => 'decimal:2',
     ];

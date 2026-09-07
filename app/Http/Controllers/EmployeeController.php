@@ -7,6 +7,7 @@ use App\Imports\PermanentEmployeeImport;
 use App\Models\CostCenter;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\Level;
 use App\Models\Outsourcing;
 use App\Models\Position;
 use App\Models\PsGroup;
@@ -44,6 +45,7 @@ class EmployeeController extends Controller
             'is_active' => ['nullable', 'in:0,1'],
             'cost_center_id' => ['nullable', 'exists:cost_centers,id'],
             'position_id' => ['nullable', 'exists:positions,id'],
+            'level_id' => ['nullable', 'exists:levels,id'],
         ]);
 
         $search = $request->input('search');
@@ -53,12 +55,14 @@ class EmployeeController extends Controller
         $isActive = $request->is_active;
         $costCenterId = $request->cost_center_id;
         $positionId = $request->position_id;
+        $levelId = $request->level_id;
 
         $query = Employee::with([
             'outsourcing',
             'costCenter',
             'psGroup',
             'position',
+            'level'
         ]);
 
         if ($search) {
@@ -88,6 +92,10 @@ class EmployeeController extends Controller
             $query->where('position_id', $positionId);
         }
 
+        if ($levelId) {
+            $query->where('level_id', $levelId);
+        }
+
         $query
             ->orderBy(
                 CostCenter::select('name')
@@ -109,6 +117,7 @@ class EmployeeController extends Controller
 
         $costCenterList = CostCenter::orderBy('name')->get();
         $positionList = Position::orderBy('name')->get();
+        $levelList = Level::orderBy('name')->get();
 
         return view(
             'pages.admin.employee.index',
@@ -120,8 +129,10 @@ class EmployeeController extends Controller
                 'isActive',
                 'costCenterId',
                 'positionId',
+                'levelId',
                 'costCenterList',
-                'positionList'
+                'positionList',
+                'levelList'
             )
         );
     }
@@ -136,6 +147,7 @@ class EmployeeController extends Controller
             'is_active' => ['nullable', 'in:0,1'],
             'cost_center_id' => ['nullable', 'exists:cost_centers,id'],
             'position_id' => ['nullable', 'exists:positions,id'],
+            'level_id' => ['nullable', 'exists:levels,id'],
         ]);
 
         $search = $request->input('search');
@@ -145,12 +157,14 @@ class EmployeeController extends Controller
         $isActive = $request->is_active;
         $costCenterId = $request->cost_center_id;
         $positionId = $request->position_id;
+        $levelId = $request->level_id;
 
         $query = Employee::with([
             'outsourcing',
             'costCenter',
             'psGroup',
             'position',
+            'level',
         ]);
 
         if ($search) {
@@ -180,7 +194,10 @@ class EmployeeController extends Controller
             $query->where('position_id', $positionId);
         }
 
-        
+        if ($levelId) {
+            $query->where('level_id', $levelId);
+        }
+
         $query
             ->orderBy(
                 CostCenter::select('name')
@@ -202,6 +219,7 @@ class EmployeeController extends Controller
 
         $costCenterList = CostCenter::orderBy('name')->get();
         $positionList = Position::orderBy('name')->get();
+        $levelList = Level::orderBy('name')->get();
 
         return view(
             'pages.general_manager.employee.index',
@@ -213,15 +231,16 @@ class EmployeeController extends Controller
                 'isActive',
                 'costCenterId',
                 'positionId',
+                'levelId',
                 'costCenterList',
-                'positionList'
+                'positionList',
+                'levelList'
             )
         );
     }
 
     public function managerIndex(Request $request)
     {
-
         $managerDepartmentId = auth()->user()->department_id;
 
         $request->validate([
@@ -232,6 +251,7 @@ class EmployeeController extends Controller
             'is_active' => ['nullable', 'in:0,1'],
             'cost_center_id' => ['nullable', 'exists:cost_centers,id'],
             'position_id' => ['nullable', 'exists:positions,id'],
+            'level_id' => ['nullable', 'exists:levels,id'],
         ]);
 
         $search = $request->input('search');
@@ -241,12 +261,14 @@ class EmployeeController extends Controller
         $isActive = $request->is_active;
         $costCenterId = $request->cost_center_id;
         $positionId = $request->position_id;
+        $levelId = $request->level_id;
 
         $query = Employee::with([
             'outsourcing',
             'costCenter',
             'psGroup',
             'position',
+            'level'
         ])->where('department_id', $managerDepartmentId);
 
         if ($search) {
@@ -276,7 +298,10 @@ class EmployeeController extends Controller
             $query->where('position_id', $positionId);
         }
 
-        
+        if ($levelId) {
+            $query->where('level_id', $levelId);
+        }
+
         $query
             ->orderBy(
                 CostCenter::select('name')
@@ -296,9 +321,13 @@ class EmployeeController extends Controller
             ->paginate($size)
             ->withQueryString();
 
+        $costCenterList = CostCenter::where(
+            'department_id',
+            $managerDepartmentId
+        )->orderBy('name')->get();
 
-        $costCenterList = CostCenter::where('department_id', $managerDepartmentId)->orderBy('name')->get();
         $positionList = Position::orderBy('name')->get();
+        $levelList = Level::orderBy('name')->get();
 
         return view(
             'pages.manager.employee.index',
@@ -310,15 +339,19 @@ class EmployeeController extends Controller
                 'isActive',
                 'costCenterId',
                 'positionId',
+                'levelId',
                 'costCenterList',
-                'positionList'
+                'positionList',
+                'levelList'
             )
         );
     }
 
+
     public function create()
     {
         $outsourcingList = Outsourcing::orderBy('name')->get();
+
         $costCenters = CostCenter::orderBy('name')->get();
 
         $psGroups = PsGroup::with('costCenter')
@@ -326,6 +359,9 @@ class EmployeeController extends Controller
             ->get();
 
         $positions = Position::orderBy('name')->get();
+
+        $levels = Level::orderBy('name')->get();
+
         $departments = Department::orderBy('name')->get();
 
         return view(
@@ -335,6 +371,7 @@ class EmployeeController extends Controller
                 'costCenters',
                 'psGroups',
                 'positions',
+                'levels',
                 'departments'
             )
         );
@@ -364,7 +401,7 @@ class EmployeeController extends Controller
             'employee_status' => [
                 'required_if:employment_status,outsourcing',
                 'nullable',
-                'in:borongan,harian',
+                'in:borongan,harian,harian_kontrak',
             ],
 
             'outsourcing_id' => [
@@ -393,6 +430,11 @@ class EmployeeController extends Controller
                 'exists:positions,id',
             ],
 
+            'level_id' => [
+                'nullable',
+                'exists:levels,id',
+            ],
+
             'personel_area' => [
                 'nullable',
                 'string',
@@ -402,9 +444,10 @@ class EmployeeController extends Controller
                 'nullable',
                 'string',
             ],
+
             'is_active' => [
-                'required', 
-                'boolean', 
+                'required',
+                'boolean',
             ],
         ]);
 
@@ -426,6 +469,7 @@ class EmployeeController extends Controller
             'cost_center_id' => $request->cost_center_id,
             'ps_group_id' => $request->ps_group_id,
             'position_id' => $request->position_id,
+            'level_id' => $request->level_id,
             'personel_area' => $request->personel_area,
             'gender' => $request->gender,
             'is_active' => $request->is_active,
@@ -525,10 +569,16 @@ class EmployeeController extends Controller
         $employee = Employee::findOrFail($id);
 
         $outsourcingList = Outsourcing::orderBy('name')->get();
+
         $departmentList = Department::orderBy('name')->get();
+
         $costCenterList = CostCenter::orderBy('name')->get();
+
         $psGroupList = PsGroup::orderBy('name')->get();
+
         $positionList = Position::orderBy('name')->get();
+
+        $levels = Level::orderBy('name')->get();
 
         return view(
             'pages.admin.employee.edit',
@@ -538,7 +588,8 @@ class EmployeeController extends Controller
                 'departmentList',
                 'costCenterList',
                 'psGroupList',
-                'positionList'
+                'positionList',
+                'levels'
             )
         );
     }
@@ -573,7 +624,7 @@ class EmployeeController extends Controller
             'employee_status' => [
                 'nullable',
                 'required_if:employment_status,outsourcing',
-                'in:cpi,borongan,harian',
+                'in:cpi,borongan,harian,harian_kontrak',
             ],
 
             'department_id' => [
@@ -596,6 +647,11 @@ class EmployeeController extends Controller
                 'exists:positions,id',
             ],
 
+            'level_id' => [
+                'nullable',
+                'exists:levels,id',
+            ],
+
             'personel_area' => [
                 'nullable',
                 'string',
@@ -605,6 +661,7 @@ class EmployeeController extends Controller
                 'nullable',
                 'string',
             ],
+
             'is_active' => [
                 'required',
                 'boolean',
@@ -628,6 +685,7 @@ class EmployeeController extends Controller
             'cost_center_id' => $request->cost_center_id,
             'ps_group_id' => $request->ps_group_id,
             'position_id' => $request->position_id,
+            'level_id' => $request->level_id,
             'personel_area' => $request->personel_area,
             'gender' => $request->gender,
             'is_active' => $request->is_active,
@@ -695,6 +753,8 @@ class EmployeeController extends Controller
 
         $positionList = Position::orderBy('name')->get();
 
+        $levels = Level::orderBy('name')->get();
+
         return view(
             'pages.manager.employee.create',
             compact(
@@ -702,7 +762,8 @@ class EmployeeController extends Controller
                 'departmentList',
                 'costCenterList',
                 'psGroupList',
-                'positionList'
+                'positionList',
+                'levels'
             )
         );
     }
@@ -733,6 +794,8 @@ class EmployeeController extends Controller
 
         $positionList = Position::orderBy('name')->get();
 
+        $levels = Level::orderBy('name')->get();
+
         return view(
             'pages.manager.employee.edit',
             compact(
@@ -741,7 +804,8 @@ class EmployeeController extends Controller
                 'departmentList',
                 'costCenterList',
                 'psGroupList',
-                'positionList'
+                'positionList',
+                'levels'
             )
         );
     }

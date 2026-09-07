@@ -15,7 +15,7 @@
                             Department
                         </div>
                         <h3 class="mb-0">
-                            {{ $department->name }}
+                            {{ $managerDepartment->name }}
                         </h3>
                     </div>
                 </div>
@@ -137,6 +137,10 @@
                     </tbody>
 
                 </table>
+
+                <div class="card-footer text-right">
+                    {{ $employees->withQueryString()->links() }}
+                </div>
 
             </div>
 

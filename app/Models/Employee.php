@@ -14,6 +14,7 @@ class Employee extends Model
         'cost_center_id',
         'ps_group_id',
         'position_id',
+        'level_id',
         'department_id',
         'nik',
         'name',
@@ -76,5 +77,10 @@ class Employee extends Model
     public function dailyActivitySlaughterHouses()
     {
         return $this->hasMany(DailyActivitySlaughterHouse::class);
+    }
+
+    public function level()
+    {
+        return $this->belongsTo(Level::class);
     }
 }

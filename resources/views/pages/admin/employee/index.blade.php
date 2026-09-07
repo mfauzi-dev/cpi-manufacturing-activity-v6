@@ -10,7 +10,6 @@
         @if (session()->has('success'))
             <div class="alert alert-success alert-dismissible fade show">
                 {{ session('success') }}
-
                 <button type="button" class="close" data-dismiss="alert">
                     <span>&times;</span>
                 </button>
@@ -23,7 +22,6 @@
             </a>
         </div>
 
-        {{-- FILTER --}}
         <div class="card mb-3">
             <div class="card-body">
 
@@ -34,6 +32,7 @@
                         <div class="col-md-3 mb-2">
                             <div class="form-group">
                                 <label>Jenis Karyawan</label>
+
                                 <select name="employment_status" class="form-control">
                                     <option value="">Jenis Karyawan</option>
 
@@ -53,6 +52,7 @@
                         <div class="col-md-3 mb-2">
                             <div class="form-group">
                                 <label>Status Karyawan</label>
+
                                 <select name="employee_status" class="form-control">
                                     <option value="">Status</option>
 
@@ -75,6 +75,7 @@
                         <div class="col-md-3 mb-2">
                             <div class="form-group">
                                 <label>Cost Center</label>
+
                                 <select name="cost_center_id" class="form-control">
                                     <option value="">Semua Cost Center</option>
 
@@ -91,6 +92,7 @@
                         <div class="col-md-3 mb-2">
                             <div class="form-group">
                                 <label>Position</label>
+
                                 <select name="position_id" class="form-control">
                                     <option value="">Semua Position</option>
 
@@ -106,12 +108,32 @@
 
                         <div class="col-md-3 mb-2">
                             <div class="form-group">
+                                <label>Level</label>
+
+                                <select name="level_id" class="form-control">
+                                    <option value="">Semua Level</option>
+
+                                    @foreach ($levelList as $level)
+                                        <option value="{{ $level->id }}"
+                                            {{ request('level_id') == $level->id ? 'selected' : '' }}>
+                                            {{ $level->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 mb-2">
+                            <div class="form-group">
                                 <label>Status Aktif</label>
+
                                 <select name="is_active" class="form-control">
                                     <option value="">Semua Status</option>
+
                                     <option value="1" {{ request('is_active') === '1' ? 'selected' : '' }}>
                                         Aktif
                                     </option>
+
                                     <option value="0" {{ request('is_active') === '0' ? 'selected' : '' }}>
                                         Tidak Aktif
                                     </option>
@@ -122,6 +144,7 @@
                         <div class="col-md-3 mb-2">
                             <div class="form-group">
                                 <label>Nama Karyawan</label>
+
                                 <input type="text" name="search" class="form-control" placeholder="NIK / Nama"
                                     value="{{ request('search') }}">
                             </div>
@@ -144,8 +167,8 @@
             </div>
         </div>
 
-        {{-- TABLE --}}
         <div class="card">
+
             <div class="card-body table-responsive">
 
                 <table class="table table-bordered table-hover">
@@ -160,6 +183,7 @@
                             <th>PS Group</th>
                             <th>Outsourcing</th>
                             <th>Position</th>
+                            <th>Level</th>
                             <th>Gender</th>
                             <th width="280" class="text-center">Action</th>
                         </tr>
@@ -169,8 +193,14 @@
 
                         @forelse ($employees as $employee)
                             <tr>
-                                <td>{{ $employee->nik ?? '-' }}</td>
-                                <td>{{ $employee->name }}</td>
+
+                                <td>
+                                    {{ $employee->nik ?? '-' }}
+                                </td>
+
+                                <td>
+                                    {{ $employee->name }}
+                                </td>
 
                                 <td>
                                     @if ($employee->employment_status == 'permanent')
@@ -196,31 +226,50 @@
                                     @endif
                                 </td>
 
-                                <td>{{ $employee->costCenter->name ?? '-' }}</td>
+                                <td>
+                                    {{ $employee->costCenter->name ?? '-' }}
+                                </td>
 
-                                <td>{{ $employee->psGroup->name ?? '-' }}</td>
+                                <td>
+                                    {{ $employee->psGroup->name ?? '-' }}
+                                </td>
 
-                                <td>{{ $employee->outsourcing->name ?? '-' }}</td>
+                                <td>
+                                    {{ $employee->outsourcing->name ?? '-' }}
+                                </td>
 
-                                <td>{{ $employee->position->name ?? '-' }}</td>
+                                <td>
+                                    {{ $employee->position->name ?? '-' }}
+                                </td>
 
-                                <td>{{ $employee->gender ?? '-' }}</td>
+                                <td>
+                                    {{ $employee->level->name ?? '-' }}
+                                </td>
+
+                                <td>
+                                    {{ $employee->gender ?? '-' }}
+                                </td>
 
                                 <td class="text-center">
+
                                     <div class="d-flex justify-content-center align-items-center"
                                         style="gap: 5px; flex-wrap: nowrap;">
+
                                         <a href="{{ route('admin.employee.detail', $employee->id) }}"
                                             class="btn btn-success btn-sm">
                                             Detail
                                         </a>
+
                                         <a href="{{ route('admin.employee.edit', $employee->id) }}"
                                             class="btn btn-warning btn-sm">
                                             Edit
                                         </a>
+
                                         <form action="{{ route('admin.employee.destroy', $employee->id) }}" method="POST"
                                             style="display:inline;">
                                             @csrf
                                             @method('DELETE')
+
                                             <button class="btn btn-danger btn-sm"
                                                 onclick="return confirm('Yakin hapus data?')">
                                                 Hapus
@@ -228,11 +277,15 @@
                                         </form>
 
                                     </div>
+
                                 </td>
+
                             </tr>
+
                         @empty
+
                             <tr>
-                                <td colspan="12" class="text-center text-muted">
+                                <td colspan="11" class="text-center text-muted">
                                     Tidak ada data
                                 </td>
                             </tr>

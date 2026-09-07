@@ -11,10 +11,15 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeProductivityController;
+use App\Http\Controllers\EmployeeSalaryController;
+use App\Http\Controllers\LevelController;
 use App\Http\Controllers\LineController;
 use App\Http\Controllers\OutsourcingController;
+use App\Http\Controllers\OvertimeController;
+use App\Http\Controllers\OvertimeRateController;
 use App\Http\Controllers\PenggajianBoronganController;
 use App\Http\Controllers\PenggajianHarianController;
+use App\Http\Controllers\PenggajianKaryawanTetapController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProcessTypeController;
 use App\Http\Controllers\ProductController;
@@ -72,7 +77,11 @@ Route::middleware(['auth'])->group(function() {
     Route::get('/daily-activity-slaughter-house/lines/{departmentId}', [DailyActivitySlaughterHouseController::class, 'getLines'])->name('daily-activity-slaughter-house.lines');
     
     Route::get('/employee-productivity/cost-centers/{departmentId}', [EmployeeProductivityController::class, 'getCostCenters'])->name('employee-productivity.cost-centers');
+    Route::get('/employee-salary/cost-centers/{departmentId}', [EmployeeSalaryController::class, 'getCostCenters'])->name('employee-salary.cost-centers');
     Route::get('/penggajian-borongan/cost-centers/{departmentId}', [PenggajianBoronganController::class, 'getCostCenters'])->name('penggajian-borongan.cost-centers');
+    Route::get('/overtime/cost-centers/{departmentId}', [OvertimeController::class, 'getCostCenters'])->name('overtime.cost-centers');
+    Route::get('/admin-production/overtime/rate/{employeeId}', [OvertimeController::class, 'getRate'])->name('admin-production.overtime.rate');
+    Route::get('/penggajian-karyawan-tetap/cost-centers/{departmentId}', [PenggajianKaryawanTetapController::class, 'getCostCenters'])->name('manager.penggajian-karyawan-tetap.cost-centers');
 });
 
 
@@ -220,6 +229,16 @@ Route::prefix('admin-production')->middleware(['auth', 'role:Admin Production'])
         Route::get('/export-excel', [EmployeeProductivityController::class, 'exportExcel'])->name('admin-production.employee-productivity.export-excel');
         Route::get('/export-pdf', [EmployeeProductivityController::class, 'exportPdf'])->name('admin-production.employee-productivity.export-pdf');
     });
+
+    Route::prefix('overtime')->group(function () {
+        Route::get('/', [OvertimeController::class, 'index'])->name('admin-production.overtime.index');
+        Route::get('/create', [OvertimeController::class, 'create'])->name('admin-production.overtime.create');
+        Route::post('/store', [OvertimeController::class, 'store'])->name('admin-production.overtime.store');
+        Route::get('/{id}', [OvertimeController::class, 'show'])->name('admin-production.overtime.show');
+        Route::get('/{id}/edit', [OvertimeController::class, 'edit'])->name('admin-production.overtime.edit');
+        Route::put('/{id}/update', [OvertimeController::class, 'update'])->name('admin-production.overtime.update');
+        Route::delete('/{id}/delete', [OvertimeController::class, 'destroy'])->name('admin-production.overtime.destroy');
+    });
 });
 
 Route::prefix('admin')->middleware(['auth', 'role:Admin'])->group(function() {
@@ -293,6 +312,14 @@ Route::prefix('admin')->middleware(['auth', 'role:Admin'])->group(function() {
         Route::get('{id}/edit', [PositionController::class, 'edit'])->name('position.edit');
         Route::put('{id}/update', [PositionController::class, 'update'])->name('position.update');
         Route::delete('{id}/delete', [PositionController::class, 'destroy'])->name('position.destroy');
+    });
+    Route::prefix('levels')->group(function() {
+        Route::get('/', [LevelController::class, 'index'])->name('admin.level.index');
+        Route::get('/create', [LevelController::class, 'create'])->name('admin.level.create');
+        Route::post('/store', [LevelController::class, 'store'])->name('admin.level.store');
+        Route::get('{id}/edit', [LevelController::class, 'edit'])->name('admin.level.edit');
+        Route::put('{id}/update', [LevelController::class, 'update'])->name('admin.level.update');
+        Route::delete('{id}/delete', [LevelController::class, 'destroy'])->name('admin.level.destroy');
     });
 
     Route::prefix('employees')->group(function() {
@@ -415,6 +442,13 @@ Route::prefix('general-manager')->middleware(['auth', 'role:General Manager'])->
         Route::get('/export-excel', [EmployeeProductivityController::class, 'exportExcelGeneralManager'])->name('general-manager.employee-productivity.export-excel');
         Route::get('/export-pdf', [EmployeeProductivityController::class, 'exportPdfGeneralManager'])->name('general-manager.employee-productivity.export-pdf');
     });
+
+     Route::prefix('overtime')->group(function () {
+        Route::get('/', [OvertimeController::class, 'generalManagerIndex'])->name('general-manager.overtime.index');
+        Route::get('/{id}', [OvertimeController::class, 'generalManagerShow'])->name('general-manager.overtime.show');
+        Route::put('/{id}/approve', [OvertimeController::class, 'generalManagerApprove'])->name('general-manager.overtime.approve');
+        Route::put('/{id}/reject', [OvertimeController::class, 'generalManagerReject'])->name('general-manager.overtime.reject');
+    });
 });
 
 Route::prefix('manager')->middleware(['auth', 'role:Manager'])->group(function() {
@@ -484,5 +518,36 @@ Route::prefix('manager')->middleware(['auth', 'role:Manager'])->group(function()
         Route::get('/{employee_id}/detail', [EmployeeProductivityController::class, 'managerDetail'])->name('manager.employee-productivity.detail');
         Route::get('/export-excel', [EmployeeProductivityController::class, 'exportExcelManager'])->name('manager.employee-productivity.export-excel');
         Route::get('/export-pdf', [EmployeeProductivityController::class, 'exportPdfManager'])->name('manager.employee-productivity.export-pdf');
+    });
+
+
+    Route::prefix('employee-salary')->group(function () {
+        Route::get('/', [EmployeeSalaryController::class, 'index'])->name('manager.employee-salary.index');
+        Route::get('/create', [EmployeeSalaryController::class, 'create'])->name('manager.employee-salary.create');
+        Route::post('/store', [EmployeeSalaryController::class, 'store'])->name('manager.employee-salary.store');
+        Route::get('/{id}/edit', [EmployeeSalaryController::class, 'edit'])->name('manager.employee-salary.edit');
+        Route::put('/{id}/update', [EmployeeSalaryController::class, 'update'])->name('manager.employee-salary.update');
+        Route::delete('/{id}/delete', [EmployeeSalaryController::class, 'destroy'])->name('manager.employee-salary.destroy');
+    });
+
+    Route::prefix('overtime-rate')->group(function () {
+        Route::get('/', [OvertimeRateController::class, 'index'])->name('manager.overtime-rate.index');
+        Route::get('/create', [OvertimeRateController::class, 'create'])->name('manager.overtime-rate.create');
+        Route::post('/store', [OvertimeRateController::class, 'store'])->name('manager.overtime-rate.store');
+        Route::get('/{id}/edit', [OvertimeRateController::class, 'edit'])->name('manager.overtime-rate.edit');
+        Route::put('/{id}/update', [OvertimeRateController::class, 'update'])->name('manager.overtime-rate.update');
+        Route::delete('/{id}/delete', [OvertimeRateController::class, 'destroy'])->name('manager.overtime-rate.destroy');
+    });
+
+    Route::prefix('overtime')->group(function () {
+        Route::get('/', [OvertimeController::class, 'managerIndex'])->name('manager.overtime.index');
+        Route::get('/{id}', [OvertimeController::class, 'managerShow'])->name('manager.overtime.show');
+        Route::put('/{id}/approve', [OvertimeController::class, 'managerApprove'])->name('manager.overtime.approve');
+        Route::put('/{id}/reject', [OvertimeController::class, 'managerReject'])->name('manager.overtime.reject');
+    });
+
+    Route::prefix('penggajian-karyawan-tetap')->group(function () {
+        Route::get('/', [PenggajianKaryawanTetapController::class, 'index'])->name('manager.penggajian-karyawan-tetap.index');
+
     });
 });

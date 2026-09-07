@@ -9,11 +9,9 @@
 
         <div class="row">
 
-            {{-- PROFILE --}}
             <div class="col-lg-4">
 
                 <div class="card">
-
                     <div class="card-body text-center">
 
                         <img src="https://ui-avatars.com/api/?name={{ urlencode($employee->name) }}&background=6777ef&color=fff&size=150"
@@ -27,7 +25,6 @@
                             {{ $employee->nik }}
                         </p>
 
-                        {{-- JENIS KARYAWAN --}}
                         @if ($employee->employment_status == 'permanent')
                             <span class="badge badge-primary">
                                 Permanent
@@ -38,7 +35,6 @@
                             </span>
                         @endif
 
-                        {{-- STATUS KARYAWAN --}}
                         @if ($employee->employee_status)
                             <br><br>
 
@@ -47,7 +43,6 @@
                             </span>
                         @endif
 
-                        {{-- STATUS AKTIF --}}
                         <br><br>
 
                         @if ($employee->is_active)
@@ -61,16 +56,12 @@
                         @endif
 
                     </div>
-
                 </div>
 
             </div>
 
-
-            {{-- DATA --}}
             <div class="col-lg-8">
 
-                {{-- INFORMASI PEKERJAAN --}}
                 <div class="card">
 
                     <div class="card-header">
@@ -84,35 +75,42 @@
                             <tr>
                                 <th width="220">Department</th>
                                 <td>
-                                    {{ $employee->department->name ?? '-' }}
+                                    {{ $employee->department?->name ?? '-' }}
                                 </td>
                             </tr>
 
                             <tr>
                                 <th>Cost Center</th>
                                 <td>
-                                    {{ $employee->costCenter->name ?? '-' }}
+                                    {{ $employee->costCenter?->name ?? '-' }}
                                 </td>
                             </tr>
 
                             <tr>
                                 <th>PS Group</th>
                                 <td>
-                                    {{ $employee->psGroup->name ?? '-' }}
+                                    {{ $employee->psGroup?->name ?? '-' }}
                                 </td>
                             </tr>
 
                             <tr>
                                 <th>Position</th>
                                 <td>
-                                    {{ $employee->position->name ?? '-' }}
+                                    {{ $employee->position?->name ?? '-' }}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <th>Level</th>
+                                <td>
+                                    {{ $employee->level?->name ?? '-' }}
                                 </td>
                             </tr>
 
                             <tr>
                                 <th>Outsourcing</th>
                                 <td>
-                                    {{ $employee->outsourcing->name ?? '-' }}
+                                    {{ $employee->outsourcing?->name ?? '-' }}
                                 </td>
                             </tr>
 
@@ -136,8 +134,6 @@
 
                 </div>
 
-
-                {{-- INFORMASI PRIBADI --}}
                 <div class="card">
 
                     <div class="card-header">
@@ -203,16 +199,10 @@
 
                 </div>
 
-
-                {{-- BUTTON --}}
                 <div class="text-right">
-
                     <a href="{{ route('admin.employee.index') }}" class="btn btn-secondary">
-
                         Kembali
-
                     </a>
-
                 </div>
 
             </div>

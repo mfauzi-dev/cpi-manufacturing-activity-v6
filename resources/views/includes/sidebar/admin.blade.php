@@ -36,6 +36,13 @@
                 </a>
             </li>
 
+            <li class="{{ Request::is('admin/levels*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('admin.level.index') }}">
+                    <i class="fas fa-layer-group"></i>
+                    <span>Levels</span>
+                </a>
+            </li>
+
             <li class="{{ Request::is('admin/outsourcings*') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('admin.outsourcing.index') }}">
                     <i class="fas fa-building"></i>

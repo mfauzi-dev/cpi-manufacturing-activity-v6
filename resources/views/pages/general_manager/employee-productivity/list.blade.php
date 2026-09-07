@@ -133,6 +133,10 @@
 
                 </table>
 
+                <div class="card-footer text-right">
+                    {{ $employees->withQueryString()->links() }}
+                </div>
+
             </div>
         </div>
 

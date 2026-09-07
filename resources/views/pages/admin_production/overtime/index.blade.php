@@ -1,174 +1,353 @@
 @extends('layouts.master')
 
 @section('content')
+
     <div class="section-header">
         <h1>Overtime</h1>
-        <div class="section-header-breadcrumb">
-            <div class="breadcrumb-item active">Overtime</div>
-            <div class="breadcrumb-item">Table</div>
-        </div>
     </div>
 
-    <a href="{{ route('admin-production.overtime.create') }}" class="btn btn-primary mb-4">
-        <i class="fas fa-plus"></i> Overtime
-    </a>
-
-    @if (session()->has('success'))
-        <div class="alert alert-success alert-dismissible fade show">
-            {{ session('success') }}
-            <button type="button" class="close" data-dismiss="alert">
-                <span>&times;</span>
-            </button>
-        </div>
-    @endif
-
-    @if (session()->has('errors'))
-        <div class="alert alert-danger alert-dismissible fade show">
-            {{ session('errors') }}
-            <button type="button" class="close" data-dismiss="alert">
-                <span>&times;</span>
-            </button>
-        </div>
-    @endif
-
-
     <div class="section-body">
-        <div class="card">
-            <div class="card-body">
 
+        @if (session('success'))
+            <div class="alert alert-success">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div class="alert alert-danger">
+                {{ session('error') }}
+            </div>
+        @endif
+
+        {{-- FILTER --}}
+        <div class="card">
+            <div class="card-header">
+                <h4>Filter Overtime</h4>
+            </div>
+
+            <div class="card-body">
                 <form method="GET" action="{{ route('admin-production.overtime.index') }}">
 
                     <div class="row">
 
-                        <div class="col-md-3 mb-3">
-                            <label>Department</label>
-                            <select name="department_id" class="form-control">
-                                <option value="">Semua Department</option>
-                                @foreach ($departments as $department)
-                                    <option value="{{ $department->id }}"
-                                        {{ $departmentId == $department->id ? 'selected' : '' }}>
-                                        {{ $department->name }}
-                                    </option>
-                                @endforeach
+                        @if (strtolower(auth()->user()->department?->name ?? '') === 'general affair')
+                            <div class="form-group col-md-3">
+                                <label>Department</label>
+                                <select name="department_id" id="department_id" class="form-control">
+                                    <option value="">Semua Department</option>
+
+                                    @foreach ($departments as $department)
+                                        <option value="{{ $department->id }}"
+                                            {{ request('department_id') == $department->id ? 'selected' : '' }}>
+                                            {{ $department->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @endif
+
+                        <div class="form-group col-md-3">
+                            <label>Cost Center</label>
+                            <select name="cost_center_id" id="cost_center_id" class="form-control">
+                                <option value="">Semua Cost Center</option>
+
+                                @if (strtolower(auth()->user()->department?->name ?? '') !== 'general affair')
+                                    @foreach ($costCenters as $costCenter)
+                                        <option value="{{ $costCenter->id }}"
+                                            {{ request('cost_center_id') == $costCenter->id ? 'selected' : '' }}>
+                                            {{ $costCenter->code }} - {{ $costCenter->name }}
+                                        </option>
+                                    @endforeach
+                                @endif
                             </select>
                         </div>
 
-                        <div class="col-md-3 mb-3">
+                        <div class="form-group col-md-3">
+                            <label>Dari Tanggal</label>
+                            <input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}">
+                        </div>
+
+                        <div class="form-group col-md-3">
+                            <label>Sampai Tanggal</label>
+                            <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}">
+                        </div>
+
+                        <div class="form-group col-md-3">
                             <label>Status</label>
                             <select name="status" class="form-control">
                                 <option value="">Semua Status</option>
 
-                                <option value="PENDING" {{ $status == 'PENDING' ? 'selected' : '' }}>
-                                    Pending
+                                <option value="PENDING" {{ request('status') === 'PENDING' ? 'selected' : '' }}>
+                                    PENDING
                                 </option>
 
-                                <option value="APPROVED" {{ $status == 'APPROVED' ? 'selected' : '' }}>
-                                    Approved
+                                <option value="APPROVED" {{ request('status') === 'APPROVED' ? 'selected' : '' }}>
+                                    APPROVED
                                 </option>
 
-                                <option value="REJECTED" {{ $status == 'REJECTED' ? 'selected' : '' }}>
-                                    Rejected
+                                <option value="REJECTED" {{ request('status') === 'REJECTED' ? 'selected' : '' }}>
+                                    REJECTED
                                 </option>
                             </select>
                         </div>
 
-                        <div class="col-md-3 mb-3">
-                            <label>Nama Karyawan</label>
-                            <input type="text" name="search" class="form-control" placeholder="Cari nama atau NIK">
-                        </div>
-
-                        <div class="col-md-3 mb-3">
-                            <label>Tanggal</label>
-                            <input type="date" name="work_date" class="form-control" value="{{ $workDate }}">
+                        <div class="form-group col-md-3">
+                            <label>Search</label>
+                            <input type="text" name="search" class="form-control"
+                                placeholder="Cari NIK atau nama karyawan..." value="{{ request('search') }}">
                         </div>
 
                     </div>
 
-                    {{-- BUTTON DI BAWAH KIRI --}}
                     <div class="mt-2">
-                        <button type="submit" class="btn btn-primary">
-                            Terapkan Filter
+                        <button type="submit" class="btn btn-primary mr-2">
+                            <i class="fas fa-search"></i>
+                            Filter
                         </button>
 
                         <a href="{{ route('admin-production.overtime.index') }}" class="btn btn-secondary">
+                            <i class="fas fa-sync"></i>
                             Reset
                         </a>
                     </div>
 
                 </form>
-
             </div>
         </div>
 
+        {{-- DATA --}}
         <div class="card">
-            <div class="card-body table-responsive">
 
-                <table class="table table-bordered table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>No</th>
-                            <th>NIK</th>
-                            <th>Nama</th>
-                            <th>Department</th>
-                            <th>Tanggal</th>
-                            <th>Hours</th>
-                            <th>Rate per Hours</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th class="text-center">Action</th>
-                        </tr>
-                    </thead>
+            <div class="card-header">
+                <h4>Data Overtime</h4>
 
-                    <tbody>
-                        @forelse($overtimes as $key => $item)
+                <div class="card-header-action">
+                    <a href="{{ route('admin-production.overtime.create') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Tambah Overtime
+                    </a>
+                </div>
+            </div>
+
+            <div class="card-body">
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead>
                             <tr>
-                                <td>{{ $key + 1 }}</td>
-                                <td>{{ $item->employee->nik ?? '-' }}</td>
-                                <td>{{ $item->employee->name ?? '-' }}</td>
-                                <td>{{ $item->employee->department->name ?? '-' }}</td>
-                                <td>{{ $item->work_date->format('d F Y') }}</td>
-                                <td>{{ $item->hours }}</td>
-                                <td>Rp {{ number_format($item->rate_per_hour, 0, ',', '.') }}</td>
-                                <td>Rp {{ number_format($item->amount, 0, ',', '.') }}</td>
-
-                                <td>
-                                    @if ($item->status == 'APPROVED')
-                                        <span class="badge bg-success">Approved</span>
-                                    @elseif($item->status == 'REJECTED')
-                                        <span class="badge bg-danger">Rejected</span>
-                                    @else
-                                        <span class="badge bg-warning text-dark">Pending</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <div class="btn-group">
-
-                                        <a href="{{ route('admin-production.overtime.show', $item->id) }}"
-                                            class="btn btn-sm btn-primary mr-2">
-                                            Lihat
-                                        </a>
-
-                                        <a href="{{ route('admin-production.overtime.edit', $item->id) }}"
-                                            class="btn btn-sm btn-info">
-                                            Edit
-                                        </a>
-
-                                    </div>
-                                </td>
-
+                                <th width="50">No</th>
+                                <th>Tanggal</th>
+                                <th>NIK</th>
+                                <th>Karyawan</th>
+                                <th>Department</th>
+                                <th>Cost Center</th>
+                                <th>Jam</th>
+                                <th>Actual</th>
+                                <th>Konversi</th>
+                                <th>Rate</th>
+                                <th>Total Overtime</th>
+                                <th>Status</th>
+                                <th width="130">Action</th>
                             </tr>
-                        @empty
-                            <tr>
-                                <td colspan="10" class="text-center text-muted">
-                                    Data tidak ditemukan
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
+                        </thead>
 
-                </table>
+                        <tbody>
+                            @forelse ($overtimes as $overtime)
+                                <tr>
+
+                                    <td>
+                                        {{ $overtimes->firstItem() + $loop->index }}
+                                    </td>
+
+                                    <td>
+                                        {{ \Carbon\Carbon::parse($overtime->date)->format('d-m-Y') }}
+                                    </td>
+
+                                    <td>
+                                        {{ $overtime->employee->nik ?? '-' }}
+                                    </td>
+
+                                    <td>
+                                        {{ $overtime->employee->name ?? '-' }}
+                                    </td>
+
+                                    <td>
+                                        {{ $overtime->employee->department->name ?? '-' }}
+                                    </td>
+
+                                    <td>
+                                        @if ($overtime->employee->costCenter)
+                                            {{ $overtime->employee->costCenter->code }}
+                                            -
+                                            {{ $overtime->employee->costCenter->name }}
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
+
+                                    <td>
+                                        {{ \Carbon\Carbon::parse($overtime->start_time)->format('H:i') }}
+                                        -
+                                        {{ \Carbon\Carbon::parse($overtime->end_time)->format('H:i') }}
+                                    </td>
+
+                                    <td>
+                                        {{ number_format($overtime->total_hours_actual, 2, ',', '.') }}
+                                        jam
+                                    </td>
+
+                                    <td>
+                                        {{ number_format($overtime->total_hours_konversi, 2, ',', '.') }}
+                                        jam
+                                    </td>
+
+                                    <td>
+                                        Rp {{ number_format($overtime->hourly_rate, 0, ',', '.') }}
+                                    </td>
+
+                                    <td>
+                                        Rp {{ number_format($overtime->overtime_amount, 0, ',', '.') }}
+                                    </td>
+
+                                    <td>
+                                        @if ($overtime->status === 'PENDING')
+                                            <span class="badge badge-warning">
+                                                PENDING
+                                            </span>
+                                        @elseif ($overtime->status === 'APPROVED')
+                                            <span class="badge badge-success">
+                                                APPROVED
+                                            </span>
+                                        @elseif ($overtime->status === 'REJECTED')
+                                            <span class="badge badge-danger">
+                                                REJECTED
+                                            </span>
+                                        @else
+                                            <span class="badge badge-secondary">
+                                                {{ $overtime->status }}
+                                            </span>
+                                        @endif
+                                    </td>
+
+                                    <td style="white-space: nowrap;">
+                                        <a href="{{ route('admin-production.overtime.show', $overtime->id) }}"
+                                            class="btn btn-info btn-sm" title="Detail">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        @if ($overtime->status === 'PENDING')
+                                            <a href="{{ route('admin-production.overtime.edit', $overtime->id) }}"
+                                                class="btn btn-warning btn-sm" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        @endif
+                                        <form action="{{ route('admin-production.overtime.destroy', $overtime->id) }}"
+                                            method="POST" class="d-inline"
+                                            onsubmit="return confirm('Yakin ingin menghapus overtime ini?')">
+                                            @csrf
+                                            @method('DELETE')
+
+                                            <button type="submit" class="btn btn-danger btn-sm" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+
+                                    </td>
+
+                                </tr>
+
+                            @empty
+                                <tr>
+                                    <td colspan="13" class="text-center">
+                                        Belum ada data overtime.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+
+                    </table>
+                </div>
+
+                <div class="mt-3">
+                    {{ $overtimes->withQueryString()->links() }}
+                </div>
 
             </div>
         </div>
+
     </div>
+
 @endsection
+
+@push('scripts')
+    <script>
+        $(document).ready(function() {
+
+            function loadCostCenters(departmentId, selectedCostCenter = '') {
+
+                let costCenter = $('#cost_center_id');
+
+                costCenter.empty();
+
+                costCenter.append(
+                    '<option value="">Semua Cost Center</option>'
+                );
+
+                if (!departmentId) {
+                    return;
+                }
+
+                $.ajax({
+                    url: "{{ route('overtime.cost-centers', ':departmentId') }}"
+                        .replace(':departmentId', departmentId),
+
+                    type: "GET",
+
+                    success: function(data) {
+
+                        $.each(data, function(key, value) {
+
+                            let selected =
+                                selectedCostCenter == value.id ?
+                                'selected' :
+                                '';
+
+                            costCenter.append(
+                                '<option value="' + value.id + '" ' + selected + '>' +
+                                value.code + ' - ' + value.name +
+                                '</option>'
+                            );
+
+                        });
+
+                    },
+
+                    error: function() {
+                        alert('Gagal mengambil data Cost Center.');
+                    }
+                });
+            }
+
+            $('#department_id').on('change', function() {
+
+                let departmentId = $(this).val();
+
+                loadCostCenters(departmentId);
+
+            });
+
+            let departmentId = $('#department_id').val();
+            let selectedCostCenter = "{{ request('cost_center_id') }}";
+
+            if (departmentId) {
+
+                loadCostCenters(
+                    departmentId,
+                    selectedCostCenter
+                );
+
+            }
+
+        });
+    </script>
+@endpush

@@ -19,6 +19,7 @@ use App\Models\WageConfig;
 use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\DB;
 
 class AttendanceController extends Controller
 {
@@ -1016,112 +1017,133 @@ class AttendanceController extends Controller
     }
 
     public function bulkStore(Request $request)
-    {        
+    {
         $request->validate([
             'date' => ['required', 'date'],
             'employees' => ['required', 'array'],
             'employees.*.line_id' => ['nullable', 'exists:lines,id'],
         ]);
 
-        $date = Carbon::parse($request->date);
-        $month = $date->month;
-        $year = $date->year;
+        DB::beginTransaction();
 
-        $config = WageConfig::where('tahun', $year)->first();
+        try {
+            $date = Carbon::parse($request->date);
+            $month = $date->month;
+            $year = $date->year;
 
-        foreach ($request->employees as $employeeId => $data) {
+            $config = WageConfig::where('tahun', $year)->first();
 
-            $status = $data['status'] ?? null;
+            if (!$config) {
+                throw new \Exception('Wage Config untuk tahun ' . $year . ' belum tersedia.');
+            }
 
-            Attendance::updateOrCreate(
-                [
-                    'employee_id' => $employeeId,
-                    'date' => $request->date,
-                ],
-                [
-                    'status' => $status,
-                    'keterangan_izin' => $data['keterangan_izin'] ?? null,
-                    'line_id' => $data['line_id'] ?? null,
-                    'input_by' => auth()->id(),
-                ]
-            );
+            foreach ($request->employees as $employeeId => $data) {
+                $status = $data['status'] ?? null;
 
-            $employee = Employee::find($employeeId);
-
-            if ($employee && $employee->employee_status === 'harian') {
-
-                $payroll = PenggajianHarian::where('employee_id', $employeeId)
-                    ->where('period_month', $month)
-                    ->where('period_year', $year)
-                    ->first();
-
-                if ($payroll && $payroll->ump_used > 0) {
-                    // Gunakan snapshot yang sudah tersimpan
-                    $ump = $payroll->ump_used;
-                    $hariKerjaStandar = $payroll->hari_kerja_standar_used;
-                } else {
-                    // Payroll belum ada, ambil config sebagai snapshot awal
-                    $ump = $config->ump ?? 0;
-                    $hariKerjaStandar = $config->hari_kerja_standar ?? 25;
-                }
-
-                $workDays = Attendance::where('employee_id', $employeeId)
-                    ->whereMonth('date', $month)
-                    ->whereYear('date', $year)
-                    ->where('status', 'hadir')
-                    ->count();
-
-                $upahHarian = $hariKerjaStandar > 0
-                    ? round(($ump / $hariKerjaStandar) * $workDays, 2)
-                    : 0;
-
-                $jamsostek = round(
-                    $upahHarian * 0.0489,
-                    2
-                );
-
-                $bpjsKesehatan = round(
-                    $upahHarian * 0.04,
-                    2
-                );
-
-                $bpjsPensiun = round(
-                    $upahHarian * 0.02,
-                    2
-                );
-
-                $managemenFeePercent = 175000 / 25;
-
-                $managemenFee = min(
-                    $workDays * $managemenFeePercent,
-                    175000
-                );
-
-                $grandTotalUpah = $upahHarian + $jamsostek + $bpjsKesehatan + $bpjsPensiun + $managemenFee;
-
-                PenggajianHarian::updateOrCreate(
+                Attendance::updateOrCreate(
                     [
                         'employee_id' => $employeeId,
-                        'period_month' => $month,
-                        'period_year' => $year,
+                        'date' => $request->date,
                     ],
                     [
-                        'work_days' => $workDays,
-                        'ump_used' => $ump,
-                        'hari_kerja_standar_used' => $hariKerjaStandar,
-                        'upah_harian' => $upahHarian,
-                        'jamsostek' => $jamsostek,
-                        'bpjs_kesehatan' => $bpjsKesehatan,
-                        'bpjs_pensiun' => $bpjsPensiun,
-                        'managemen_fee' => $managemenFee,
-                        'grand_total_upah' => $grandTotalUpah,
-                        'net_salary' => $grandTotalUpah,
+                        'status' => $status,
+                        'keterangan_izin' => $data['keterangan_izin'] ?? null,
+                        'line_id' => $data['line_id'] ?? null,
+                        'input_by' => auth()->id(),
                     ]
                 );
-            }
-        }
 
-        return redirect()->route('admin-production.attendance.index')->with('success', 'Absensi berhasil disimpan');
+                $employee = Employee::find($employeeId);
+
+                if ($employee && in_array($employee->employee_status, ['harian', 'harian_kontrak'])) {
+                    $payroll = PenggajianHarian::where('employee_id', $employeeId)
+                        ->where('period_month', $month)
+                        ->where('period_year', $year)
+                        ->first();
+
+                    if ($payroll && $payroll->ump_used > 0) {
+                        $ump = $payroll->ump_used;
+                        $hariKerjaStandar = $payroll->hari_kerja_standar_used;
+                    } else {
+                        $ump = (float) $config->ump;
+                        $hariKerjaStandar = $config->hari_kerja_standar;
+                    }
+
+                    if ($hariKerjaStandar <= 0) {
+                        throw new \Exception('Hari kerja standar untuk tahun ' . $year . ' harus lebih dari 0.');
+                    }
+
+                    $workDays = Attendance::where('employee_id', $employeeId)
+                        ->whereMonth('date', $month)
+                        ->whereYear('date', $year)
+                        ->where('status', 'hadir')
+                        ->count();
+
+                    $upahPerHari = $ump / $hariKerjaStandar;
+
+                    if ($employee->employee_status === 'harian_kontrak') {
+                        $upahHarian = min(
+                            $upahPerHari * $workDays,
+                            $ump
+                        );
+                    } else {
+                        $upahHarian = $upahPerHari * $workDays;
+                    }
+
+                    $jamsostek = round($ump * 0.0489, 2);
+                    $bpjsKesehatan = round($ump * 0.04, 2);
+                    $bpjsPensiun = round($ump * 0.02, 2);
+
+                    $managemenFeePerDay = 175000 / $hariKerjaStandar;
+
+                    $managemenFee = min(
+                        $workDays * $managemenFeePerDay,
+                        175000
+                    );
+
+                    $grandTotalUpah =
+                        $upahHarian +
+                        $jamsostek +
+                        $bpjsKesehatan +
+                        $bpjsPensiun +
+                        $managemenFee;
+
+                    PenggajianHarian::updateOrCreate(
+                        [
+                            'employee_id' => $employeeId,
+                            'period_month' => $month,
+                            'period_year' => $year,
+                        ],
+                        [
+                            'work_days' => $workDays,
+                            'ump_used' => $ump,
+                            'hari_kerja_standar_used' => $hariKerjaStandar,
+                            'upah_harian' => $upahHarian,
+                            'jamsostek' => $jamsostek,
+                            'bpjs_kesehatan' => $bpjsKesehatan,
+                            'bpjs_pensiun' => $bpjsPensiun,
+                            'managemen_fee' => $managemenFee,
+                            'grand_total_upah' => $grandTotalUpah,
+                            'net_salary' => $grandTotalUpah,
+                        ]
+                    );
+                }
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('admin-production.attendance.index')
+                ->with('success', 'Absensi berhasil disimpan');
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Gagal menyimpan absensi: ' . $e->getMessage());
+        }
     }
 
     public function generalManagerBulkStore(Request $request)
@@ -1132,105 +1154,126 @@ class AttendanceController extends Controller
             'employees.*.line_id' => ['nullable', 'exists:lines,id'],
         ]);
 
-        $date = Carbon::parse($request->date);
-        $month = $date->month;
-        $year = $date->year;
+        DB::beginTransaction();
 
-        $config = WageConfig::where('tahun', $year)->first();
+        try {
+            $date = Carbon::parse($request->date);
+            $month = $date->month;
+            $year = $date->year;
 
-        foreach ($request->employees as $employeeId => $data) {
+            $config = WageConfig::where('tahun', $year)->first();
 
-            $status = $data['status'] ?? null;
+            if (!$config) {
+                throw new \Exception('Wage Config untuk tahun ' . $year . ' belum tersedia.');
+            }
 
-            Attendance::updateOrCreate(
-                [
-                    'employee_id' => $employeeId,
-                    'date' => $request->date,
-                ],
-                [
-                    'status' => $status,
-                    'keterangan_izin' => $data['keterangan_izin'] ?? null,
-                    'line_id' => $data['line_id'] ?? null,
-                    'input_by' => auth()->id(),
-                ]
-            );
+            foreach ($request->employees as $employeeId => $data) {
+                $status = $data['status'] ?? null;
 
-            $employee = Employee::find($employeeId);
-
-            if ($employee && $employee->employee_status === 'harian') {
-
-                $payroll = PenggajianHarian::where('employee_id', $employeeId)
-                    ->where('period_month', $month)
-                    ->where('period_year', $year)
-                    ->first();
-
-                if ($payroll && $payroll->ump_used > 0) {
-                    // Gunakan snapshot yang sudah tersimpan
-                    $ump = $payroll->ump_used;
-                    $hariKerjaStandar = $payroll->hari_kerja_standar_used;
-                } else {
-                    // Payroll belum ada, ambil config sebagai snapshot awal
-                    $ump = $config->ump ?? 0;
-                    $hariKerjaStandar = $config->hari_kerja_standar ?? 25;
-                }
-
-                $workDays = Attendance::where('employee_id', $employeeId)
-                    ->whereMonth('date', $month)
-                    ->whereYear('date', $year)
-                    ->where('status', 'hadir')
-                    ->count();
-
-                $upahHarian = $hariKerjaStandar > 0
-                    ? round(($ump / $hariKerjaStandar) * $workDays, 2)
-                    : 0;
-
-                $jamsostek = round(
-                    $upahHarian * 0.0489,
-                    2
-                );
-
-                $bpjsKesehatan = round(
-                    $upahHarian * 0.04,
-                    2
-                );
-
-                $bpjsPensiun = round(
-                    $upahHarian * 0.02,
-                    2
-                );
-
-                $managemenFeePercent = 175000 / 25;
-
-                $managemenFee = min(
-                    $workDays * $managemenFeePercent,
-                    175000
-                );
-
-                $grandTotalUpah = $upahHarian + $jamsostek + $bpjsKesehatan + $bpjsPensiun + $managemenFee;
-
-                PenggajianHarian::updateOrCreate(
+                Attendance::updateOrCreate(
                     [
                         'employee_id' => $employeeId,
-                        'period_month' => $month,
-                        'period_year' => $year,
+                        'date' => $request->date,
                     ],
                     [
-                        'work_days' => $workDays,
-                        'ump_used' => $ump,
-                        'hari_kerja_standar_used' => $hariKerjaStandar,
-                        'upah_harian' => $upahHarian,
-                        'jamsostek' => $jamsostek,
-                        'bpjs_kesehatan' => $bpjsKesehatan,
-                        'bpjs_pensiun' => $bpjsPensiun,
-                        'managemen_fee' => $managemenFee,
-                        'grand_total_upah' => $grandTotalUpah,
-                        'net_salary' => $grandTotalUpah,
+                        'status' => $status,
+                        'keterangan_izin' => $data['keterangan_izin'] ?? null,
+                        'line_id' => $data['line_id'] ?? null,
+                        'input_by' => auth()->id(),
                     ]
                 );
-            }
-        }
 
-        return redirect()->route('general-manager.attendance.index')->with('success', 'Absensi berhasil disimpan');
+                $employee = Employee::find($employeeId);
+
+                if ($employee && in_array($employee->employee_status, ['harian', 'harian_kontrak'])) {
+                    $payroll = PenggajianHarian::where('employee_id', $employeeId)
+                        ->where('period_month', $month)
+                        ->where('period_year', $year)
+                        ->first();
+
+                    if ($payroll && $payroll->ump_used > 0) {
+                        $ump = $payroll->ump_used;
+                        $hariKerjaStandar = $payroll->hari_kerja_standar_used;
+                    } else {
+                        $ump = (float) $config->ump;
+                        $hariKerjaStandar = $config->hari_kerja_standar;
+                    }
+
+                    if ($hariKerjaStandar <= 0) {
+                        throw new \Exception('Hari kerja standar untuk tahun ' . $year . ' harus lebih dari 0.');
+                    }
+
+                    $workDays = Attendance::where('employee_id', $employeeId)
+                        ->whereMonth('date', $month)
+                        ->whereYear('date', $year)
+                        ->where('status', 'hadir')
+                        ->count();
+
+                    $upahPerHari = $ump / $hariKerjaStandar;
+
+                    if ($employee->employee_status === 'harian_kontrak') {
+                        $upahHarian = min(
+                            $upahPerHari * $workDays,
+                            $ump
+                        );
+                    } else {
+                        $upahHarian = $upahPerHari * $workDays;
+                    }
+
+                    $jamsostek = round($ump * 0.0489, 2);
+                    $bpjsKesehatan = round($ump * 0.04, 2);
+                    $bpjsPensiun = round($ump * 0.02, 2);
+
+                    $managemenFeePerDay = 175000 / $hariKerjaStandar;
+
+                    $managemenFee = min(
+                        $workDays * $managemenFeePerDay,
+                        175000
+                    );
+
+                    $grandTotalUpah =
+                        $upahHarian +
+                        $jamsostek +
+                        $bpjsKesehatan +
+                        $bpjsPensiun +
+                        $managemenFee;
+
+                    PenggajianHarian::updateOrCreate(
+                        [
+                            'employee_id' => $employeeId,
+                            'period_month' => $month,
+                            'period_year' => $year,
+                        ],
+                        [
+                            'work_days' => $workDays,
+                            'ump_used' => $ump,
+                            'hari_kerja_standar_used' => $hariKerjaStandar,
+                            'upah_harian' => $upahHarian,
+                            'jamsostek' => $jamsostek,
+                            'bpjs_kesehatan' => $bpjsKesehatan,
+                            'bpjs_pensiun' => $bpjsPensiun,
+                            'managemen_fee' => $managemenFee,
+                            'grand_total_upah' => $grandTotalUpah,
+                            'net_salary' => $grandTotalUpah,
+                        ]
+                    );
+                }
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('general-manager.attendance.index')
+                ->with('success', 'Absensi berhasil disimpan');
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Gagal menyimpan absensi: ' . $e->getMessage());
+        }
     }
 
     public function managerBulkStore(Request $request)
@@ -1241,105 +1284,126 @@ class AttendanceController extends Controller
             'employees.*.line_id' => ['nullable', 'exists:lines,id'],
         ]);
 
-        $date = Carbon::parse($request->date);
-        $month = $date->month;
-        $year = $date->year;
+        DB::beginTransaction();
 
-        $config = WageConfig::where('tahun', $year)->first();
+        try {
+            $date = Carbon::parse($request->date);
+            $month = $date->month;
+            $year = $date->year;
 
-        foreach ($request->employees as $employeeId => $data) {
+            $config = WageConfig::where('tahun', $year)->first();
 
-            $status = $data['status'] ?? null;
+            if (!$config) {
+                throw new \Exception('Wage Config untuk tahun ' . $year . ' belum tersedia.');
+            }
 
-            Attendance::updateOrCreate(
-                [
-                    'employee_id' => $employeeId,
-                    'date' => $request->date,
-                ],
-                [
-                    'status' => $status,
-                    'keterangan_izin' => $data['keterangan_izin'] ?? null,
-                    'line_id' => $data['line_id'] ?? null,
-                    'input_by' => auth()->id(),
-                ]
-            );
+            foreach ($request->employees as $employeeId => $data) {
+                $status = $data['status'] ?? null;
 
-            $employee = Employee::find($employeeId);
-
-            if ($employee && $employee->employee_status === 'harian') {
-
-                $payroll = PenggajianHarian::where('employee_id', $employeeId)
-                    ->where('period_month', $month)
-                    ->where('period_year', $year)
-                    ->first();
-
-                if ($payroll && $payroll->ump_used > 0) {
-                    // Gunakan snapshot yang sudah tersimpan
-                    $ump = $payroll->ump_used;
-                    $hariKerjaStandar = $payroll->hari_kerja_standar_used;
-                } else {
-                    // Payroll belum ada, ambil config sebagai snapshot awal
-                    $ump = $config->ump ?? 0;
-                    $hariKerjaStandar = $config->hari_kerja_standar ?? 25;
-                }
-
-                $workDays = Attendance::where('employee_id', $employeeId)
-                    ->whereMonth('date', $month)
-                    ->whereYear('date', $year)
-                    ->where('status', 'hadir')
-                    ->count();
-
-                $upahHarian = $hariKerjaStandar > 0
-                    ? round(($ump / $hariKerjaStandar) * $workDays, 2)
-                    : 0;
-
-                
-                $jamsostek = round(
-                    $upahHarian * 0.0489,
-                    2
-                );
-
-                $bpjsKesehatan = round(
-                    $upahHarian * 0.04,
-                    2
-                );
-
-                $bpjsPensiun = round(
-                    $upahHarian * 0.02,
-                    2
-                );
-
-                $managemenFeePercent = 175000 / 25;
-
-                $managemenFee = min(
-                    $workDays * $managemenFeePercent,
-                    175000
-                );
-
-                $grandTotalUpah = $upahHarian + $jamsostek + $bpjsKesehatan + $bpjsPensiun + $managemenFee;
-                PenggajianHarian::updateOrCreate(
+                Attendance::updateOrCreate(
                     [
                         'employee_id' => $employeeId,
-                        'period_month' => $month,
-                        'period_year' => $year,
+                        'date' => $request->date,
                     ],
                     [
-                        'work_days' => $workDays,
-                        'ump_used' => $ump,
-                        'hari_kerja_standar_used' => $hariKerjaStandar,
-                        'upah_harian' => $upahHarian,
-                        'jamsostek' => $jamsostek,
-                        'bpjs_kesehatan' => $bpjsKesehatan,
-                        'bpjs_pensiun' => $bpjsPensiun,
-                        'managemen_fee' => $managemenFee,
-                        'grand_total_upah' => $grandTotalUpah,
-                        'net_salary' => $grandTotalUpah,
+                        'status' => $status,
+                        'keterangan_izin' => $data['keterangan_izin'] ?? null,
+                        'line_id' => $data['line_id'] ?? null,
+                        'input_by' => auth()->id(),
                     ]
                 );
-            }
-        }
 
-        return redirect()->route('manager.attendance.index')->with('success', 'Absensi berhasil disimpan');
+                $employee = Employee::find($employeeId);
+
+                if ($employee && in_array($employee->employee_status, ['harian', 'harian_kontrak'])) {
+                    $payroll = PenggajianHarian::where('employee_id', $employeeId)
+                        ->where('period_month', $month)
+                        ->where('period_year', $year)
+                        ->first();
+
+                    if ($payroll && $payroll->ump_used > 0) {
+                        $ump = $payroll->ump_used;
+                        $hariKerjaStandar = $payroll->hari_kerja_standar_used;
+                    } else {
+                        $ump = (float) $config->ump;
+                        $hariKerjaStandar = $config->hari_kerja_standar;
+                    }
+
+                    if ($hariKerjaStandar <= 0) {
+                        throw new \Exception('Hari kerja standar untuk tahun ' . $year . ' harus lebih dari 0.');
+                    }
+
+                    $workDays = Attendance::where('employee_id', $employeeId)
+                        ->whereMonth('date', $month)
+                        ->whereYear('date', $year)
+                        ->where('status', 'hadir')
+                        ->count();
+
+                    $upahPerHari = $ump / $hariKerjaStandar;
+
+                    if ($employee->employee_status === 'harian_kontrak') {
+                        $upahHarian = min(
+                            $upahPerHari * $workDays,
+                            $ump
+                        );
+                    } else {
+                        $upahHarian = $upahPerHari * $workDays;
+                    }
+
+                    $jamsostek = round($ump * 0.0489, 2);
+                    $bpjsKesehatan = round($ump * 0.04, 2);
+                    $bpjsPensiun = round($ump * 0.02, 2);
+
+                    $managemenFeePerDay = 175000 / $hariKerjaStandar;
+
+                    $managemenFee = min(
+                        $workDays * $managemenFeePerDay,
+                        175000
+                    );
+
+                    $grandTotalUpah =
+                        $upahHarian +
+                        $jamsostek +
+                        $bpjsKesehatan +
+                        $bpjsPensiun +
+                        $managemenFee;
+
+                    PenggajianHarian::updateOrCreate(
+                        [
+                            'employee_id' => $employeeId,
+                            'period_month' => $month,
+                            'period_year' => $year,
+                        ],
+                        [
+                            'work_days' => $workDays,
+                            'ump_used' => $ump,
+                            'hari_kerja_standar_used' => $hariKerjaStandar,
+                            'upah_harian' => $upahHarian,
+                            'jamsostek' => $jamsostek,
+                            'bpjs_kesehatan' => $bpjsKesehatan,
+                            'bpjs_pensiun' => $bpjsPensiun,
+                            'managemen_fee' => $managemenFee,
+                            'grand_total_upah' => $grandTotalUpah,
+                            'net_salary' => $grandTotalUpah,
+                        ]
+                    );
+                }
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('manager.attendance.index')
+                ->with('success', 'Absensi berhasil disimpan');
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Gagal menyimpan absensi: ' . $e->getMessage());
+        }
     }
 
     public function exportSummaryExcelGeneralManager(Request $request)

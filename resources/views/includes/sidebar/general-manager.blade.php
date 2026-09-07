@@ -92,6 +92,12 @@
 
                 </ul>
             </li>
+            <li class="{{ Request::is('general-manager/overtime*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('general-manager.overtime.index') }}">
+                    <i class="fas fa-clock"></i>
+                    <span>Approval Overtime</span>
+                </a>
+            </li>
 
             <li class="{{ Request::is('general-manager/employee-productivity*') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('general-manager.employee-productivity.list') }}">

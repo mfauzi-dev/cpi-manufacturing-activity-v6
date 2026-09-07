@@ -59,7 +59,8 @@ class EmployeeProductivityController extends Controller
                 });
             })
             ->orderBy('name')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         $costCenters = CostCenter::where('department_id', $departmentId)
             ->orderBy('name')
@@ -184,7 +185,8 @@ class EmployeeProductivityController extends Controller
                 });
             })
             ->orderBy('name')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         $costCenters = CostCenter::where('department_id', $departmentId)
             ->orderBy('name')
@@ -334,7 +336,8 @@ class EmployeeProductivityController extends Controller
 
         $employees = $query
             ->orderBy('name')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         $departments = Department::orderBy('name')->get();
 

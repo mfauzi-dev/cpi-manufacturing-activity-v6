@@ -235,6 +235,10 @@
                             </th>
 
                             <th class="text-right">
+                                Total Overtime
+                            </th>
+
+                            <th class="text-right">
                                 Jamsostek (4.89%)
                             </th>
 
@@ -292,17 +296,18 @@
                                     {{ $payroll->hari_kerja_standar_used ?? 0 }}
                                 </td>
 
-                                {{-- TOTAL HARI KERJA --}}
                                 <td class="text-center">
                                     {{ $payroll->work_days ?? 0 }}
                                 </td>
 
-                                {{-- UPAH HARIAN --}}
                                 <td class="text-right">
                                     Rp {{ number_format($payroll->upah_harian ?? 0, 0, ',', '.') }}
                                 </td>
 
-                                {{-- JAMSOSTEK --}}
+                                <td class="text-right">
+                                    Rp {{ number_format($payroll->overtime_total ?? 0, 0, ',', '.') }}
+                                </td>
+
                                 <td class="text-right">
                                     Rp {{ number_format($payroll->jamsostek ?? 0, 0, ',', '.') }}
                                 </td>

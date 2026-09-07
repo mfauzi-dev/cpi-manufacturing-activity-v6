@@ -140,6 +140,41 @@ class UserController extends Controller
             ->with('success', 'User berhasil ditambahkan.');
     }
 
+    public function edit($id)
+    {
+        $user = User::findOrFail($id);
+
+        $roles = Role::orderBy('name')->get();
+        $departments = Department::orderBy('name')->get();
+
+        return view('pages.admin.user.edit', compact(
+            'user',
+            'roles',
+            'departments'
+        ));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'role_id' => ['required', 'exists:roles,id'],
+            'department_id' => ['nullable', 'exists:departments,id'],
+        ]);
+
+        $user = User::findOrFail($id);
+
+        $user->update([
+            'name' => $request->name,
+            'role_id' => $request->role_id,
+            'department_id' => $request->department_id,
+        ]);
+
+        return redirect()
+            ->route('admin.user.index')
+            ->with('success', 'User berhasil diupdate.');
+    }
+
     public function destroy($id)
     {
         $user = User::findOrFail($id);

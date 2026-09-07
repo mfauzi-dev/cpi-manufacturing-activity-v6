@@ -39,6 +39,13 @@
                 </ul>
             </li>
 
+            <li class="{{ Request::is('admin-production/overtime*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('admin-production.overtime.index') }}">
+                    <i class="fas fa-clock"></i>
+                    <span>Overtime</span>
+                </a>
+            </li>
+
             <li class="{{ Request::is('admin-production/employee-productivity*') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('admin-production.employee-productivity.list') }}">
                     <i class="fas fa-chart-line"></i>
