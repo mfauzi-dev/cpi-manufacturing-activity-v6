@@ -144,6 +144,11 @@
                             {{ old('employee_status', $employee->employee_status) == 'harian' ? 'selected' : '' }}>
                             Harian
                         </option>
+
+                        <option value="harian_kontrak"
+                            {{ old('employee_status', $employee->employee_status) == 'harian_kontrak' ? 'selected' : '' }}>
+                            Harian Kontrak
+                        </option>
                     </select>
 
                     @error('employee_status')
