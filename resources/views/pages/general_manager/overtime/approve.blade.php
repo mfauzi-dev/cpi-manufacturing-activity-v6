@@ -1,6 +1,11 @@
 @extends('layouts.master')
 
 @section('content')
+    @php
+        $departmentName = strtolower(trim(auth()->user()->department?->name ?? ''));
+        $isGeneralAffair = $departmentName === 'personalia dan general affair';
+    @endphp
+
     <div class="section-header">
         <h1>Approval Overtime</h1>
     </div>
@@ -20,19 +25,16 @@
         @endif
 
         <div class="card">
-
             <div class="card-header">
                 <h4>Filter Overtime</h4>
             </div>
 
             <div class="card-body">
-
                 <form method="GET" action="{{ route('general-manager.overtime.index') }}">
 
                     <div class="row">
 
                         <div class="form-group col-md-3">
-
                             <label>Department</label>
 
                             <select name="department_id" id="department_id" class="form-control">
@@ -44,48 +46,36 @@
                                 @foreach ($departments as $department)
                                     <option value="{{ $department->id }}"
                                         {{ request('department_id') == $department->id ? 'selected' : '' }}>
-
                                         {{ $department->name }}
-
                                     </option>
                                 @endforeach
 
                             </select>
-
                         </div>
 
                         <div class="form-group col-md-3">
-
                             <label>Cost Center</label>
 
                             <select name="cost_center_id" id="cost_center_id" class="form-control">
-
                                 <option value="">
                                     Semua Cost Center
                                 </option>
-
                             </select>
-
                         </div>
 
                         <div class="form-group col-md-3">
-
                             <label>Dari Tanggal</label>
 
                             <input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}">
-
                         </div>
 
                         <div class="form-group col-md-3">
-
                             <label>Sampai Tanggal</label>
 
                             <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}">
-
                         </div>
 
                         <div class="form-group col-md-3">
-
                             <label>Status</label>
 
                             <select name="status" class="form-control">
@@ -107,16 +97,41 @@
                                 </option>
 
                             </select>
+                        </div>
 
+                        <div class="form-group col-md-3">
+                            <label>Jenis Overtime</label>
+
+                            <select name="overtime_type" class="form-control">
+
+                                <option value="">
+                                    Semua Jenis Overtime
+                                </option>
+
+                                <option value="OTL1" {{ request('overtime_type') === 'OTL1' ? 'selected' : '' }}>
+                                    OTL1 - Hari Biasa Bulan Lalu
+                                </option>
+
+                                <option value="OTL2" {{ request('overtime_type') === 'OTL2' ? 'selected' : '' }}>
+                                    OTL2 - Hari Libur Bulan Lalu
+                                </option>
+
+                                <option value="OT01" {{ request('overtime_type') === 'OT01' ? 'selected' : '' }}>
+                                    OT01 - Hari Biasa Bulan Ini
+                                </option>
+
+                                <option value="OT02" {{ request('overtime_type') === 'OT02' ? 'selected' : '' }}>
+                                    OT02 - Hari Libur Bulan Ini
+                                </option>
+
+                            </select>
                         </div>
 
                         <div class="form-group col-md-6">
-
                             <label>Search</label>
 
                             <input type="text" name="search" class="form-control"
                                 placeholder="Cari NIK atau nama karyawan..." value="{{ request('search') }}">
-
                         </div>
 
                     </div>
@@ -124,25 +139,19 @@
                     <div class="mt-2">
 
                         <button type="submit" class="btn btn-primary mr-2">
-
                             <i class="fas fa-search"></i>
                             Filter
-
                         </button>
 
                         <a href="{{ route('general-manager.overtime.index') }}" class="btn btn-secondary">
-
                             <i class="fas fa-sync"></i>
                             Reset
-
                         </a>
 
                     </div>
 
                 </form>
-
             </div>
-
         </div>
 
         <div class="card">
@@ -156,6 +165,14 @@
                     <span class="badge badge-primary">
                         {{ $overtimes->total() }} Data
                     </span>
+
+                    <a href="{{ route('general-manager.overtime.export-excel', request()->query()) }}"
+                        class="btn btn-success btn-sm">
+
+                        <i class="fas fa-file-excel"></i>
+                        Export Excel
+
+                    </a>
 
                 </div>
 
@@ -196,6 +213,10 @@
                                 </th>
 
                                 <th>
+                                    Jenis Overtime
+                                </th>
+
+                                <th>
                                     Jam
                                 </th>
 
@@ -207,13 +228,15 @@
                                     Konversi
                                 </th>
 
-                                <th>
-                                    Rate
-                                </th>
+                                @if ($isGeneralAffair)
+                                    <th>
+                                        Rate
+                                    </th>
 
-                                <th>
-                                    Total Overtime
-                                </th>
+                                    <th>
+                                        Total Overtime
+                                    </th>
+                                @endif
 
                                 <th>
                                     Status
@@ -266,6 +289,32 @@
 
                                     <td>
 
+                                        @if ($overtime->overtime_type === 'OTL1')
+                                            <span class="badge badge-primary">
+                                                OTL1 - Hari Biasa Bulan Lalu
+                                            </span>
+                                        @elseif ($overtime->overtime_type === 'OTL2')
+                                            <span class="badge badge-info">
+                                                OTL2 - Hari Libur Bulan Lalu
+                                            </span>
+                                        @elseif ($overtime->overtime_type === 'OT01')
+                                            <span class="badge badge-primary">
+                                                OT01 - Hari Biasa Bulan Ini
+                                            </span>
+                                        @elseif ($overtime->overtime_type === 'OT02')
+                                            <span class="badge badge-info">
+                                                OT02 - Hari Libur Bulan Ini
+                                            </span>
+                                        @else
+                                            <span class="badge badge-secondary">
+                                                {{ $overtime->overtime_type }}
+                                            </span>
+                                        @endif
+
+                                    </td>
+
+                                    <td>
+
                                         {{ \Carbon\Carbon::parse($overtime->start_time)->format('H:i') }}
                                         -
                                         {{ \Carbon\Carbon::parse($overtime->end_time)->format('H:i') }}
@@ -286,23 +335,25 @@
 
                                     </td>
 
-                                    <td>
-
-                                        Rp
-                                        {{ number_format((float) $overtime->hourly_rate, 0, ',', '.') }}
-
-                                    </td>
-
-                                    <td>
-
-                                        <strong>
+                                    @if ($isGeneralAffair)
+                                        <td>
 
                                             Rp
-                                            {{ number_format((float) $overtime->overtime_amount, 0, ',', '.') }}
+                                            {{ number_format((float) $overtime->hourly_rate, 0, ',', '.') }}
 
-                                        </strong>
+                                        </td>
 
-                                    </td>
+                                        <td>
+
+                                            <strong>
+
+                                                Rp
+                                                {{ number_format((float) $overtime->overtime_amount, 0, ',', '.') }}
+
+                                            </strong>
+
+                                        </td>
+                                    @endif
 
                                     <td>
 
@@ -344,7 +395,7 @@
 
                                 <tr>
 
-                                    <td colspan="13" class="text-center">
+                                    <td colspan="{{ $isGeneralAffair ? 14 : 12 }}" class="text-center">
 
                                         Belum ada data overtime.
 
@@ -360,9 +411,7 @@
                 </div>
 
                 <div class="mt-3">
-
                     {{ $overtimes->withQueryString()->links() }}
-
                 </div>
 
             </div>

@@ -20,7 +20,6 @@
             </div>
         @endif
 
-        {{-- FILTER --}}
         <div class="card">
             <div class="card-header">
                 <h4>Filter Overtime</h4>
@@ -28,7 +27,6 @@
 
             <div class="card-body">
                 <form method="GET" action="{{ route('admin-production.overtime.index') }}">
-
                     <div class="row">
 
                         @if (strtolower(auth()->user()->department?->name ?? '') === 'general affair')
@@ -49,6 +47,7 @@
 
                         <div class="form-group col-md-3">
                             <label>Cost Center</label>
+
                             <select name="cost_center_id" id="cost_center_id" class="form-control">
                                 <option value="">Semua Cost Center</option>
 
@@ -74,7 +73,32 @@
                         </div>
 
                         <div class="form-group col-md-3">
+                            <label>Jenis Overtime</label>
+
+                            <select name="overtime_type" class="form-control">
+                                <option value="">Semua Jenis Overtime</option>
+
+                                <option value="OTL1" {{ request('overtime_type') === 'OTL1' ? 'selected' : '' }}>
+                                    OTL1 - Hari Biasa Bulan Lalu
+                                </option>
+
+                                <option value="OTL2" {{ request('overtime_type') === 'OTL2' ? 'selected' : '' }}>
+                                    OTL2 - Hari Libur Bulan Lalu
+                                </option>
+
+                                <option value="OT01" {{ request('overtime_type') === 'OT01' ? 'selected' : '' }}>
+                                    OT01 - Hari Biasa Bulan Ini
+                                </option>
+
+                                <option value="OT02" {{ request('overtime_type') === 'OT02' ? 'selected' : '' }}>
+                                    OT02 - Hari Libur Bulan Ini
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="form-group col-md-3">
                             <label>Status</label>
+
                             <select name="status" class="form-control">
                                 <option value="">Semua Status</option>
 
@@ -94,6 +118,7 @@
 
                         <div class="form-group col-md-3">
                             <label>Search</label>
+
                             <input type="text" name="search" class="form-control"
                                 placeholder="Cari NIK atau nama karyawan..." value="{{ request('search') }}">
                         </div>
@@ -111,14 +136,11 @@
                             Reset
                         </a>
                     </div>
-
                 </form>
             </div>
         </div>
 
-        {{-- DATA --}}
         <div class="card">
-
             <div class="card-header">
                 <h4>Data Overtime</h4>
 
@@ -132,8 +154,17 @@
 
             <div class="card-body">
 
+                <div class="mb-4">
+                    <a href="{{ route('admin-production.overtime.export-excel', request()->query()) }}"
+                        class="btn btn-success btn-sm">
+                        <i class="fas fa-file-excel"></i>
+                        Export Excel
+                    </a>
+                </div>
+
                 <div class="table-responsive">
                     <table class="table table-bordered table-striped">
+
                         <thead>
                             <tr>
                                 <th width="50">No</th>
@@ -142,17 +173,17 @@
                                 <th>Karyawan</th>
                                 <th>Department</th>
                                 <th>Cost Center</th>
+                                <th>Jenis Overtime</th>
                                 <th>Jam</th>
                                 <th>Actual</th>
                                 <th>Konversi</th>
-                                <th>Rate</th>
-                                <th>Total Overtime</th>
                                 <th>Status</th>
                                 <th width="130">Action</th>
                             </tr>
                         </thead>
 
                         <tbody>
+
                             @forelse ($overtimes as $overtime)
                                 <tr>
 
@@ -187,6 +218,30 @@
                                     </td>
 
                                     <td>
+                                        @if ($overtime->overtime_type === 'OTL1')
+                                            <span class="badge badge-primary">
+                                                OTL1 - Hari Biasa Bulan Lalu
+                                            </span>
+                                        @elseif ($overtime->overtime_type === 'OTL2')
+                                            <span class="badge badge-info">
+                                                OTL2 - Hari Libur Bulan Lalu
+                                            </span>
+                                        @elseif ($overtime->overtime_type === 'OT01')
+                                            <span class="badge badge-primary">
+                                                OT01 - Hari Biasa Bulan Ini
+                                            </span>
+                                        @elseif ($overtime->overtime_type === 'OT02')
+                                            <span class="badge badge-info">
+                                                OT02 - Hari Libur Bulan Ini
+                                            </span>
+                                        @else
+                                            <span class="badge badge-secondary">
+                                                {{ $overtime->overtime_type }}
+                                            </span>
+                                        @endif
+                                    </td>
+
+                                    <td>
                                         {{ \Carbon\Carbon::parse($overtime->start_time)->format('H:i') }}
                                         -
                                         {{ \Carbon\Carbon::parse($overtime->end_time)->format('H:i') }}
@@ -200,14 +255,6 @@
                                     <td>
                                         {{ number_format($overtime->total_hours_konversi, 2, ',', '.') }}
                                         jam
-                                    </td>
-
-                                    <td>
-                                        Rp {{ number_format($overtime->hourly_rate, 0, ',', '.') }}
-                                    </td>
-
-                                    <td>
-                                        Rp {{ number_format($overtime->overtime_amount, 0, ',', '.') }}
                                     </td>
 
                                     <td>
@@ -231,25 +278,30 @@
                                     </td>
 
                                     <td style="white-space: nowrap;">
+
                                         <a href="{{ route('admin-production.overtime.show', $overtime->id) }}"
                                             class="btn btn-info btn-sm" title="Detail">
                                             <i class="fas fa-eye"></i>
                                         </a>
+
                                         @if ($overtime->status === 'PENDING')
                                             <a href="{{ route('admin-production.overtime.edit', $overtime->id) }}"
                                                 class="btn btn-warning btn-sm" title="Edit">
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                         @endif
+
                                         <form action="{{ route('admin-production.overtime.destroy', $overtime->id) }}"
                                             method="POST" class="d-inline"
                                             onsubmit="return confirm('Yakin ingin menghapus overtime ini?')">
+
                                             @csrf
                                             @method('DELETE')
 
                                             <button type="submit" class="btn btn-danger btn-sm" title="Delete">
                                                 <i class="fas fa-trash"></i>
                                             </button>
+
                                         </form>
 
                                     </td>
@@ -257,12 +309,14 @@
                                 </tr>
 
                             @empty
+
                                 <tr>
-                                    <td colspan="13" class="text-center">
+                                    <td colspan="14" class="text-center">
                                         Belum ada data overtime.
                                     </td>
                                 </tr>
                             @endforelse
+
                         </tbody>
 
                     </table>
@@ -298,6 +352,7 @@
                 }
 
                 $.ajax({
+
                     url: "{{ route('overtime.cost-centers', ':departmentId') }}"
                         .replace(':departmentId', departmentId),
 
@@ -325,6 +380,7 @@
                     error: function() {
                         alert('Gagal mengambil data Cost Center.');
                     }
+
                 });
             }
 
@@ -337,6 +393,7 @@
             });
 
             let departmentId = $('#department_id').val();
+
             let selectedCostCenter = "{{ request('cost_center_id') }}";
 
             if (departmentId) {

@@ -48,7 +48,7 @@
                 </a>
             </li>
 
-            @if (strtolower(auth()->user()->department->name ?? '') === 'general affair')
+            @if (strtolower(auth()->user()->department->name ?? '') === 'personalia dan general affair')
                 <li class="{{ Request::is('manager/employee-salary*') ? 'active' : '' }}">
                     <a class="nav-link" href="{{ route('manager.employee-salary.index') }}">
                         <i class="fas fa-money-check-alt"></i>
@@ -105,13 +105,6 @@
                 <a class="nav-link" href="{{ route('manager.penggajian-harian.index') }}">
                     <i class="fas fa-money-bill-wave"></i>
                     <span>Penggajian Harian</span>
-                </a>
-            </li>
-
-            <li class="{{ Request::is('manager/penggajian-karyawan-tetap*') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('manager.penggajian-karyawan-tetap.index') }}">
-                    <i class="fas fa-money-bill-wave"></i>
-                    <span>Penggajian Karyawan Tetap</span>
                 </a>
             </li>
 

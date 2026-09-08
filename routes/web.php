@@ -234,10 +234,11 @@ Route::prefix('admin-production')->middleware(['auth', 'role:Admin Production'])
         Route::get('/', [OvertimeController::class, 'index'])->name('admin-production.overtime.index');
         Route::get('/create', [OvertimeController::class, 'create'])->name('admin-production.overtime.create');
         Route::post('/store', [OvertimeController::class, 'store'])->name('admin-production.overtime.store');
-        Route::get('/{id}', [OvertimeController::class, 'show'])->name('admin-production.overtime.show');
+        Route::get('/{id}/detail', [OvertimeController::class, 'show'])->name('admin-production.overtime.show');
         Route::get('/{id}/edit', [OvertimeController::class, 'edit'])->name('admin-production.overtime.edit');
         Route::put('/{id}/update', [OvertimeController::class, 'update'])->name('admin-production.overtime.update');
         Route::delete('/{id}/delete', [OvertimeController::class, 'destroy'])->name('admin-production.overtime.destroy');
+        Route::get('/export-excel', [OvertimeController::class, 'exportExcel'])->name('admin-production.overtime.export-excel');    
     });
 });
 
@@ -445,9 +446,10 @@ Route::prefix('general-manager')->middleware(['auth', 'role:General Manager'])->
 
      Route::prefix('overtime')->group(function () {
         Route::get('/', [OvertimeController::class, 'generalManagerIndex'])->name('general-manager.overtime.index');
-        Route::get('/{id}', [OvertimeController::class, 'generalManagerShow'])->name('general-manager.overtime.show');
+        Route::get('/{id}/detail', [OvertimeController::class, 'generalManagerShow'])->name('general-manager.overtime.show');
         Route::put('/{id}/approve', [OvertimeController::class, 'generalManagerApprove'])->name('general-manager.overtime.approve');
         Route::put('/{id}/reject', [OvertimeController::class, 'generalManagerReject'])->name('general-manager.overtime.reject');
+        Route::get('/export-excel', [OvertimeController::class, 'generalManagerExportExcel'])->name('general-manager.overtime.export-excel');    
     });
 });
 
@@ -541,13 +543,9 @@ Route::prefix('manager')->middleware(['auth', 'role:Manager'])->group(function()
 
     Route::prefix('overtime')->group(function () {
         Route::get('/', [OvertimeController::class, 'managerIndex'])->name('manager.overtime.index');
-        Route::get('/{id}', [OvertimeController::class, 'managerShow'])->name('manager.overtime.show');
+        Route::get('/{id}/detail', [OvertimeController::class, 'managerShow'])->name('manager.overtime.show');
         Route::put('/{id}/approve', [OvertimeController::class, 'managerApprove'])->name('manager.overtime.approve');
         Route::put('/{id}/reject', [OvertimeController::class, 'managerReject'])->name('manager.overtime.reject');
-    });
-
-    Route::prefix('penggajian-karyawan-tetap')->group(function () {
-        Route::get('/', [PenggajianKaryawanTetapController::class, 'index'])->name('manager.penggajian-karyawan-tetap.index');
-
+        Route::get('/export-excel', [OvertimeController::class, 'managerExportExcel'])->name('manager.overtime.export-excel');    
     });
 });

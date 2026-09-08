@@ -16,7 +16,7 @@ class OvertimeRateController extends Controller
         if (
             !$user ||
             strtolower($user->role?->name ?? '') !== 'manager' ||
-            strtolower($user->department?->name ?? '') !== 'general affair'
+            strtolower($user->department?->name ?? '') !== 'personalia dan general affair'
         ) {
             abort(403, 'Anda tidak memiliki akses ke halaman Overtime Rate.');
         }

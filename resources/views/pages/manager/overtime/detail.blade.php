@@ -22,6 +22,11 @@
             </div>
         @endif
 
+        @php
+            $departmentName = strtolower(trim(auth()->user()->department?->name ?? ''));
+            $isGeneralAffair = $departmentName === 'personalia dan general affair';
+        @endphp
+
         <div class="row">
 
             <div class="col-md-8">
@@ -155,8 +160,13 @@
                                         </div>
 
                                         <div class="h3 mb-0">
+
                                             {{ number_format($overtime->total_hours_actual, 2, ',', '.') }}
-                                            <small class="text-muted">Jam</small>
+
+                                            <small class="text-muted">
+                                                Jam
+                                            </small>
+
                                         </div>
 
                                     </div>
@@ -176,8 +186,13 @@
                                         </div>
 
                                         <div class="h3 mb-0">
+
                                             {{ number_format($overtime->total_hours_konversi, 2, ',', '.') }}
-                                            <small class="text-muted">Jam</small>
+
+                                            <small class="text-muted">
+                                                Jam
+                                            </small>
+
                                         </div>
 
                                     </div>
@@ -192,49 +207,96 @@
 
                 </div>
 
-                <div class="card">
+                @if ($isGeneralAffair)
+                    <div class="card">
 
-                    <div class="card-header">
+                        <div class="card-header">
 
-                        <h4>
-                            <i class="fas fa-calculator mr-2"></i>
-                            Perhitungan Overtime
-                        </h4>
+                            <h4>
+                                <i class="fas fa-calculator mr-2"></i>
+                                Perhitungan Overtime
+                            </h4>
 
-                    </div>
+                        </div>
 
-                    <div class="card-body">
+                        <div class="card-body">
 
-                        <div class="row">
+                            <div class="row">
 
-                            <div class="col-md-6">
+                                <div class="col-md-6">
 
-                                <div class="form-group">
+                                    <div class="form-group">
 
-                                    <label class="text-muted">
-                                        Rate Overtime
-                                    </label>
+                                        <label class="text-muted">
+                                            Rate Overtime
+                                        </label>
 
-                                    <div class="h4 mb-0">
-                                        Rp {{ number_format($overtime->hourly_rate, 0, ',', '.') }}
-                                        <small class="text-muted">/ jam</small>
+                                        <div class="h4 mb-0">
+
+                                            Rp
+                                            {{ number_format($overtime->hourly_rate, 0, ',', '.') }}
+
+                                            <small class="text-muted">
+                                                / jam
+                                            </small>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <div class="form-group">
+
+                                        <label class="text-muted">
+                                            Total Overtime
+                                        </label>
+
+                                        <div class="h4 text-success mb-0">
+
+                                            Rp
+                                            {{ number_format($overtime->overtime_amount, 0, ',', '.') }}
+
+                                        </div>
+
                                     </div>
 
                                 </div>
 
                             </div>
 
-                            <div class="col-md-6">
+                            <hr>
 
-                                <div class="form-group">
+                            <div class="text-center">
 
-                                    <label class="text-muted">
-                                        Total Overtime
-                                    </label>
+                                <div class="text-muted mb-2">
+                                    Rumus Perhitungan
+                                </div>
 
-                                    <div class="h4 text-success mb-0">
-                                        Rp {{ number_format($overtime->overtime_amount, 0, ',', '.') }}
-                                    </div>
+                                <div class="h5">
+
+                                    {{ number_format($overtime->total_hours_actual, 2, ',', '.') }}
+                                    Jam
+
+                                    <span class="mx-2">
+                                        ×
+                                    </span>
+
+                                    Rp
+                                    {{ number_format($overtime->hourly_rate, 0, ',', '.') }}
+
+                                    <span class="mx-2">
+                                        =
+                                    </span>
+
+                                    <strong class="text-success">
+
+                                        Rp
+                                        {{ number_format($overtime->overtime_amount, 0, ',', '.') }}
+
+                                    </strong>
 
                                 </div>
 
@@ -242,36 +304,8 @@
 
                         </div>
 
-                        <hr>
-
-                        <div class="text-center">
-
-                            <div class="text-muted mb-2">
-                                Rumus Perhitungan
-                            </div>
-
-                            <div class="h5">
-
-                                {{ number_format($overtime->total_hours_actual, 2, ',', '.') }}
-                                Jam
-
-                                <span class="mx-2">×</span>
-
-                                Rp {{ number_format($overtime->hourly_rate, 0, ',', '.') }}
-
-                                <span class="mx-2">=</span>
-
-                                <strong class="text-success">
-                                    Rp {{ number_format($overtime->overtime_amount, 0, ',', '.') }}
-                                </strong>
-
-                            </div>
-
-                        </div>
-
                     </div>
-
-                </div>
+                @endif
 
                 @if ($overtime->description)
                     <div class="card">
@@ -408,7 +442,7 @@
 
                             <div>
 
-                                <div class="text-muted small">
+                                <div class="text-muted small mb-1">
                                     Status Karyawan
                                 </div>
 
@@ -424,9 +458,9 @@
                                     <span class="badge badge-success">
                                         Borongan
                                     </span>
-                                @else
+                                @elseif ($overtime->employee->employee_status === 'harian_kontrak')
                                     <span class="badge badge-secondary">
-                                        {{ $overtime->employee->employee_status ?? '-' }}
+                                        Harian Kontrak
                                     </span>
                                 @endif
 
@@ -510,9 +544,9 @@
                                     </strong>
                                 @endif
 
-                                @if ($overtime->APPROVED_at)
+                                @if ($overtime->approved_at)
                                     <div class="text-muted small mt-2">
-                                        {{ \Carbon\Carbon::parse($overtime->APPROVED_at)->translatedFormat('d F Y H:i') }}
+                                        {{ \Carbon\Carbon::parse($overtime->approved_at)->translatedFormat('d F Y H:i') }}
                                     </div>
                                 @endif
 
@@ -540,9 +574,9 @@
                                     </strong>
                                 @endif
 
-                                @if ($overtime->APPROVED_at)
+                                @if ($overtime->approved_at)
                                     <div class="text-muted small mt-2">
-                                        {{ \Carbon\Carbon::parse($overtime->APPROVED_at)->translatedFormat('d F Y H:i') }}
+                                        {{ \Carbon\Carbon::parse($overtime->approved_at)->translatedFormat('d F Y H:i') }}
                                     </div>
                                 @endif
 
@@ -570,9 +604,9 @@
                                     </strong>
                                 @endif
 
-                                @if ($overtime->APPROVED_at)
+                                @if ($overtime->approved_at)
                                     <div class="text-muted small mt-2">
-                                        {{ \Carbon\Carbon::parse($overtime->APPROVED_at)->translatedFormat('d F Y H:i') }}
+                                        {{ \Carbon\Carbon::parse($overtime->approved_at)->translatedFormat('d F Y H:i') }}
                                     </div>
                                 @endif
 
@@ -653,9 +687,7 @@
         function confirmApprove() {
 
             if (confirm('Yakin ingin menyetujui overtime ini?')) {
-
                 document.getElementById('approve-form').submit();
-
             }
 
         }
@@ -663,9 +695,7 @@
         function confirmReject() {
 
             if (confirm('Yakin ingin menolak overtime ini?')) {
-
                 document.getElementById('reject-form').submit();
-
             }
 
         }

@@ -9,8 +9,8 @@
     <div class="section-body">
 
         @php
-            $departmentName = strtolower(auth()->user()->department?->name ?? '');
-            $isGeneralAffair = $departmentName === 'general affair';
+            $departmentName = strtolower(trim(auth()->user()->department?->name ?? ''));
+            $isGeneralAffair = $departmentName === 'personalia dan general affair';
         @endphp
 
         @if (session('success'))
@@ -32,9 +32,7 @@
             <div class="col-md-8">
 
                 <div class="card">
-
                     <div class="card-header">
-
                         <h4>
                             <i class="fas fa-user-clock mr-2"></i>
                             Informasi Overtime
@@ -64,7 +62,6 @@
                             @endif
 
                         </div>
-
                     </div>
 
                     <div class="card-body">
@@ -72,7 +69,6 @@
                         <div class="row">
 
                             <div class="col-md-6">
-
                                 <div class="form-group">
 
                                     <label class="text-muted">
@@ -85,11 +81,9 @@
                                     </div>
 
                                 </div>
-
                             </div>
 
                             <div class="col-md-6">
-
                                 <div class="form-group">
 
                                     <label class="text-muted">
@@ -102,7 +96,6 @@
                                     </div>
 
                                 </div>
-
                             </div>
 
                         </div>
@@ -112,7 +105,6 @@
                         <div class="row">
 
                             <div class="col-md-6">
-
                                 <div class="form-group">
 
                                     <label class="text-muted">
@@ -125,11 +117,9 @@
                                     </div>
 
                                 </div>
-
                             </div>
 
                             <div class="col-md-6">
-
                                 <div class="form-group">
 
                                     <label class="text-muted">
@@ -142,7 +132,6 @@
                                     </div>
 
                                 </div>
-
                             </div>
 
                         </div>
@@ -150,9 +139,7 @@
                         <div class="row mt-2">
 
                             <div class="col-md-6">
-
                                 <div class="card bg-light mb-0">
-
                                     <div class="card-body text-center">
 
                                         <div class="text-muted small">
@@ -165,15 +152,11 @@
                                         </div>
 
                                     </div>
-
                                 </div>
-
                             </div>
 
                             <div class="col-md-6">
-
                                 <div class="card bg-light mb-0">
-
                                     <div class="card-body text-center">
 
                                         <div class="text-muted small">
@@ -186,108 +169,98 @@
                                         </div>
 
                                     </div>
-
                                 </div>
-
                             </div>
 
                         </div>
 
                     </div>
-
                 </div>
 
-                <div class="card">
+                @if ($isGeneralAffair)
+                    <div class="card">
 
-                    <div class="card-header">
+                        <div class="card-header">
+                            <h4>
+                                <i class="fas fa-calculator mr-2"></i>
+                                Perhitungan Overtime
+                            </h4>
+                        </div>
 
-                        <h4>
-                            <i class="fas fa-calculator mr-2"></i>
-                            Perhitungan Overtime
-                        </h4>
+                        <div class="card-body">
 
-                    </div>
+                            <div class="row">
 
-                    <div class="card-body">
+                                <div class="col-md-6">
+                                    <div class="form-group">
 
-                        <div class="row">
+                                        <label class="text-muted">
+                                            Rate Overtime
+                                        </label>
 
-                            <div class="col-md-6">
+                                        <div class="h4 mb-0">
+                                            Rp {{ number_format($overtime->hourly_rate, 0, ',', '.') }}
+                                            <small class="text-muted">/ jam</small>
+                                        </div>
 
-                                <div class="form-group">
-
-                                    <label class="text-muted">
-                                        Rate Overtime
-                                    </label>
-
-                                    <div class="h4 mb-0">
-                                        Rp {{ number_format($overtime->hourly_rate, 0, ',', '.') }}
-                                        <small class="text-muted">/ jam</small>
                                     </div>
+                                </div>
 
+                                <div class="col-md-6">
+                                    <div class="form-group">
+
+                                        <label class="text-muted">
+                                            Total Overtime
+                                        </label>
+
+                                        <div class="h4 text-success mb-0">
+                                            Rp {{ number_format($overtime->overtime_amount, 0, ',', '.') }}
+                                        </div>
+
+                                    </div>
                                 </div>
 
                             </div>
 
-                            <div class="col-md-6">
+                            <hr>
 
-                                <div class="form-group">
+                            <div class="text-center">
 
-                                    <label class="text-muted">
-                                        Total Overtime
-                                    </label>
+                                <div class="text-muted mb-2">
+                                    Rumus Perhitungan
+                                </div>
 
-                                    <div class="h4 text-success mb-0">
+                                <div class="h5">
+
+                                    {{ number_format($overtime->total_hours_actual, 2, ',', '.') }}
+                                    Jam
+
+                                    <span class="mx-2">×</span>
+
+                                    Rp {{ number_format($overtime->hourly_rate, 0, ',', '.') }}
+
+                                    <span class="mx-2">=</span>
+
+                                    <strong class="text-success">
                                         Rp {{ number_format($overtime->overtime_amount, 0, ',', '.') }}
-                                    </div>
+                                    </strong>
 
                                 </div>
 
                             </div>
 
                         </div>
-
-                        <hr>
-
-                        <div class="text-center">
-
-                            <div class="text-muted mb-2">
-                                Rumus Perhitungan
-                            </div>
-
-                            <div class="h5">
-
-                                {{ number_format($overtime->total_hours_actual, 2, ',', '.') }}
-                                Jam
-
-                                <span class="mx-2">×</span>
-
-                                Rp {{ number_format($overtime->hourly_rate, 0, ',', '.') }}
-
-                                <span class="mx-2">=</span>
-
-                                <strong class="text-success">
-                                    Rp {{ number_format($overtime->overtime_amount, 0, ',', '.') }}
-                                </strong>
-
-                            </div>
-
-                        </div>
-
                     </div>
-
-                </div>
+                @endif
 
                 @if ($overtime->description)
                     <div class="card">
 
                         <div class="card-header">
-
                             <h4>
                                 <i class="fas fa-align-left mr-2"></i>
                                 Keterangan
                             </h4>
-
                         </div>
 
                         <div class="card-body">
@@ -308,12 +281,10 @@
                 <div class="card">
 
                     <div class="card-header">
-
                         <h4>
                             <i class="fas fa-user mr-2"></i>
                             Data Karyawan
                         </h4>
-
                     </div>
 
                     <div class="card-body">
@@ -429,6 +400,10 @@
                                     <span class="badge badge-success">
                                         Borongan
                                     </span>
+                                @elseif ($overtime->employee->employee_status === 'harian_kontrak')
+                                    <span class="badge badge-warning">
+                                        Harian Kontrak
+                                    </span>
                                 @else
                                     <span class="badge badge-secondary">
                                         {{ $overtime->employee->employee_status ?? '-' }}
@@ -440,18 +415,15 @@
                         </div>
 
                     </div>
-
                 </div>
 
                 <div class="card">
 
                     <div class="card-header">
-
                         <h4>
                             <i class="fas fa-user-check mr-2"></i>
                             Approval
                         </h4>
-
                     </div>
 
                     <div class="card-body">
@@ -460,9 +432,7 @@
                             <div class="text-center">
 
                                 <div class="mb-3">
-
                                     <i class="fas fa-hourglass-half text-warning" style="font-size: 45px;"></i>
-
                                 </div>
 
                                 <h6>
@@ -496,9 +466,7 @@
                             <div class="text-center">
 
                                 <div class="mb-3">
-
                                     <i class="fas fa-hourglass-half text-warning" style="font-size: 45px;"></i>
-
                                 </div>
 
                                 <h6>
@@ -514,9 +482,7 @@
                             <div class="text-center">
 
                                 <div class="mb-3">
-
                                     <i class="fas fa-check-circle text-success" style="font-size: 45px;"></i>
-
                                 </div>
 
                                 <h6>
@@ -533,9 +499,9 @@
                                     </strong>
                                 @endif
 
-                                @if ($overtime->APPROVED_at)
+                                @if ($overtime->approved_at)
                                     <div class="text-muted small mt-2">
-                                        {{ \Carbon\Carbon::parse($overtime->APPROVED_at)->translatedFormat('d F Y H:i') }}
+                                        {{ \Carbon\Carbon::parse($overtime->approved_at)->translatedFormat('d F Y H:i') }}
                                     </div>
                                 @endif
 
@@ -544,9 +510,7 @@
                             <div class="text-center">
 
                                 <div class="mb-3">
-
                                     <i class="fas fa-times-circle text-danger" style="font-size: 45px;"></i>
-
                                 </div>
 
                                 <h6>
@@ -563,9 +527,9 @@
                                     </strong>
                                 @endif
 
-                                @if ($overtime->APPROVED_at)
+                                @if ($overtime->approved_at)
                                     <div class="text-muted small mt-2">
-                                        {{ \Carbon\Carbon::parse($overtime->APPROVED_at)->translatedFormat('d F Y H:i') }}
+                                        {{ \Carbon\Carbon::parse($overtime->approved_at)->translatedFormat('d F Y H:i') }}
                                     </div>
                                 @endif
 
@@ -574,9 +538,7 @@
                             <div class="text-center">
 
                                 <div class="mb-3">
-
                                     <i class="fas fa-money-bill-wave text-primary" style="font-size: 45px;"></i>
-
                                 </div>
 
                                 <h6>
@@ -593,9 +555,9 @@
                                     </strong>
                                 @endif
 
-                                @if ($overtime->APPROVED_at)
+                                @if ($overtime->approved_at)
                                     <div class="text-muted small mt-2">
-                                        {{ \Carbon\Carbon::parse($overtime->APPROVED_at)->translatedFormat('d F Y H:i') }}
+                                        {{ \Carbon\Carbon::parse($overtime->approved_at)->translatedFormat('d F Y H:i') }}
                                     </div>
                                 @endif
 
@@ -603,7 +565,6 @@
                         @endif
 
                     </div>
-
                 </div>
 
             </div>
@@ -674,23 +635,15 @@
 @push('scripts')
     <script>
         function confirmApprove() {
-
             if (confirm('Yakin ingin menyetujui overtime ini?')) {
-
                 document.getElementById('approve-form').submit();
-
             }
-
         }
 
         function confirmReject() {
-
             if (confirm('Yakin ingin menolak overtime ini?')) {
-
                 document.getElementById('reject-form').submit();
-
             }
-
         }
     </script>
 @endpush

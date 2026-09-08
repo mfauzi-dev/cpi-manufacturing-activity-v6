@@ -2,25 +2,26 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\OvertimeExport;
 use App\Models\CostCenter;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\EmployeeSalary;
+use App\Models\Holiday;
 use App\Models\Overtime;
 use App\Models\OvertimeRate;
 use App\Models\PenggajianHarian;
-use App\Models\PenggajianKaryawanTetap;
 use App\Models\WageConfig;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class OvertimeController extends Controller
 {
     public function index(Request $request)
     {
         $user = auth()->user();
-
         $departmentName = strtolower($user->department?->name ?? '');
 
         $query = Overtime::with([
@@ -37,8 +38,7 @@ class OvertimeController extends Controller
         $departments = collect();
         $costCenters = collect();
 
-        if ($departmentName === 'general affair') {
-
+        if ($departmentName === 'personalia dan general affair') {
             $departments = Department::orderBy('name')->get();
 
             if ($departmentId) {
@@ -52,9 +52,7 @@ class OvertimeController extends Controller
                     $q->where('cost_center_id', $costCenterId);
                 });
             }
-
         } else {
-
             $query->whereHas('employee', function ($q) use ($user) {
                 $q->where('department_id', $user->department_id);
             });
@@ -83,6 +81,10 @@ class OvertimeController extends Controller
             $query->where('status', $request->status);
         }
 
+        if ($request->filled('overtime_type')) {
+            $query->where('overtime_type', $request->overtime_type);
+        }
+
         if ($request->filled('search')) {
             $search = $request->search;
 
@@ -108,7 +110,6 @@ class OvertimeController extends Controller
     public function show($id)
     {
         $user = auth()->user();
-
         $departmentName = strtolower($user->department?->name ?? '');
 
         $overtime = Overtime::with([
@@ -120,7 +121,7 @@ class OvertimeController extends Controller
             'approver',
         ])->findOrFail($id);
 
-        if ($departmentName !== 'general affair') {
+        if ($departmentName !== 'personalia dan general affair') {
             if (
                 !$overtime->employee ||
                 $overtime->employee->department_id !== $user->department_id
@@ -151,7 +152,7 @@ class OvertimeController extends Controller
         $departmentId = $request->department_id;
         $costCenterId = $request->cost_center_id;
 
-        if ($departmentName === 'general affair') {
+        if ($departmentName === 'personalia dan general affair') {
             if ($departmentId) {
                 $query->whereHas('employee', function ($q) use ($departmentId) {
                     $q->where('department_id', $departmentId);
@@ -182,6 +183,10 @@ class OvertimeController extends Controller
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
+        }
+
+        if ($request->filled('overtime_type')) {
+            $query->where('overtime_type', $request->overtime_type);
         }
 
         if ($request->filled('date_from')) {
@@ -227,7 +232,7 @@ class OvertimeController extends Controller
             'approver',
         ])->findOrFail($id);
 
-        if ($departmentName !== 'general affair') {
+        if ($departmentName !== 'personalia dan general affair') {
             if (
                 !$overtime->employee ||
                 $overtime->employee->department_id !== $user->department_id
@@ -273,6 +278,14 @@ class OvertimeController extends Controller
 
         if ($request->filled('date_to')) {
             $query->whereDate('date', '<=', $request->date_to);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('overtime_type')) {
+            $query->where('overtime_type', $request->overtime_type);
         }
 
         if ($request->filled('search')) {
@@ -335,9 +348,7 @@ class OvertimeController extends Controller
         $date = $request->date ?? now()->format('Y-m-d');
         $year = Carbon::parse($date)->year;
 
-        $totalHoursActual = (float) ($request->total_hours_actual ?? 0);
         $totalHoursKonversi = (float) ($request->total_hours_konversi ?? 0);
-
         $levelNumber = (int) ($employee->level?->name ?? 0);
 
         if (in_array($employee->employee_status, ['harian', 'harian_kontrak'])) {
@@ -403,7 +414,7 @@ class OvertimeController extends Controller
         }
 
         $hourlyRate = (float) $overtimeRate->rate;
-        $overtimeAmount = round($hourlyRate * $totalHoursActual, 2);
+        $overtimeAmount = round($hourlyRate * $totalHoursKonversi, 2);
 
         return response()->json([
             'success' => true,
@@ -424,7 +435,7 @@ class OvertimeController extends Controller
             'position',
         ])->where('is_active', true);
 
-        if ($departmentName !== 'general affair') {
+        if ($departmentName !== 'personalia dan general affair') {
             $query->where('department_id', $user->department_id);
         }
 
@@ -432,8 +443,13 @@ class OvertimeController extends Controller
             ->orderBy('name')
             ->get();
 
+        $holidays = Holiday::pluck('date')->map(function ($date) {
+            return Carbon::parse($date)->format('Y-m-d');
+        });
+
         return view('pages.admin_production.overtime.create', compact(
-            'employees'
+            'employees',
+            'holidays'
         ));
     }
 
@@ -442,6 +458,7 @@ class OvertimeController extends Controller
         $request->validate([
             'employee_id' => ['required', 'exists:employees,id'],
             'date' => ['required', 'date'],
+            'overtime_type' => ['required', 'in:OTL1,OTL2,OT01,OT02'], 
             'start_time' => ['required'],
             'end_time' => ['required'],
             'total_hours_actual' => ['required', 'numeric', 'min:0'],
@@ -455,7 +472,7 @@ class OvertimeController extends Controller
         $employee = Employee::with('level')->findOrFail($request->employee_id);
 
         if (
-            $departmentName !== 'general affair' &&
+            $departmentName !== 'personalia dan general affair' &&
             $employee->department_id != $user->department_id
         ) {
             abort(403, 'Anda tidak memiliki akses ke karyawan ini.');
@@ -505,12 +522,13 @@ class OvertimeController extends Controller
             }
 
             $hourlyRate = (float) $overtimeRate->rate;
-            $overtimeAmount = round($hourlyRate * $totalHoursActual, 2);
+            $overtimeAmount = round($hourlyRate * $totalHoursKonversi, 2);
         }
 
         Overtime::create([
             'employee_id' => $employee->id,
             'date' => $request->date,
+            'overtime_type' => $request->overtime_type,
             'start_time' => $request->start_time,
             'end_time' => $request->end_time,
             'total_hours_actual' => $totalHoursActual,
@@ -541,7 +559,7 @@ class OvertimeController extends Controller
         }
 
         if (
-            $departmentName !== 'general affair' &&
+            $departmentName !== 'personalia dan general affair' &&
             $overtime->employee->department_id != $user->department_id
         ) {
             abort(403, 'Anda tidak memiliki akses ke overtime ini.');
@@ -554,7 +572,7 @@ class OvertimeController extends Controller
             'position',
         ])->where('is_active', true);
 
-        if ($departmentName !== 'general affair') {
+        if ($departmentName !== 'personalia dan general affair') {
             $query->where('department_id', $user->department_id);
         }
 
@@ -562,9 +580,14 @@ class OvertimeController extends Controller
             ->orderBy('name')
             ->get();
 
+        $holidays = Holiday::pluck('date')->map(function ($date) {
+            return Carbon::parse($date)->format('Y-m-d');
+        });
+
         return view('pages.admin_production.overtime.edit', compact(
             'overtime',
-            'employees'
+            'employees',
+            'holidays'
         ));
     }
 
@@ -573,6 +596,7 @@ class OvertimeController extends Controller
         $request->validate([
             'employee_id' => ['required', 'exists:employees,id'],
             'date' => ['required', 'date'],
+            'overtime_type' => ['required', 'in:OTL1,OTL2,OT01,OT02'],
             'start_time' => ['required'],
             'end_time' => ['required'],
             'total_hours_actual' => ['required', 'numeric', 'min:0'],
@@ -593,7 +617,7 @@ class OvertimeController extends Controller
         }
 
         if (
-            $departmentName !== 'general affair' &&
+            $departmentName !== 'personalia dan general affair' &&
             $overtime->employee->department_id != $user->department_id
         ) {
             abort(403, 'Anda tidak memiliki akses ke overtime ini.');
@@ -602,7 +626,7 @@ class OvertimeController extends Controller
         $employee = Employee::with('level')->findOrFail($request->employee_id);
 
         if (
-            $departmentName !== 'general affair' &&
+            $departmentName !== 'personalia dan general affair' &&
             $employee->department_id != $user->department_id
         ) {
             abort(403, 'Anda tidak memiliki akses ke karyawan ini.');
@@ -652,12 +676,13 @@ class OvertimeController extends Controller
             }
 
             $hourlyRate = (float) $overtimeRate->rate;
-            $overtimeAmount = round($hourlyRate * $totalHoursActual, 2);
+            $overtimeAmount = round($hourlyRate * $totalHoursKonversi, 2);
         }
 
         $overtime->update([
             'employee_id' => $employee->id,
             'date' => $request->date,
+            'overtime_type' => $request->overtime_type,
             'start_time' => $request->start_time,
             'end_time' => $request->end_time,
             'total_hours_actual' => $totalHoursActual,
@@ -686,78 +711,66 @@ class OvertimeController extends Controller
             return back()->with('error', 'Overtime sudah diproses.');
         }
 
-        if ($departmentName !== 'general affair') {
+        if ($departmentName !== 'personalia dan general affair') {
             if ($overtime->employee->department_id != $user->department_id) {
                 abort(403, 'Anda tidak memiliki akses ke overtime ini.');
             }
         }
 
-        DB::transaction(function () use ($overtime, $user) {
+        try {
+            DB::transaction(function () use ($overtime, $user) {
 
-            $overtime->update([
-                'status' => 'APPROVED',
-                'approved_by' => $user->id,
-                'approved_at' => now(),
-            ]);
+                $employee = Employee::findOrFail($overtime->employee_id);
 
-            $employee = Employee::find($overtime->employee_id);
+                $date = Carbon::parse($overtime->date);
+                $month = $date->month;
+                $year = $date->year;
 
-            if (!$employee) {
-                return;
-            }
+                $overtimeAmount = (float) $overtime->overtime_amount;
 
-            $date = Carbon::parse($overtime->date);
-            $month = $date->month;
-            $year = $date->year;
-            $overtimeAmount = (float) $overtime->overtime_amount;
+                if (in_array($employee->employee_status, ['harian', 'harian_kontrak'])) {
 
-            if (in_array($employee->employee_status, ['harian', 'harian_kontrak'])) {
+                    $payroll = PenggajianHarian::where('employee_id', $employee->id)
+                        ->where('period_month', $month)
+                        ->where('period_year', $year)
+                        ->first();
 
-                $payroll = PenggajianHarian::where('employee_id', $employee->id)
-                    ->where('period_month', $month)
-                    ->where('period_year', $year)
-                    ->first();
+                    if (!$payroll) {
+                        throw new \Exception(
+                            'Payroll harian untuk ' .
+                            $date->format('m/Y') .
+                            ' belum ditemukan.'
+                        );
+                    }
 
-                if (!$payroll) {
-                    return;
+                    $overtimeTotal = (float) $payroll->overtime_total + $overtimeAmount;
+                    $grandTotalUpah = (float) $payroll->grand_total_upah + $overtimeAmount;
+
+                    $payroll->update([
+                        'overtime_total' => $overtimeTotal,
+                        'grand_total_upah' => $grandTotalUpah,
+                        'net_salary' => $grandTotalUpah,
+                    ]);
                 }
 
-                $overtimeTotal = (float) $payroll->overtime_total + $overtimeAmount;
-
-                $grandTotalUpah = (float) $payroll->grand_total_upah;
-
-                $payroll->update([
-                    'overtime_total' => $overtimeTotal,
-                    'grand_total_upah' => $grandTotalUpah + $overtimeAmount,
-                    'net_salary' => $grandTotalUpah + $overtimeAmount,
+                $overtime->update([
+                    'status' => 'APPROVED',
+                    'approved_by' => $user->id,
+                    'approved_at' => now(),
                 ]);
+            });
 
-            } elseif ($employee->employee_status === 'cpi') {
+            return back()->with(
+                'success',
+                'Overtime berhasil disetujui dan payroll diperbarui.'
+            );
 
-                $payroll = PenggajianKaryawanTetap::where('employee_id', $employee->id)
-                    ->where('period_month', $month)
-                    ->where('period_year', $year)
-                    ->first();
-
-                if (!$payroll) {
-                    return;
-                }
-
-                $overtimeTotal = (float) $payroll->overtime_total + $overtimeAmount;
-
-                $basicSalary = (float) $payroll->basic_salary;
-
-                $payroll->update([
-                    'overtime_total' => $overtimeTotal,
-                    'grand_total_salary' => $basicSalary + $overtimeTotal,
-                ]);
-            }
-        });
-
-        return back()->with(
-            'success',
-            'Overtime berhasil disetujui dan payroll diperbarui.'
-        );
+        } catch (\Throwable $e) {
+            return back()->with(
+                'error',
+                $e->getMessage()
+            );
+        }
     }
 
     public function managerReject(Request $request, $id)
@@ -775,7 +788,7 @@ class OvertimeController extends Controller
             return back()->with('error', 'Overtime sudah diproses.');
         }
 
-        if ($departmentName !== 'general affair') {
+        if ($departmentName !== 'personalia dan general affair') {
             if ($overtime->employee->department_id != $user->department_id) {
                 abort(403, 'Anda tidak memiliki akses ke overtime ini.');
             }
@@ -796,78 +809,66 @@ class OvertimeController extends Controller
 
     public function generalManagerApprove($id)
     {
+        $user = auth()->user();
+
         $overtime = Overtime::with('employee')->findOrFail($id);
 
         if ($overtime->status !== 'PENDING') {
             return back()->with('error', 'Overtime sudah diproses.');
         }
 
-        DB::transaction(function () use ($overtime) {
+        try {
+            DB::transaction(function () use ($overtime, $user) {
 
-            $overtime->update([
-                'status' => 'APPROVED',
-                'approved_by' => auth()->id(),
-                'approved_at' => now(),
-            ]);
+                $employee = Employee::findOrFail($overtime->employee_id);
 
-            $employee = Employee::find($overtime->employee_id);
+                $date = Carbon::parse($overtime->date);
+                $month = $date->month;
+                $year = $date->year;
 
-            if (!$employee) {
-                return;
-            }
+                $overtimeAmount = (float) $overtime->overtime_amount;
 
-            $date = Carbon::parse($overtime->date);
-            $month = $date->month;
-            $year = $date->year;
-            $overtimeAmount = (float) $overtime->overtime_amount;
+                if (in_array($employee->employee_status, ['harian', 'harian_kontrak'])) {
 
-            if (in_array($employee->employee_status, ['harian', 'harian_kontrak'])) {
+                    $payroll = PenggajianHarian::where('employee_id', $employee->id)
+                        ->where('period_month', $month)
+                        ->where('period_year', $year)
+                        ->first();
 
-                $payroll = PenggajianHarian::where('employee_id', $employee->id)
-                    ->where('period_month', $month)
-                    ->where('period_year', $year)
-                    ->first();
+                    if (!$payroll) {
+                        throw new \Exception(
+                            'Payroll harian untuk ' . $date->format('m/Y') . ' belum ditemukan.'
+                        );
+                    }
 
-                if (!$payroll) {
-                    return;
+                    $overtimeTotal = (float) $payroll->overtime_total + $overtimeAmount;
+                    $grandTotalUpah = (float) $payroll->grand_total_upah + $overtimeAmount;
+
+                    $payroll->update([
+                        'overtime_total' => $overtimeTotal,
+                        'grand_total_upah' => $grandTotalUpah,
+                        'net_salary' => $grandTotalUpah,
+                    ]);
                 }
 
-                $overtimeTotal = (float) $payroll->overtime_total + $overtimeAmount;
-
-                $grandTotalUpah = (float) $payroll->grand_total_upah;
-
-                $payroll->update([
-                    'overtime_total' => $overtimeTotal,
-                    'grand_total_upah' => $grandTotalUpah + $overtimeAmount,
-                    'net_salary' => $grandTotalUpah + $overtimeAmount,
+                $overtime->update([
+                    'status' => 'APPROVED',
+                    'approved_by' => $user->id,
+                    'approved_at' => now(),
                 ]);
+            });
 
-            } elseif ($employee->employee_status === 'cpi') {
+            return back()->with(
+                'success',
+                'Overtime berhasil disetujui dan payroll diperbarui.'
+            );
 
-                $payroll = PenggajianKaryawanTetap::where('employee_id', $employee->id)
-                    ->where('period_month', $month)
-                    ->where('period_year', $year)
-                    ->first();
-
-                if (!$payroll) {
-                    return;
-                }
-
-                $overtimeTotal = (float) $payroll->overtime_total + $overtimeAmount;
-
-                $basicSalary = (float) $payroll->basic_salary;
-
-                $payroll->update([
-                    'overtime_total' => $overtimeTotal,
-                    'grand_total_salary' => $basicSalary + $overtimeTotal,
-                ]);
-            }
-        });
-
-        return back()->with(
-            'success',
-            'Overtime berhasil disetujui dan payroll diperbarui.'
-        );
+        } catch (\Throwable $e) {
+            return back()->with(
+                'error',
+                $e->getMessage()
+            );
+        }
     }
 
     public function generalManagerReject(Request $request, $id)
@@ -906,7 +907,7 @@ class OvertimeController extends Controller
             $overtime = Overtime::with('employee')->findOrFail($id);
 
             if (
-                $departmentName !== 'general affair' &&
+                $departmentName !== 'personalia dan general affair' &&
                 $overtime->employee->department_id != $user->department_id
             ) {
                 abort(403, 'Anda tidak memiliki akses ke overtime ini.');
@@ -930,7 +931,6 @@ class OvertimeController extends Controller
             $approvedOvertimeTotal = (float) $approvedOvertimeTotal;
 
             if (in_array($employee->employee_status, ['harian', 'harian_kontrak'])) {
-
                 $payroll = PenggajianHarian::where('employee_id', $employeeId)
                     ->where('period_month', $month)
                     ->where('period_year', $year)
@@ -948,24 +948,6 @@ class OvertimeController extends Controller
                         'net_salary' => $grandTotalUpah,
                     ]);
                 }
-
-            } elseif ($employee->employee_status === 'cpi') {
-
-                $payroll = PenggajianKaryawanTetap::where('employee_id', $employeeId)
-                    ->where('period_month', $month)
-                    ->where('period_year', $year)
-                    ->first();
-
-                if ($payroll) {
-                    $basicSalary = (float) $payroll->basic_salary;
-
-                    $grandTotalSalary = $basicSalary + $approvedOvertimeTotal;
-
-                    $payroll->update([
-                        'overtime_total' => $approvedOvertimeTotal,
-                        'grand_total_salary' => $grandTotalSalary,
-                    ]);
-                }
             }
 
             DB::commit();
@@ -974,7 +956,6 @@ class OvertimeController extends Controller
                 'success',
                 'Overtime berhasil dihapus dan payroll berhasil diperbarui.'
             );
-
         } catch (\Throwable $e) {
             DB::rollBack();
 
@@ -983,5 +964,67 @@ class OvertimeController extends Controller
                 'Gagal menghapus overtime: ' . $e->getMessage()
             );
         }
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $user = auth()->user();
+        $departmentName = strtolower($user->department?->name ?? '');
+
+        $departmentId = $departmentName === 'personalia dan general affair'
+            ? $request->department_id
+            : $user->department_id;
+
+        return Excel::download(
+            new OvertimeExport(
+                $departmentId,
+                $request->cost_center_id,
+                $request->status,
+                $request->overtime_type,
+                $request->date_from,
+                $request->date_to,
+                $request->search
+            ),
+            'overtime_export_' . now()->format('Ymd_His') . '.xlsx'
+        );
+    }
+
+    public function managerExportExcel(Request $request)
+    {
+        $user = auth()->user();
+        $departmentName = strtolower($user->department?->name ?? '');
+
+        $departmentId = $departmentName === 'personalia dan general affair'
+            ? $request->department_id
+            : $user->department_id;
+
+        return Excel::download(
+            new OvertimeExport(
+                $departmentId,
+                $request->cost_center_id,
+                $request->status,
+                $request->overtime_type,
+                $request->date_from,
+                $request->date_to,
+                $request->search
+            ),
+            'overtime_manager_export_' . now()->format('Ymd_His') . '.xlsx'
+        );
+    }
+
+    public function generalManagerExportExcel(Request $request)
+    {
+        return Excel::download(
+            new OvertimeExport(
+                $request->department_id,
+                $request->cost_center_id,
+                $request->status,
+                $request->overtime_type,
+                $request->date_from,
+                $request->date_to,
+                $request->search
+            ),
+            'overtime_general_manager_export_' . now()->format('Ymd_His') . '.xlsx'
+        );
     }
 }
