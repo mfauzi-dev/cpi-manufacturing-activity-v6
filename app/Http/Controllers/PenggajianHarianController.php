@@ -293,7 +293,7 @@ class PenggajianHarianController extends Controller
             ->where('period_year', $year)
             ->whereHas('employee', function ($q) use ($departmentId, $outsourcingId) {
 
-                $q->where('employee_status', 'harian');
+                $q->whereIn('employee_status', ['harian', 'harian_kontrak']);
 
                 if ($departmentId) {
                     $q->where('department_id', $departmentId);
@@ -395,7 +395,7 @@ class PenggajianHarianController extends Controller
             ->where('period_year', $year)
             ->whereHas('employee', function ($q) use ($departmentId, $outsourcingId) {
 
-                $q->where('employee_status', 'harian')
+                $q->whereIn('employee_status', ['harian', 'harian_kontrak'])
                     ->where('department_id', $departmentId);
 
                 if ($outsourcingId) {
@@ -489,7 +489,7 @@ class PenggajianHarianController extends Controller
             ->where('period_year', $year)
             ->whereHas('employee', function ($q) use ($departmentId, $outsourcingId) {
 
-                $q->where('employee_status', 'harian')
+                $q->whereIn('employee_status', ['harian', 'harian_kontrak'])
                     ->where('department_id', $departmentId);
 
                 if ($outsourcingId) {

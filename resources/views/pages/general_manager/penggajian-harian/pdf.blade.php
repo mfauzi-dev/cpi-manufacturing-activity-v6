@@ -92,6 +92,10 @@
                     Harian
                 </th>
                 <th>
+                    Total<br>
+                    Overtime
+                </th>
+                <th>
                     Jamsostek<br>
                     (4,89%)
                 </th>
@@ -162,9 +166,12 @@
                         {{ $payroll->work_days ?? 0 }}
                     </td>
 
-                    {{-- UPAH HARIAN --}}
                     <td class="text-right">
                         Rp {{ number_format($payroll->upah_harian ?? 0, 0, ',', '.') }}
+                    </td>
+
+                    <td class="text-right">
+                        Rp {{ number_format($payroll->overtime_total ?? 0, 0, ',', '.') }}
                     </td>
 
                     {{-- JAMSOSTEK --}}
