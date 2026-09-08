@@ -26,7 +26,6 @@ class PenggajianHarianExport implements
     protected int $year;
     protected ?int $departmentId;
     protected $outsourcingId;
-
     protected int $no = 0;
 
     public function __construct(
@@ -133,8 +132,9 @@ class PenggajianHarianExport implements
             'L' => 20,
             'M' => 18,
             'N' => 28,
-            'O' => 18,
+            'O' => 25,
             'P' => 25,
+            'Q' => 28,
         ];
     }
 
@@ -161,37 +161,118 @@ class PenggajianHarianExport implements
 
                 $sheet = $event->sheet->getDelegate();
 
-                $lastRow = $sheet->getHighestRow();
-                $lastColumn = 'P';
+                $lastDataRow = $sheet->getHighestRow();
+                $grandTotalRow = $lastDataRow + 1;
 
-                $sheet->getStyle("A1:{$lastColumn}{$lastRow}")
+                $sheet->mergeCells("A{$grandTotalRow}:F{$grandTotalRow}");
+
+                $sheet->setCellValue(
+                    "A{$grandTotalRow}",
+                    'GRAND TOTAL'
+                );
+
+                $sheet->setCellValue(
+                    "G{$grandTotalRow}",
+                    '-'
+                );
+
+                $sheet->setCellValue(
+                    "H{$grandTotalRow}",
+                    '-'
+                );
+
+                $sheet->setCellValue(
+                    "I{$grandTotalRow}",
+                    "=SUM(I2:I{$lastDataRow})"
+                );
+
+                $sheet->setCellValue(
+                    "J{$grandTotalRow}",
+                    "=SUM(J2:J{$lastDataRow})"
+                );
+
+                $sheet->setCellValue(
+                    "K{$grandTotalRow}",
+                    "=SUM(K2:K{$lastDataRow})"
+                );
+
+                $sheet->setCellValue(
+                    "L{$grandTotalRow}",
+                    "=SUM(L2:L{$lastDataRow})"
+                );
+
+                $sheet->setCellValue(
+                    "M{$grandTotalRow}",
+                    "=SUM(M2:M{$lastDataRow})"
+                );
+
+                $sheet->setCellValue(
+                    "N{$grandTotalRow}",
+                    "=SUM(N2:N{$lastDataRow})"
+                );
+
+                $sheet->setCellValue(
+                    "O{$grandTotalRow}",
+                    "=SUM(O2:O{$lastDataRow})"
+                );
+
+                $sheet->setCellValue(
+                    "P{$grandTotalRow}",
+                    "=SUM(P2:P{$lastDataRow})"
+                );
+
+                $sheet->setCellValue(
+                    "Q{$grandTotalRow}",
+                    "=SUM(Q2:Q{$lastDataRow})"
+                );
+
+                $sheet->getStyle("A1:Q{$grandTotalRow}")
                     ->getBorders()
                     ->getAllBorders()
-                    ->setBorderStyle(Border::BORDER_THIN);
+                    ->setBorderStyle(
+                        Border::BORDER_THIN
+                    );
 
-                $sheet->getStyle("A1:{$lastColumn}{$lastRow}")
+                $sheet->getStyle("A1:Q{$grandTotalRow}")
                     ->getAlignment()
-                    ->setVertical(Alignment::VERTICAL_CENTER);
+                    ->setVertical(
+                        Alignment::VERTICAL_CENTER
+                    );
 
-                $sheet->getStyle("G2:G{$lastRow}")
+                $sheet->getStyle("A2:A{$lastDataRow}")
+                    ->getAlignment()
+                    ->setHorizontal(
+                        Alignment::HORIZONTAL_CENTER
+                    );
+
+                $sheet->getStyle("H2:I{$lastDataRow}")
+                    ->getAlignment()
+                    ->setHorizontal(
+                        Alignment::HORIZONTAL_CENTER
+                    );
+
+                $sheet->getStyle("G2:Q{$grandTotalRow}")
                     ->getNumberFormat()
                     ->setFormatCode('#,##0');
 
-                $sheet->getStyle("H2:I{$lastRow}")
-                    ->getNumberFormat()
-                    ->setFormatCode('#,##0');
+                $sheet->getStyle("A{$grandTotalRow}:Q{$grandTotalRow}")
+                    ->getFont()
+                    ->setBold(true);
 
-                $sheet->getStyle("J2:P{$lastRow}")
-                    ->getNumberFormat()
-                    ->setFormatCode('#,##0');
-
-                $sheet->getStyle("A2:A{$lastRow}")
+                $sheet->getStyle("A{$grandTotalRow}:F{$grandTotalRow}")
                     ->getAlignment()
-                    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    ->setHorizontal(
+                        Alignment::HORIZONTAL_CENTER
+                    );
 
-                $sheet->getStyle("H2:I{$lastRow}")
+                $sheet->getStyle("G{$grandTotalRow}:Q{$grandTotalRow}")
                     ->getAlignment()
-                    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    ->setHorizontal(
+                        Alignment::HORIZONTAL_RIGHT
+                    );
+
+                $sheet->getRowDimension($grandTotalRow)
+                    ->setRowHeight(25);
             },
         ];
     }

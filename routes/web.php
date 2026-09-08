@@ -82,6 +82,8 @@ Route::middleware(['auth'])->group(function() {
     Route::get('/overtime/cost-centers/{departmentId}', [OvertimeController::class, 'getCostCenters'])->name('overtime.cost-centers');
     Route::get('/admin-production/overtime/rate/{employeeId}', [OvertimeController::class, 'getRate'])->name('admin-production.overtime.rate');
     Route::get('/penggajian-karyawan-tetap/cost-centers/{departmentId}', [PenggajianKaryawanTetapController::class, 'getCostCenters'])->name('manager.penggajian-karyawan-tetap.cost-centers');
+    Route::get('/penggajian-harian/cost-centers/{departmentId}', [PenggajianHarianController::class, 'getCostCenters'])->name('penggajian-harian.cost-centers');
+    Route::get('/penggajian-borongan/cost-centers/{departmentId}',[PenggajianBoronganController::class, 'getCostCenters'])->name('manager.penggajian-borongan.cost-centers');
 });
 
 
@@ -194,6 +196,8 @@ Route::prefix('admin-production')->middleware(['auth', 'role:Admin Production'])
         Route::delete('/{id}/delete', [DailyActivityFurtherController::class, 'destroy'])->name('admin-production.daily-activity-further.destroy');
 
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel', [DailyActivityFurtherController::class, 'exportExcel'])->name('admin-production.daily-activity-further.export-excel');
+        
+        Route::get('export-excel', [DailyActivityFurtherController::class, 'exportIndexExcel'])->name('admin-production.daily-activity-further.all-export-excel');
 
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf', [DailyActivityFurtherController::class, 'exportPdf'])->name('admin-production.daily-activity-further.export-pdf');
     });
@@ -415,6 +419,7 @@ Route::prefix('general-manager')->middleware(['auth', 'role:General Manager'])->
         Route::get('/cost-center/{costCenter}/ps-group/{psGroup}/detail/{lineId}',  [DailyActivityFurtherController::class,'generalManagerDetail'])->name('general-manager.daily-activity-further.detail');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel',  [DailyActivityFurtherController::class,'exportExcelGeneralManager'])->name('general-manager.daily-activity-further.export-excel');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf',  [DailyActivityFurtherController::class,'exportPdfGeneralManager'])->name('general-manager.daily-activity-further.export-pdf');
+        Route::get('export-excel', [DailyActivityFurtherController::class, 'exportGeneralManagerIndexExcel'])->name('general-manager.daily-activity-further.all-export-excel');    
     });
 
     Route::prefix('daily-activity-slaughter-house')->group(function () {
@@ -462,6 +467,8 @@ Route::prefix('manager')->middleware(['auth', 'role:Manager'])->group(function()
         Route::get('{id}/edit', [EmployeeController::class, 'managerEdit'])->name('manager.employee.edit');
         Route::put('{id}/update', [EmployeeController::class, 'update'])->name('manager.employee.update');
         Route::delete('{id}/delete', [EmployeeController::class, 'destroy'])->name('manager.employee.destroy');
+        Route::get('/import', [EmployeeController::class, 'managerImportPage'])->name('manager.employee.import');
+        Route::post('/upload', [EmployeeController::class, 'managerUpload'])->name('manager.employee.upload');    
     });
     Route::prefix('attendances')->group(function(){
         Route::get('/', [AttendanceController::class, 'managerIndex'])->name('manager.attendance.index');
@@ -493,6 +500,7 @@ Route::prefix('manager')->middleware(['auth', 'role:Manager'])->group(function()
         Route::get('/cost-center/{costCenter}/ps-group/{psGroup}/detail/{lineId}',  [DailyActivityFurtherController::class,'managerDetail'])->name('manager.daily-activity-further.detail');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel',  [DailyActivityFurtherController::class,'exportExcelManager'])->name('manager.daily-activity-further.export-excel');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf',  [DailyActivityFurtherController::class,'exportPdfManager'])->name('manager.daily-activity-further.export-pdf');
+        Route::get('export-excel', [DailyActivityFurtherController::class, 'exportManagerIndexExcel'])->name('manager.daily-activity-further.all-export-excel');    
     });
     
     Route::prefix('daily-activity-slaughter-house')->group(function () {

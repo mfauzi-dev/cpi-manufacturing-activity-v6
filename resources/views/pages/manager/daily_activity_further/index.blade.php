@@ -73,6 +73,21 @@
                             </div>
                         </div>
 
+                        <div class="col-md-4 mb-3">
+                            <div class="form-group">
+                                <label>Line</label>
+                                <select class="form-control" id="line_id" name="line_id">
+                                    <option value="">Semua Line</option>
+
+                                    @foreach ($lines as $line)
+                                        <option value="{{ $line->id }}" @selected(request('line_id') == $line->id)>
+                                            {{ $line->code ? $line->code . ' - ' : '' }}{{ $line->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
                         {{-- START DATE --}}
                         <div class="col-md-4 mb-3">
                             <div class="form-group">
@@ -148,6 +163,20 @@
         <div class="card">
 
             <div class="card-body table-responsive">
+
+                <div class="mb-2">
+                    <a href="{{ route('manager.daily-activity-further.all-export-excel', [
+                        'cost_center_id' => request('cost_center_id'),
+                        'ps_group_id' => request('ps_group_id'),
+                        'line_id' => request('line_id'),
+                        'start_date' => request('start_date'),
+                        'end_date' => request('end_date'),
+                    ]) }}"
+                        class="btn btn-success">
+                        <i class="fas fa-file-excel"></i>
+                        Excel
+                    </a>
+                </div>
 
                 <table class="table table-bordered">
 

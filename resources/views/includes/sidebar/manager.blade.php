@@ -38,6 +38,12 @@
                             Tambah Karyawan
                         </a>
                     </li>
+
+                    <li class="{{ Request::routeIs('manager.employee.import') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('manager.employee.import') }}">
+                            Import Karyawan
+                        </a>
+                    </li>
                 </ul>
             </li>
 
@@ -82,7 +88,7 @@
                 </ul>
             </li>
 
-            @if (strtolower(auth()->user()->department->name ?? '') !== 'general affair')
+            @if (strtolower(auth()->user()->department->name ?? '') !== 'personalia dan general affair')
                 <li class="{{ Request::is('manager/employee-productivity*') ? 'active' : '' }}">
                     <a class="nav-link" href="{{ route('manager.employee-productivity.list') }}">
                         <i class="fas fa-chart-line"></i>
@@ -92,7 +98,8 @@
             @endif
 
             @if (strtolower(auth()->user()->department->name) === 'sausage' ||
-                    strtolower(auth()->user()->department->name) === 'slaughter house')
+                    strtolower(auth()->user()->department->name) === 'slaughter house' ||
+                    strtolower(auth()->user()->department->name ?? '') === 'personalia dan general affair')
                 <li class="{{ Request::is('manager/penggajian-borongan*') ? 'active' : '' }}">
                     <a class="nav-link" href="{{ route('manager.penggajian-borongan.index') }}">
                         <i class="fas fa-money-bill-wave"></i>

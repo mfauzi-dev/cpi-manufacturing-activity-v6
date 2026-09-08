@@ -152,6 +152,8 @@ class AttendanceController extends Controller
             });
         }
 
+        $totalEmployee = (clone $query)->count();
+
         $employees = $query
             ->leftJoin('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
             ->select('employees.*')
@@ -175,7 +177,8 @@ class AttendanceController extends Controller
                 'outsourcings',
                 'costCenters',
                 'date',
-                'lineList'
+                'lineList',
+                'totalEmployee'
             )
         );
     }

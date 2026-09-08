@@ -5,7 +5,6 @@ namespace App\Exports;
 use App\Models\CostCenter;
 use App\Models\DailyActivityDetail;
 use App\Models\DailyActivityDetailSlaughterHouse;
-use App\Models\Department;
 use App\Models\PenggajianBorongan;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -31,11 +30,8 @@ class PenggajianBoronganExport implements
     protected ?int $departmentId;
     protected $outsourcingId;
     protected $costCenterId;
-
     protected int $no = 0;
-
     protected $costCenters;
-
     protected array $costCenterUpah = [];
 
     public function __construct(
@@ -59,8 +55,7 @@ class PenggajianBoronganExport implements
                 ->orderBy('name')
                 ->get();
         } else {
-            $this->costCenters = CostCenter::orderBy('name')
-                ->get();
+            $this->costCenters = CostCenter::orderBy('name')->get();
         }
     }
 
@@ -222,7 +217,9 @@ class PenggajianBoronganExport implements
                     ->selectRaw('
                         daily_activity_slaughter_houses.employee_id,
                         daily_activity_slaughter_houses.cost_center_id,
-                        SUM(daily_activity_detail_slaughter_houses.total_harga) as total_upah
+                        SUM(
+                            daily_activity_detail_slaughter_houses.total_harga
+                        ) as total_upah
                     ')
                     ->groupBy(
                         'daily_activity_slaughter_houses.employee_id',
@@ -411,6 +408,7 @@ class PenggajianBoronganExport implements
                     'wrapText' => true,
                 ],
             ],
+
             2 => [
                 'font' => [
                     'bold' => true,
@@ -431,12 +429,13 @@ class PenggajianBoronganExport implements
 
                 $sheet = $event->sheet->getDelegate();
 
-                $lastRow = $sheet->getHighestRow();
+                $lastDataRow = $sheet->getHighestRow();
                 $lastColumn = $sheet->getHighestColumn();
 
                 $startCostCenterColumn = 8;
 
-                $costCenterCount = $this->costCenters->count();
+                $costCenterCount =
+                    $this->costCenters->count();
 
                 $endCostCenterColumn =
                     $startCostCenterColumn +
@@ -542,7 +541,7 @@ class PenggajianBoronganExport implements
 
                 $sheet
                     ->getStyle(
-                        "A1:{$lastColumn}{$lastRow}"
+                        "A1:{$lastColumn}{$lastDataRow}"
                     )
                     ->getBorders()
                     ->getAllBorders()
@@ -552,7 +551,7 @@ class PenggajianBoronganExport implements
 
                 $sheet
                     ->getStyle(
-                        "A1:{$lastColumn}{$lastRow}"
+                        "A1:{$lastColumn}{$lastDataRow}"
                     )
                     ->getAlignment()
                     ->setVertical(
@@ -569,7 +568,7 @@ class PenggajianBoronganExport implements
 
                 $sheet
                     ->getStyle(
-                        "F3:F{$lastRow}"
+                        "F3:F{$lastDataRow}"
                     )
                     ->getNumberFormat()
                     ->setFormatCode(
@@ -580,7 +579,7 @@ class PenggajianBoronganExport implements
 
                     $sheet
                         ->getStyle(
-                            "{$startCostCenterLetter}3:{$endCostCenterLetter}{$lastRow}"
+                            "{$startCostCenterLetter}3:{$endCostCenterLetter}{$lastDataRow}"
                         )
                         ->getNumberFormat()
                         ->setFormatCode(
@@ -590,7 +589,7 @@ class PenggajianBoronganExport implements
 
                 $sheet
                     ->getStyle(
-                        "{$totalUpahLetter}3:{$grandTotalLetter}{$lastRow}"
+                        "{$totalUpahLetter}3:{$grandTotalLetter}{$lastDataRow}"
                     )
                     ->getNumberFormat()
                     ->setFormatCode(
@@ -599,7 +598,7 @@ class PenggajianBoronganExport implements
 
                 $sheet
                     ->getStyle(
-                        "A3:A{$lastRow}"
+                        "A3:A{$lastDataRow}"
                     )
                     ->getAlignment()
                     ->setHorizontal(
@@ -608,12 +607,228 @@ class PenggajianBoronganExport implements
 
                 $sheet
                     ->getStyle(
-                        "F3:G{$lastRow}"
+                        "F3:G{$lastDataRow}"
                     )
                     ->getAlignment()
                     ->setHorizontal(
                         Alignment::HORIZONTAL_CENTER
                     );
+
+                /*
+                 * GRAND TOTAL
+                 */
+                $grandTotalRow = $lastDataRow + 1;
+
+                $sheet->setCellValue(
+                    "A{$grandTotalRow}",
+                    'GRAND TOTAL'
+                );
+
+                /*
+                 * Merge A sampai E
+                 */
+                $sheet->mergeCells(
+                    "A{$grandTotalRow}:E{$grandTotalRow}"
+                );
+
+                /*
+                 * Total Hasil Proses
+                 */
+                $sheet->setCellValue(
+                    "F{$grandTotalRow}",
+                    "=SUM(F3:F{$lastDataRow})"
+                );
+
+                /*
+                 * Total Hari
+                 */
+                $sheet->setCellValue(
+                    "G{$grandTotalRow}",
+                    "=SUM(G3:G{$lastDataRow})"
+                );
+
+                /*
+                 * Total masing-masing Cost Center
+                 */
+                if ($costCenterCount > 0) {
+
+                    for (
+                        $i = 0;
+                        $i < $costCenterCount;
+                        $i++
+                    ) {
+
+                        $column =
+                            $this->getColumnLetter(
+                                $startCostCenterColumn + $i
+                            );
+
+                        $sheet->setCellValue(
+                            "{$column}{$grandTotalRow}",
+                            "=SUM({$column}3:{$column}{$lastDataRow})"
+                        );
+                    }
+                }
+
+                /*
+                 * Total Upah
+                 */
+                $sheet->setCellValue(
+                    "{$totalUpahLetter}{$grandTotalRow}",
+                    "=SUM({$totalUpahLetter}3:{$totalUpahLetter}{$lastDataRow})"
+                );
+
+                /*
+                 * Jamsostek
+                 */
+                $sheet->setCellValue(
+                    $this->getColumnLetter(
+                        $totalUpahColumn + 1
+                    ) . $grandTotalRow,
+                    "=SUM(" .
+                    $this->getColumnLetter(
+                        $totalUpahColumn + 1
+                    ) .
+                    "3:" .
+                    $this->getColumnLetter(
+                        $totalUpahColumn + 1
+                    ) .
+                    "{$lastDataRow})"
+                );
+
+                /*
+                 * BPJS Kesehatan
+                 */
+                $sheet->setCellValue(
+                    $this->getColumnLetter(
+                        $totalUpahColumn + 2
+                    ) . $grandTotalRow,
+                    "=SUM(" .
+                    $this->getColumnLetter(
+                        $totalUpahColumn + 2
+                    ) .
+                    "3:" .
+                    $this->getColumnLetter(
+                        $totalUpahColumn + 2
+                    ) .
+                    "{$lastDataRow})"
+                );
+
+                /*
+                 * BPJS Pensiun
+                 */
+                $sheet->setCellValue(
+                    $this->getColumnLetter(
+                        $totalUpahColumn + 3
+                    ) . $grandTotalRow,
+                    "=SUM(" .
+                    $this->getColumnLetter(
+                        $totalUpahColumn + 3
+                    ) .
+                    "3:" .
+                    $this->getColumnLetter(
+                        $totalUpahColumn + 3
+                    ) .
+                    "{$lastDataRow})"
+                );
+
+                /*
+                 * Management Fee
+                 */
+                $sheet->setCellValue(
+                    $this->getColumnLetter(
+                        $totalUpahColumn + 4
+                    ) . $grandTotalRow,
+                    "=SUM(" .
+                    $this->getColumnLetter(
+                        $totalUpahColumn + 4
+                    ) .
+                    "3:" .
+                    $this->getColumnLetter(
+                        $totalUpahColumn + 4
+                    ) .
+                    "{$lastDataRow})"
+                );
+
+                /*
+                 * Grand Total Upah
+                 */
+                $sheet->setCellValue(
+                    $grandTotalLetter . $grandTotalRow,
+                    "=SUM({$grandTotalLetter}3:{$grandTotalLetter}{$lastDataRow})"
+                );
+
+                /*
+                 * Style GRAND TOTAL
+                 */
+                $sheet
+                    ->getStyle(
+                        "A{$grandTotalRow}:{$lastColumn}{$grandTotalRow}"
+                    )
+                    ->getFont()
+                    ->setBold(true);
+
+                $sheet
+                    ->getStyle(
+                        "A{$grandTotalRow}:{$lastColumn}{$grandTotalRow}"
+                    )
+                    ->getBorders()
+                    ->getAllBorders()
+                    ->setBorderStyle(
+                        Border::BORDER_THIN
+                    );
+
+                $sheet
+                    ->getStyle(
+                        "A{$grandTotalRow}:{$lastColumn}{$grandTotalRow}"
+                    )
+                    ->getAlignment()
+                    ->setVertical(
+                        Alignment::VERTICAL_CENTER
+                    );
+
+                $sheet
+                    ->getStyle(
+                        "A{$grandTotalRow}:{$lastColumn}{$grandTotalRow}"
+                    )
+                    ->getAlignment()
+                    ->setHorizontal(
+                        Alignment::HORIZONTAL_CENTER
+                    );
+
+                $sheet
+                    ->getStyle(
+                        "F{$grandTotalRow}:{$grandTotalLetter}{$grandTotalRow}"
+                    )
+                    ->getNumberFormat()
+                    ->setFormatCode(
+                        '#,##0.00'
+                    );
+
+                if ($costCenterCount > 0) {
+
+                    $sheet
+                        ->getStyle(
+                            "{$startCostCenterLetter}{$grandTotalRow}:{$endCostCenterLetter}{$grandTotalRow}"
+                        )
+                        ->getNumberFormat()
+                        ->setFormatCode(
+                            '#,##0'
+                        );
+                }
+
+                $sheet
+                    ->getStyle(
+                        "{$totalUpahLetter}{$grandTotalRow}:{$grandTotalLetter}{$grandTotalRow}"
+                    )
+                    ->getNumberFormat()
+                    ->setFormatCode(
+                        '#,##0'
+                    );
+
+                $sheet
+                    ->getRowDimension($grandTotalRow)
+                    ->setRowHeight(25);
             },
         ];
     }

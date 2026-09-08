@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\DailyActivityFurtherExport;
+use App\Exports\DailyActivityFurtherIndexExport;
 use App\Models\CostCenter;
 use App\Models\DailyActivityFurther;
 use App\Models\DailyActivityDetailFurther;
@@ -889,6 +890,112 @@ class DailyActivityFurtherController extends Controller
                 $toDate,
                 $adminDepartmentId,
                 $lineId
+            ),
+            $fileName
+        );
+    }
+
+    public function exportIndexExcel(Request $request)
+    {
+        $adminDepartmentId = auth()->user()->department_id;
+
+        abort_unless(
+            $adminDepartmentId,
+            403,
+            'Akun Anda belum terhubung ke department manapun.'
+        );
+
+        $costCenterId = $request->input('cost_center_id');
+        $psGroupId = $request->input('ps_group_id');
+        $lineId = $request->input('line_id');
+
+        $fromDate = $request->input('start_date');
+        $toDate = $request->input('end_date');
+
+        $fileName = 'daily-activity-further';
+
+        if ($fromDate && $toDate) {
+            $fileName .= "-{$fromDate}-to-{$toDate}";
+        }
+
+        $fileName .= '.xlsx';
+
+        return Excel::download(
+            new DailyActivityFurtherIndexExport(
+                $costCenterId,
+                $psGroupId,
+                $lineId,
+                $fromDate,
+                $toDate,
+                $adminDepartmentId
+            ),
+            $fileName
+        );
+    }
+
+    public function exportManagerIndexExcel(Request $request)
+    {
+        $managerDepartmentId = auth()->user()->department_id;
+
+        abort_unless(
+            $managerDepartmentId,
+            403,
+            'Akun Anda belum terhubung ke department manapun.'
+        );
+
+        $costCenterId = $request->input('cost_center_id');
+        $psGroupId = $request->input('ps_group_id');
+        $lineId = $request->input('line_id');
+
+        $fromDate = $request->input('start_date');
+        $toDate = $request->input('end_date');
+
+        $fileName = 'daily-activity-further-manager';
+
+        if ($fromDate && $toDate) {
+            $fileName .= "-{$fromDate}-to-{$toDate}";
+        }
+
+        $fileName .= '.xlsx';
+
+        return Excel::download(
+            new DailyActivityFurtherIndexExport(
+                $costCenterId,
+                $psGroupId,
+                $lineId,
+                $fromDate,
+                $toDate,
+                $managerDepartmentId
+            ),
+            $fileName
+        );
+    }
+
+    public function exportGeneralManagerIndexExcel(Request $request)
+    {
+        $costCenterId = $request->input('cost_center_id');
+        $psGroupId = $request->input('ps_group_id');
+        $lineId = $request->input('line_id');
+
+        $fromDate = $request->input('start_date');
+        $toDate = $request->input('end_date');
+
+        $fileName = 'daily-activity-further-general-manager';
+
+        if ($fromDate && $toDate) {
+            $fileName .= "-{$fromDate}-to-{$toDate}";
+        }
+
+        $fileName .= '.xlsx';
+
+        return Excel::download(
+            new DailyActivityFurtherIndexExport(
+                $costCenterId,
+                $psGroupId,
+                $lineId,
+                $fromDate,
+                $toDate,
+                null
             ),
             $fileName
         );

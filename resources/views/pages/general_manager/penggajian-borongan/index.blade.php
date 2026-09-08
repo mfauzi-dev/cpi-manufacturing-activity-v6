@@ -27,7 +27,6 @@
 @section('content')
 
     <div class="section-header">
-
         <h1>Penggajian Borongan</h1>
 
         <div class="section-header-breadcrumb">
@@ -35,20 +34,17 @@
                 Penggajian Borongan
             </div>
         </div>
-
     </div>
 
     <div class="row">
 
         <div class="col-lg-4 col-md-6 col-sm-6 col-12">
             <div class="card card-statistic-1">
-
                 <div class="card-icon bg-primary">
                     <i class="fas fa-users"></i>
                 </div>
 
                 <div class="card-wrap">
-
                     <div class="card-header">
                         <h4>Total Karyawan</h4>
                     </div>
@@ -56,21 +52,17 @@
                     <div class="card-body">
                         {{ $payrolls->total() }} orang
                     </div>
-
                 </div>
-
             </div>
         </div>
 
         <div class="col-lg-4 col-md-6 col-sm-6 col-12">
             <div class="card card-statistic-1">
-
                 <div class="card-icon bg-info">
                     <i class="fas fa-weight-hanging"></i>
                 </div>
 
                 <div class="card-wrap">
-
                     <div class="card-header">
                         <h4>Total Produksi</h4>
                     </div>
@@ -78,21 +70,17 @@
                     <div class="card-body">
                         {{ number_format($grandTotalKg, 2, ',', '.') }} Kg
                     </div>
-
                 </div>
-
             </div>
         </div>
 
         <div class="col-lg-4 col-md-6 col-sm-6 col-12">
             <div class="card card-statistic-1">
-
                 <div class="card-icon bg-warning">
                     <i class="fas fa-wallet"></i>
                 </div>
 
                 <div class="card-wrap">
-
                     <div class="card-header">
                         <h4>Total Upah</h4>
                     </div>
@@ -100,9 +88,7 @@
                     <div class="card-body">
                         Rp {{ number_format($grandTotalUpah, 0, ',', '.') }}
                     </div>
-
                 </div>
-
             </div>
         </div>
 
@@ -121,53 +107,35 @@
                 <div class="row">
 
                     <div class="col-md-3">
-
                         <div class="form-group">
-
                             <label>Bulan</label>
 
                             <select name="month" class="form-control">
-
                                 @foreach (range(1, 12) as $m)
                                     <option value="{{ $m }}" {{ (int) $month === $m ? 'selected' : '' }}>
-
                                         {{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}
-
                                     </option>
                                 @endforeach
-
                             </select>
-
                         </div>
-
                     </div>
 
                     <div class="col-md-3">
-
                         <div class="form-group">
-
                             <label>Tahun</label>
 
                             <select name="year" class="form-control">
-
                                 @foreach (range(now()->year, now()->year - 3) as $y)
                                     <option value="{{ $y }}" {{ (int) $year === $y ? 'selected' : '' }}>
-
                                         {{ $y }}
-
                                     </option>
                                 @endforeach
-
                             </select>
-
                         </div>
-
                     </div>
 
                     <div class="col-md-3">
-
                         <div class="form-group">
-
                             <label>Department</label>
 
                             <select name="department_id" id="department_id" class="form-control">
@@ -179,22 +147,16 @@
                                 @foreach ($departments as $department)
                                     <option value="{{ $department->id }}"
                                         {{ (string) $departmentId === (string) $department->id ? 'selected' : '' }}>
-
                                         {{ $department->name }}
-
                                     </option>
                                 @endforeach
 
                             </select>
-
                         </div>
-
                     </div>
 
                     <div class="col-md-3">
-
                         <div class="form-group">
-
                             <label>Cost Center</label>
 
                             <select name="cost_center_id" id="cost_center_id" class="form-control">
@@ -206,22 +168,16 @@
                                 @foreach ($costCenters as $costCenter)
                                     <option value="{{ $costCenter->id }}"
                                         {{ (string) $costCenterId === (string) $costCenter->id ? 'selected' : '' }}>
-
-                                        {{ $costCenter->name }}
-
+                                        {{ $costCenter->code }} - {{ $costCenter->name }}
                                     </option>
                                 @endforeach
 
                             </select>
-
                         </div>
-
                     </div>
 
                     <div class="col-md-3">
-
                         <div class="form-group">
-
                             <label>Outsourcing</label>
 
                             <select name="outsourcing_id" class="form-control">
@@ -233,16 +189,12 @@
                                 @foreach ($outsourcings as $outsourcing)
                                     <option value="{{ $outsourcing->id }}"
                                         {{ (string) $outsourcingId === (string) $outsourcing->id ? 'selected' : '' }}>
-
                                         {{ $outsourcing->name }}
-
                                     </option>
                                 @endforeach
 
                             </select>
-
                         </div>
-
                     </div>
 
                 </div>
@@ -250,16 +202,12 @@
                 <div class="mt-3">
 
                     <button type="submit" class="btn btn-primary">
-
                         <i class="fas fa-search"></i>
                         Filter
-
                     </button>
 
                     <a href="{{ route('general-manager.penggajian-borongan.index') }}" class="btn btn-secondary">
-
                         Reset
-
                     </a>
 
                 </div>
@@ -346,7 +294,7 @@
                                 Total Hari
                             </th>
 
-                            <th colspan="{{ $costCenters->count() }}" class="text-center">
+                            <th colspan="{{ $allCostCenters->count() }}" class="text-center">
                                 UPAH YANG DITERIMA
                             </th>
 
@@ -380,11 +328,17 @@
 
                         <tr>
 
-                            @foreach ($costCenters as $costCenter)
+                            @foreach ($allCostCenters as $costCenter)
                                 <th class="text-center">
+
                                     {{ $costCenter->code }}
+
                                     <br>
-                                    <small class="cost-center-name">{{ $costCenter->name }}</small>
+
+                                    <small class="cost-center-name">
+                                        {{ $costCenter->name }}
+                                    </small>
+
                                 </th>
                             @endforeach
 
@@ -425,12 +379,12 @@
                                     {{ $payroll->total_hari_kerja ?? 0 }}
                                 </td>
 
-                                @foreach ($costCenters as $costCenter)
-                                    <td class="text-right">
+                                @foreach ($allCostCenters as $costCenter)
+                                    @php
+                                        $upahCostCenter = $payroll->cost_center_upah[$costCenter->id] ?? 0;
+                                    @endphp
 
-                                        @php
-                                            $upahCostCenter = $payroll->cost_center_upah[$costCenter->id] ?? 0;
-                                        @endphp
+                                    <td class="text-right">
 
                                         @if ($upahCostCenter > 0)
                                             Rp {{ number_format($upahCostCenter, 0, ',', '.') }}
@@ -442,39 +396,27 @@
                                 @endforeach
 
                                 <td class="text-right">
-
                                     Rp {{ number_format($payroll->total_upah ?? 0, 0, ',', '.') }}
-
                                 </td>
 
                                 <td class="text-right">
-
                                     Rp {{ number_format($payroll->jamsostek ?? 0, 0, ',', '.') }}
-
                                 </td>
 
                                 <td class="text-right">
-
                                     Rp {{ number_format($payroll->bpjs_kesehatan ?? 0, 0, ',', '.') }}
-
                                 </td>
 
                                 <td class="text-right">
-
                                     Rp {{ number_format($payroll->bpjs_pensiun ?? 0, 0, ',', '.') }}
-
                                 </td>
 
                                 <td class="text-right">
-
                                     Rp {{ number_format($payroll->managemen_fee ?? 0, 0, ',', '.') }}
-
                                 </td>
 
                                 <td class="text-right font-weight-bold text-success">
-
                                     Rp {{ number_format($payroll->grand_total_upah ?? 0, 0, ',', '.') }}
-
                                 </td>
 
                             </tr>
@@ -483,7 +425,7 @@
 
                             <tr>
 
-                                <td colspan="{{ 14 + $costCenters->count() }}" class="text-center py-4 text-muted">
+                                <td colspan="{{ 14 + $allCostCenters->count() }}" class="text-center py-4 text-muted">
 
                                     Belum ada penggajian borongan untuk periode ini.
 
@@ -501,9 +443,7 @@
         </div>
 
         <div class="card-footer text-right">
-
             {{ $payrolls->withQueryString()->links() }}
-
         </div>
 
     </div>
@@ -557,15 +497,15 @@
                                 costCenter.id;
 
                             option.textContent =
+                                costCenter.code +
+                                ' - ' +
                                 costCenter.name;
 
                             if (
                                 String(costCenter.id) ===
                                 String(selectedCostCenterId)
                             ) {
-
                                 option.selected = true;
-
                             }
 
                             costCenterSelect.appendChild(option);
@@ -588,7 +528,9 @@
                 'change',
                 function() {
 
-                    loadCostCenters(this.value);
+                    loadCostCenters(
+                        this.value
+                    );
 
                 }
             );

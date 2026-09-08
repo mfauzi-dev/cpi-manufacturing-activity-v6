@@ -54,7 +54,8 @@
             </li>
 
             @if (strtolower(auth()->user()->department->name) === 'sausage' ||
-                    strtolower(auth()->user()->department->name) === 'slaughter house')
+                    strtolower(auth()->user()->department->name) === 'slaughter house' ||
+                    strtolower(auth()->user()->department->name) === 'personalia dan general affair')
                 <li class="{{ Request::is('admin-production/penggajian-borongan*') ? 'active' : '' }}">
                     <a class="nav-link" href="{{ route('admin-production.penggajian-borongan.index') }}">
                         <i class="fas fa-money-bill-wave"></i>

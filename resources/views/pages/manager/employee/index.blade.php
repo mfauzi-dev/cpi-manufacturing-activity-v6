@@ -76,10 +76,28 @@
                             </div>
                         </div>
 
+                        @if ($isHrDepartment)
+                            <div class="col-md-3 mb-2">
+                                <div class="form-group">
+                                    <label>Department</label>
+                                    <select name="department_id" id="department_id" class="form-control">
+                                        <option value="">Semua Department</option>
+
+                                        @foreach ($departmentList as $department)
+                                            <option value="{{ $department->id }}"
+                                                {{ request('department_id') == $department->id ? 'selected' : '' }}>
+                                                {{ $department->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        @endif
+
                         <div class="col-md-3 mb-2">
                             <div class="form-group">
                                 <label>Cost Center</label>
-                                <select name="cost_center_id" class="form-control">
+                                <select name="cost_center_id" id="cost_center_id" class="form-control">
                                     <option value="">Semua Cost Center</option>
 
                                     @foreach ($costCenterList as $costCenter)
@@ -154,6 +172,9 @@
                         <tr>
                             <th>NIK</th>
                             <th>Nama</th>
+                            @if ($isHrDepartment)
+                                <th>Department</th>
+                            @endif
                             <th>Status</th>
                             <th>Status Aktif</th>
                             <th>Cost Center</th>
@@ -176,6 +197,12 @@
                                 <td>
                                     {{ $employee->name }}
                                 </td>
+
+                                @if ($isHrDepartment)
+                                    <td>
+                                        {{ $employee->department->name ?? '-' }}
+                                    </td>
+                                @endif
 
                                 <td>
                                     @if ($employee->employment_status == 'permanent')
@@ -249,7 +276,7 @@
                         @empty
 
                             <tr>
-                                <td colspan="9" class="text-center text-muted">
+                                <td colspan="{{ $isHrDepartment ? 10 : 9 }}" class="text-center text-muted">
                                     Tidak ada data
                                 </td>
                             </tr>
@@ -269,3 +296,42 @@
 
     </div>
 @endsection
+
+@if ($isHrDepartment)
+    @push('scripts')
+        <script>
+            $(document).ready(function() {
+
+                $('#department_id').on('change', function() {
+
+                    let departmentId = $(this).val();
+                    let $costCenter = $('#cost_center_id');
+
+                    $costCenter.html('<option value="">Semua Cost Center</option>');
+
+                    if (!departmentId) {
+                        return;
+                    }
+
+                    $.ajax({
+                        url: "{{ url('/employee/cost-centers-by-department') }}/" + departmentId,
+                        type: "GET",
+                        success: function(costCenters) {
+                            costCenters.forEach(function(cc) {
+                                $costCenter.append(
+                                    '<option value="' + cc.id + '">' +
+                                    cc.code + ' - ' + cc.name +
+                                    '</option>'
+                                );
+                            });
+                        },
+                        error: function(xhr) {
+                            console.log('Gagal mengambil cost center:', xhr.responseText);
+                        }
+                    });
+                });
+
+            });
+        </script>
+    @endpush
+@endif

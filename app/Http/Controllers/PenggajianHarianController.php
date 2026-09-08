@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\PenggajianHarianExport;
+use App\Models\CostCenter;
 use App\Models\Department;
 use App\Models\Outsourcing;
 use App\Models\PenggajianHarian;
@@ -15,12 +16,24 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class PenggajianHarianController extends Controller
 {
+
+    public function getCostCenters($departmentId)
+    {
+        $costCenters = CostCenter::where('department_id', $departmentId)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return response()->json($costCenters);
+    }
+
     public function generalManagerIndex(Request $request)
     {
         $month = (int) $request->input('month', now()->month);
         $year = (int) $request->input('year', now()->year);
         $departmentId = $request->input('department_id');
         $outsourcingId = $request->input('outsourcing_id');
+        $costCenterId = $request->input('cost_center_id');
+        $search = $request->input('search');
 
         $departments = Department::orderBy('name')->get();
         $outsourcings = Outsourcing::orderBy('name')->get();
@@ -31,7 +44,7 @@ class PenggajianHarianController extends Controller
         ])
             ->where('period_month', $month)
             ->where('period_year', $year)
-            ->whereHas('employee', function ($q) use ($departmentId, $outsourcingId) {
+            ->whereHas('employee', function ($q) use ($departmentId, $outsourcingId, $costCenterId, $search) {
 
                 $q->whereIn('employee_status', ['harian', 'harian_kontrak']);
 
@@ -39,8 +52,19 @@ class PenggajianHarianController extends Controller
                     $q->where('department_id', $departmentId);
                 }
 
+                if ($costCenterId) {
+                    $q->where('cost_center_id', $costCenterId);
+                }
+
                 if ($outsourcingId) {
                     $q->where('outsourcing_id', $outsourcingId);
+                }
+
+                if ($search) {
+                    $q->where(function ($sub) use ($search) {
+                        $sub->where('nik', 'like', "%{$search}%")
+                            ->orWhere('name', 'like', "%{$search}%");
+                    });
                 }
             })
             ->orderBy('employee_id');
@@ -96,39 +120,82 @@ class PenggajianHarianController extends Controller
                 'grandTotalNetSalary',
                 'ump',
                 'hariKerjaStandar',
-                'periodLabel'
+                'periodLabel',
+                'costCenterId',
+                'search'
             )
         );
     }
 
     public function index(Request $request)
     {
-        $month = (int) $request->input('month', now()->month);
-        $year = (int) $request->input('year', now()->year);
+        $user = Auth::user();
 
-        $departmentId = Auth::user()->department_id;
+        $departmentName = strtolower(trim($user->department?->name ?? ''));
+
+        $isHrDepartment =
+            str_contains($departmentName, 'personalia') &&
+            str_contains($departmentName, 'general affair');
+
+        $loginDepartmentId = $user->department_id;
 
         abort_unless(
-            $departmentId,
+            $loginDepartmentId,
             403,
             'Akun Anda belum terhubung ke department manapun.'
         );
 
+        $month = (int) $request->input('month', now()->month);
+        $year = (int) $request->input('year', now()->year);
         $outsourcingId = $request->input('outsourcing_id');
+        $costCenterId = $request->input('cost_center_id');
+        $search = trim($request->input('search', ''));
+
+        $departmentId = $isHrDepartment
+            ? $request->input('department_id')
+            : $loginDepartmentId;
 
         $query = PenggajianHarian::with([
             'employee.department',
             'employee.outsourcing',
+            'employee.costCenter',
         ])
             ->where('period_month', $month)
             ->where('period_year', $year)
-            ->whereHas('employee', function ($q) use ($departmentId, $outsourcingId) {
+            ->whereHas('employee', function ($q) use (
+                $departmentId,
+                $isHrDepartment,
+                $loginDepartmentId,
+                $outsourcingId,
+                $costCenterId,
+                $search
+            ) {
+                $q->whereIn('employee_status', [
+                    'harian',
+                    'harian_kontrak',
+                ]);
 
-                $q->whereIn('employee_status', ['harian', 'harian_kontrak'])
-                    ->where('department_id', $departmentId);
+                if ($isHrDepartment) {
+                    if ($departmentId) {
+                        $q->where('department_id', $departmentId);
+                    }
+                } else {
+                    $q->where('department_id', $loginDepartmentId);
+                }
 
                 if ($outsourcingId) {
                     $q->where('outsourcing_id', $outsourcingId);
+                }
+
+                if ($costCenterId) {
+                    $q->where('cost_center_id', $costCenterId);
+                }
+
+                if ($search) {
+                    $q->where(function ($sub) use ($search) {
+                        $sub->where('nik', 'like', "%{$search}%")
+                            ->orWhere('name', 'like', "%{$search}%");
+                    });
                 }
             })
             ->orderBy('employee_id');
@@ -142,6 +209,25 @@ class PenggajianHarianController extends Controller
             ->withQueryString();
 
         $outsourcings = Outsourcing::orderBy('name')->get();
+
+        if ($isHrDepartment) {
+            $departments = Department::orderBy('name')->get();
+
+            $costCenters = $departmentId
+                ? CostCenter::where('department_id', $departmentId)
+                    ->orderBy('name')
+                    ->get()
+                : CostCenter::orderBy('name')->get();
+        } else {
+            $departments = collect();
+
+            $costCenters = CostCenter::where(
+                'department_id',
+                $loginDepartmentId
+            )
+                ->orderBy('name')
+                ->get();
+        }
 
         $config = WageConfig::where('tahun', $year)->first();
 
@@ -184,39 +270,70 @@ class PenggajianHarianController extends Controller
                 'hariKerjaStandar',
                 'periodLabel',
                 'outsourcings',
-                'outsourcingId'
+                'outsourcingId',
+                'costCenterId',
+                'departmentId',
+                'search',
+                'departments',
+                'costCenters',
+                'isHrDepartment'
             )
         );
     }
 
     public function managerIndex(Request $request)
     {
-        $month = (int) $request->input('month', now()->month);
-        $year = (int) $request->input('year', now()->year);
+        $user = Auth::user();
+        $departmentName = strtolower($user->department?->name ?? '');
+        $isHrDepartment = $departmentName === 'personalia dan general affair';
 
-        $departmentId = Auth::user()->department_id;
+        $managerDepartmentId = $user->department_id;
 
         abort_unless(
-            $departmentId,
+            $managerDepartmentId,
             403,
             'Akun Anda belum terhubung ke department manapun.'
         );
 
+        $month = (int) $request->input('month', now()->month);
+        $year = (int) $request->input('year', now()->year);
         $outsourcingId = $request->input('outsourcing_id');
+        $search = $request->input('search');
+        $departmentId = $isHrDepartment ? $request->input('department_id') : $managerDepartmentId;
+        $costCenterId = $request->input('cost_center_id');
 
         $query = PenggajianHarian::with([
             'employee.department',
             'employee.outsourcing',
+            'employee.costCenter',
         ])
             ->where('period_month', $month)
             ->where('period_year', $year)
-            ->whereHas('employee', function ($q) use ($departmentId, $outsourcingId) {
+            ->whereHas('employee', function ($q) use ($departmentId, $outsourcingId, $costCenterId, $search, $isHrDepartment, $managerDepartmentId) {
 
-                $q->whereIn('employee_status', ['harian', 'harian_kontrak'])
-                    ->where('department_id', $departmentId);
+                $q->whereIn('employee_status', ['harian', 'harian_kontrak']);
+
+                if ($isHrDepartment) {
+                    if ($departmentId) {
+                        $q->where('department_id', $departmentId);
+                    }
+                } else {
+                    $q->where('department_id', $managerDepartmentId);
+                }
 
                 if ($outsourcingId) {
                     $q->where('outsourcing_id', $outsourcingId);
+                }
+
+                if ($costCenterId) {
+                    $q->where('cost_center_id', $costCenterId);
+                }
+
+                if ($search) {
+                    $q->where(function ($sub) use ($search) {
+                        $sub->where('nik', 'like', "%{$search}%")
+                            ->orWhere('name', 'like', "%{$search}%");
+                    });
                 }
             })
             ->orderBy('employee_id');
@@ -230,6 +347,14 @@ class PenggajianHarianController extends Controller
             ->withQueryString();
 
         $outsourcings = Outsourcing::orderBy('name')->get();
+
+        $departments = $isHrDepartment
+            ? Department::orderBy('name')->get()
+            : collect();
+
+        $costCenters = $isHrDepartment
+            ? CostCenter::orderBy('name')->get()
+            : CostCenter::where('department_id', $managerDepartmentId)->orderBy('name')->get();
 
         $config = WageConfig::where('tahun', $year)->first();
 
@@ -272,7 +397,13 @@ class PenggajianHarianController extends Controller
                 'hariKerjaStandar',
                 'periodLabel',
                 'outsourcings',
-                'outsourcingId'
+                'outsourcingId',
+                'search',
+                'departments',
+                'departmentId',
+                'costCenters',
+                'costCenterId',
+                'isHrDepartment'
             )
         );
     }
@@ -375,31 +506,57 @@ class PenggajianHarianController extends Controller
 
     public function exportPdfManager(Request $request)
     {
-        $month = (int) $request->input('month', now()->month);
-        $year = (int) $request->input('year', now()->year);
+        $user = Auth::user();
+        $departmentName = strtolower($user->department?->name ?? '');
+        $isHrDepartment = $departmentName === 'personalia dan general affair';
 
-        $departmentId = Auth::user()->department_id;
-        $outsourcingId = $request->input('outsourcing_id');
+        $managerDepartmentId = $user->department_id;
 
         abort_unless(
-            $departmentId,
+            $managerDepartmentId,
             403,
             'Akun Anda belum terhubung ke department manapun.'
         );
 
+        $month = (int) $request->input('month', now()->month);
+        $year = (int) $request->input('year', now()->year);
+        $outsourcingId = $request->input('outsourcing_id');
+        $search = $request->input('search');
+        $departmentId = $isHrDepartment ? $request->input('department_id') : $managerDepartmentId;
+        $costCenterId = $request->input('cost_center_id');
+
         $query = PenggajianHarian::with([
             'employee.department',
             'employee.outsourcing',
+            'employee.costCenter',
         ])
             ->where('period_month', $month)
             ->where('period_year', $year)
-            ->whereHas('employee', function ($q) use ($departmentId, $outsourcingId) {
+            ->whereHas('employee', function ($q) use ($departmentId, $outsourcingId, $costCenterId, $search, $isHrDepartment, $managerDepartmentId) {
 
-                $q->whereIn('employee_status', ['harian', 'harian_kontrak'])
-                    ->where('department_id', $departmentId);
+                $q->whereIn('employee_status', ['harian', 'harian_kontrak']);
+
+                if ($isHrDepartment) {
+                    if ($departmentId) {
+                        $q->where('department_id', $departmentId);
+                    }
+                } else {
+                    $q->where('department_id', $managerDepartmentId);
+                }
 
                 if ($outsourcingId) {
                     $q->where('outsourcing_id', $outsourcingId);
+                }
+
+                if ($costCenterId) {
+                    $q->where('cost_center_id', $costCenterId);
+                }
+
+                if ($search) {
+                    $q->where(function ($sub) use ($search) {
+                        $sub->where('nik', 'like', "%{$search}%")
+                            ->orWhere('name', 'like', "%{$search}%");
+                    });
                 }
             })
             ->orderBy('employee_id');
@@ -434,7 +591,9 @@ class PenggajianHarianController extends Controller
         $periodLabel = Carbon::create($year, $month, 1)
             ->translatedFormat('F Y');
 
-        $departmentName = Auth::user()->department->name ?? '-';
+        $departmentName = $isHrDepartment
+            ? ($departmentId ? (Department::find($departmentId)->name ?? '-') : 'Semua Department')
+            : ($user->department->name ?? '-');
 
         $outsourcingName = 'Semua Outsourcing';
 
@@ -474,6 +633,7 @@ class PenggajianHarianController extends Controller
 
         $departmentId = Auth::user()->department_id;
         $outsourcingId = $request->input('outsourcing_id');
+        $costCenterId = $request->input('cost_center_id');
 
         abort_unless(
             $departmentId,
@@ -487,13 +647,17 @@ class PenggajianHarianController extends Controller
         ])
             ->where('period_month', $month)
             ->where('period_year', $year)
-            ->whereHas('employee', function ($q) use ($departmentId, $outsourcingId) {
+            ->whereHas('employee', function ($q) use ($departmentId, $outsourcingId, $costCenterId) {
 
                 $q->whereIn('employee_status', ['harian', 'harian_kontrak'])
                     ->where('department_id', $departmentId);
 
                 if ($outsourcingId) {
                     $q->where('outsourcing_id', $outsourcingId);
+                }
+
+                if ($costCenterId) {
+                    $q->where('cost_center_id', $costCenterId);
                 }
             })
             ->orderBy('employee_id');
@@ -566,8 +730,10 @@ class PenggajianHarianController extends Controller
         $month = (int) $request->input('month', now()->month);
         $year = (int) $request->input('year', now()->year);
         $outsourcingId = $request->input('outsourcing_id');
+        $costCenterId = $request->input('cost_center_id');
 
         $departmentId = Auth::user()->department_id;
+        
 
         abort_unless(
             $departmentId,
@@ -583,7 +749,8 @@ class PenggajianHarianController extends Controller
                 $month,
                 $year,
                 $departmentId,
-                $outsourcingId
+                $outsourcingId,
+                $costCenterId
             ),
             'Penggajian-Harian-' . $periodLabel . '.xlsx'
         );
@@ -591,17 +758,25 @@ class PenggajianHarianController extends Controller
 
     public function exportExcelManager(Request $request)
     {
+        $user = Auth::user();
+        $departmentName = strtolower($user->department?->name ?? '');
+        $isHrDepartment = $departmentName === 'personalia dan general affair';
+
         $month = (int) $request->input('month', now()->month);
         $year = (int) $request->input('year', now()->year);
         $outsourcingId = $request->input('outsourcing_id');
 
-        $departmentId = Auth::user()->department_id;
+        $managerDepartmentId = $user->department_id;
 
         abort_unless(
-            $departmentId,
+            $managerDepartmentId,
             403,
             'Akun Anda belum terhubung ke department manapun.'
         );
+
+        $departmentId = $isHrDepartment
+            ? ($request->input('department_id') ? (int) $request->input('department_id') : null)
+            : $managerDepartmentId;
 
         $periodLabel = Carbon::create($year, $month, 1)
             ->translatedFormat('F-Y');

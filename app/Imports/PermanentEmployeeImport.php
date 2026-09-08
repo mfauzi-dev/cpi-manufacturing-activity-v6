@@ -5,6 +5,7 @@ namespace App\Imports;
 use App\Models\CostCenter;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\EmployeeSalary;
 use App\Models\PsGroup;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -56,6 +57,8 @@ class PermanentEmployeeImport implements ToCollection, WithHeadingRow
             $psGroupName = trim($row['ps_group'] ?? '');
             $gender = trim($row['gender'] ?? '');
             $status = strtolower(trim($row['status'] ?? ''));
+            $salaryRaw = trim($row['salary'] ?? '');
+            $tahunRaw = trim($row['tahun'] ?? '');
 
             if (empty($nik) && empty($name)) {
                 continue;
@@ -103,15 +106,34 @@ class PermanentEmployeeImport implements ToCollection, WithHeadingRow
                 'is_active' => $isActive,
             ];
 
+            $employee = null;
+
             if (!empty($nik)) {
-                Employee::updateOrCreate(
-                    ['nik' => $nik],
-                    $data
-                );
+                $employee = Employee::where('nik', $nik)->first();
+            }
+
+            if (!$employee && !empty($name)) {
+                $employee = Employee::where('name', $name)->first();
+            }
+
+            if ($employee) {
+                $employee->update($data);
             } else {
-                Employee::updateOrCreate(
-                    ['name' => $name],
-                    $data
+                $employee = Employee::create($data);
+            }
+
+            if ($salaryRaw !== '' && $tahunRaw !== '') {
+                $tahun = (int) $tahunRaw;
+                $basicSalary = (float) $salaryRaw;
+
+                EmployeeSalary::updateOrCreate(
+                    [
+                        'employee_id' => $employee->id,
+                        'tahun' => $tahun,
+                    ],
+                    [
+                        'basic_salary' => $basicSalary,
+                    ]
                 );
             }
         }

@@ -241,7 +241,11 @@ class EmployeeController extends Controller
 
     public function managerIndex(Request $request)
     {
-        $managerDepartmentId = auth()->user()->department_id;
+        $user = auth()->user();
+        $departmentName = strtolower($user->department?->name ?? '');
+        $isHrDepartment = $departmentName === 'personalia dan general affair';
+
+        $managerDepartmentId = $user->department_id;
 
         $request->validate([
             'search' => ['nullable', 'string'],
@@ -249,6 +253,7 @@ class EmployeeController extends Controller
             'employment_status' => ['nullable', 'in:permanent,outsourcing'],
             'employee_status' => ['nullable', 'in:cpi,borongan,harian'],
             'is_active' => ['nullable', 'in:0,1'],
+            'department_id' => ['nullable', 'exists:departments,id'],
             'cost_center_id' => ['nullable', 'exists:cost_centers,id'],
             'position_id' => ['nullable', 'exists:positions,id'],
             'level_id' => ['nullable', 'exists:levels,id'],
@@ -259,6 +264,7 @@ class EmployeeController extends Controller
         $employmentStatus = $request->employment_status;
         $employeeStatus = $request->employee_status;
         $isActive = $request->is_active;
+        $departmentId = $request->department_id;
         $costCenterId = $request->cost_center_id;
         $positionId = $request->position_id;
         $levelId = $request->level_id;
@@ -269,7 +275,17 @@ class EmployeeController extends Controller
             'psGroup',
             'position',
             'level'
-        ])->where('department_id', $managerDepartmentId);
+        ]);
+
+        if ($isHrDepartment) {
+            // HR bisa lihat semua department, atau filter ke department tertentu
+            if ($departmentId) {
+                $query->where('department_id', $departmentId);
+            }
+        } else {
+            // Non-HR selalu dibatasi ke department-nya sendiri
+            $query->where('department_id', $managerDepartmentId);
+        }
 
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -321,10 +337,19 @@ class EmployeeController extends Controller
             ->paginate($size)
             ->withQueryString();
 
-        $costCenterList = CostCenter::where(
-            'department_id',
-            $managerDepartmentId
-        )->orderBy('name')->get();
+        // Dropdown department: cuma HR yang butuh, non-HR gak perlu pilih (udah fix ke departmentnya)
+        $departmentList = $isHrDepartment
+            ? Department::orderBy('name')->get()
+            : collect();
+
+        // Dropdown cost center: awal load berdasarkan department yang lagi difilter (atau semua kalau HR belum filter)
+        if ($isHrDepartment) {
+            $costCenterList = $departmentId
+                ? CostCenter::where('department_id', $departmentId)->orderBy('name')->get()
+                : CostCenter::orderBy('name')->get();
+        } else {
+            $costCenterList = CostCenter::where('department_id', $managerDepartmentId)->orderBy('name')->get();
+        }
 
         $positionList = Position::orderBy('name')->get();
         $levelList = Level::orderBy('name')->get();
@@ -337,16 +362,18 @@ class EmployeeController extends Controller
                 'employmentStatus',
                 'employeeStatus',
                 'isActive',
+                'departmentId',
                 'costCenterId',
                 'positionId',
                 'levelId',
+                'departmentList',
                 'costCenterList',
                 'positionList',
-                'levelList'
+                'levelList',
+                'isHrDepartment'
             )
         );
     }
-
 
     public function create()
     {
@@ -770,27 +797,35 @@ class EmployeeController extends Controller
 
     public function managerEdit($id)
     {
-        $managerDepartmentId = auth()->user()->department_id;
+        $user = auth()->user();
+        $departmentName = strtolower($user->department?->name ?? '');
+        $isHrDepartment = $departmentName === 'personalia dan general affair';
 
-        $employee = Employee::where('id', $id)
-            ->where('department_id', $managerDepartmentId)
-            ->firstOrFail();
+        $managerDepartmentId = $user->department_id;
+
+        $employeeQuery = Employee::where('id', $id);
+
+        if (!$isHrDepartment) {
+            $employeeQuery->where('department_id', $managerDepartmentId);
+        }
+
+        $employee = $employeeQuery->firstOrFail();
 
         $outsourcingList = Outsourcing::orderBy('name')->get();
 
-        $departmentList = Department::where('id', $managerDepartmentId)
-            ->orderBy('name')
-            ->get();
+        $departmentList = $isHrDepartment
+            ? Department::orderBy('name')->get()
+            : Department::where('id', $managerDepartmentId)->orderBy('name')->get();
 
-        $costCenterList = CostCenter::where('department_id', $managerDepartmentId)
-            ->orderBy('name')
-            ->get();
+        $costCenterList = $isHrDepartment
+            ? CostCenter::orderBy('name')->get()
+            : CostCenter::where('department_id', $managerDepartmentId)->orderBy('name')->get();
 
-        $psGroupList = PsGroup::whereHas('costCenter', function ($query) use ($managerDepartmentId) {
-            $query->where('department_id', $managerDepartmentId);
-        })
-            ->orderBy('name')
-            ->get();
+        $psGroupList = $isHrDepartment
+            ? PsGroup::orderBy('name')->get()
+            : PsGroup::whereHas('costCenter', function ($query) use ($managerDepartmentId) {
+                $query->where('department_id', $managerDepartmentId);
+            })->orderBy('name')->get();
 
         $positionList = Position::orderBy('name')->get();
 
@@ -805,29 +840,109 @@ class EmployeeController extends Controller
                 'costCenterList',
                 'psGroupList',
                 'positionList',
-                'levels'
+                'levels',
+                'isHrDepartment'
             )
         );
     }
 
     public function managerDetail($id)
     {
-        $managerDepartmentId = auth()->user()->department_id;
+        $user = auth()->user();
+        $departmentName = strtolower($user->department?->name ?? '');
+        $isHrDepartment = $departmentName === 'personalia dan general affair';
 
-        $employee = Employee::with([
+        $managerDepartmentId = $user->department_id;
+
+        $employeeQuery = Employee::with([
             'outsourcing',
             'department',
             'costCenter',
             'psGroup',
             'position',
-        ])
-            ->where('id', $id)
-            ->where('department_id', $managerDepartmentId)
-            ->firstOrFail();
+        ])->where('id', $id);
+
+        if (!$isHrDepartment) {
+            $employeeQuery->where('department_id', $managerDepartmentId);
+        }
+
+        $employee = $employeeQuery->firstOrFail();
 
         return view(
             'pages.manager.employee.detail',
-            compact('employee')
+            compact('employee', 'isHrDepartment')
         );
+    }
+
+    public function managerImportPage()
+    {
+        $outsourcingList = Outsourcing::orderBy('name')->get();
+
+        return view(
+            'pages.manager.employee.import',
+            compact('outsourcingList')
+        );
+    }
+
+    public function managerUpload(Request $request)
+    {
+        $managerDepartmentId = auth()->user()->department_id;
+
+        $request->validate([
+            'employment_status' => [
+                'required',
+                'in:permanent,outsourcing',
+            ],
+
+            'outsourcing_id' => [
+                'required_if:employment_status,outsourcing',
+                'nullable',
+                'exists:outsourcings,id',
+            ],
+
+            'employee_status' => [
+                'required_if:employment_status,outsourcing',
+                'nullable',
+                'in:borongan,harian',
+            ],
+
+            'file' => [
+                'required',
+                'mimes:xlsx,xls',
+            ],
+        ]);
+
+        try {
+            if ($request->employment_status === 'permanent') {
+                Excel::import(
+                    new PermanentEmployeeImport(
+                        $request->employment_status,
+                        $managerDepartmentId
+                    ),
+                    $request->file('file')
+                );
+            } else {
+                $outsourcing = Outsourcing::findOrFail(
+                    $request->outsourcing_id
+                );
+
+                Excel::import(
+                    new OutsourcingEmployeeImport(
+                        $outsourcing,
+                        $request->employee_status,
+                        $managerDepartmentId
+                    ),
+                    $request->file('file')
+                );
+            }
+
+            return redirect()
+                ->route('manager.employee.index')
+                ->with('success', 'Import karyawan berhasil.');
+        } catch (\Throwable $e) {
+            return back()
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
     }
 }

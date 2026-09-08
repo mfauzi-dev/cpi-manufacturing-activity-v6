@@ -159,15 +159,39 @@
                 </div>
 
                 {{-- DEPARTMENT --}}
-                <div class="form-group">
-                    <label>Department</label>
+                @if ($isHrDepartment)
+                    <div class="form-group">
+                        <label>Department</label>
 
-                    <input type="text" class="form-control" value="{{ auth()->user()->department->name ?? '-' }}"
-                        readonly>
-                </div>
+                        <select name="department_id" id="department_id"
+                            class="form-control @error('department_id') is-invalid @enderror">
+                            <option value="">-- Pilih Department --</option>
 
-                {{-- Hidden Department ID --}}
-                <input type="hidden" name="department_id" value="{{ auth()->user()->department_id }}">
+                            @foreach ($departmentList as $department)
+                                <option value="{{ $department->id }}"
+                                    {{ old('department_id', $employee->department_id) == $department->id ? 'selected' : '' }}>
+                                    {{ $department->name }}
+                                </option>
+                            @endforeach
+                        </select>
+
+                        @error('department_id')
+                            <div class="invalid-feedback">
+                                {{ $message }}
+                            </div>
+                        @enderror
+                    </div>
+                @else
+                    <div class="form-group">
+                        <label>Department</label>
+
+                        <input type="text" class="form-control" value="{{ auth()->user()->department->name ?? '-' }}"
+                            readonly>
+                    </div>
+
+                    {{-- Hidden Department ID --}}
+                    <input type="hidden" name="department_id" value="{{ auth()->user()->department_id }}">
+                @endif
 
                 {{-- COST CENTER --}}
                 <div class="form-group">
@@ -288,10 +312,6 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
 
-            // ==========================================
-            // EMPLOYMENT STATUS
-            // ==========================================
-
             const employmentStatus = document.getElementById('employment_status');
             const outsourcingWrapper = document.getElementById('outsourcing-wrapper');
             const employeeStatusWrapper = document.getElementById('employee-status-wrapper');
@@ -315,21 +335,12 @@
 
             toggleOutsourcingFields();
 
-
-            // ==========================================
-            // COST CENTER & PS GROUP
-            // ==========================================
-
             const costCenter = document.getElementById('cost_center_id');
             const psGroup = document.getElementById('ps_group_id');
 
             const selectedCostCenter = "{{ old('cost_center_id', $employee->cost_center_id) }}";
             const selectedPsGroup = "{{ old('ps_group_id', $employee->ps_group_id) }}";
 
-
-            // ==========================================
-            // LOAD PS GROUP
-            // ==========================================
 
             function loadPsGroups(costCenterId, selectedId = null) {
 
@@ -350,8 +361,6 @@
 
                     })
                     .then(function(data) {
-
-                        console.log('PS Group:', data);
 
                         data.forEach(function(item) {
 
@@ -377,9 +386,49 @@
             }
 
 
-            // ==========================================
-            // COST CENTER CHANGE
-            // ==========================================
+            function loadCostCenters(departmentId, selectedId = null) {
+
+                costCenter.innerHTML = '<option value="">-- Pilih Cost Center --</option>';
+                psGroup.innerHTML = '<option value="">-- Pilih Group --</option>';
+
+                if (!departmentId) {
+                    return;
+                }
+
+                fetch('/employee/cost-centers-by-department/' + departmentId)
+                    .then(function(response) {
+
+                        if (!response.ok) {
+                            throw new Error('HTTP Error ' + response.status);
+                        }
+
+                        return response.json();
+
+                    })
+                    .then(function(data) {
+
+                        data.forEach(function(item) {
+
+                            const option = document.createElement('option');
+
+                            option.value = item.id;
+                            option.textContent = (item.code ? item.code + ' - ' : '') + item.name;
+
+                            if (selectedId && String(selectedId) === String(item.id)) {
+                                option.selected = true;
+                            }
+
+                            costCenter.appendChild(option);
+
+                        });
+
+                    })
+                    .catch(function(error) {
+
+                        console.error('Gagal mengambil Cost Center:', error);
+
+                    });
+            }
 
             costCenter.addEventListener('change', function() {
 
@@ -388,9 +437,15 @@
             });
 
 
-            // ==========================================
-            // LOAD PS GROUP SAAT EDIT
-            // ==========================================
+            @if ($isHrDepartment)
+                const department = document.getElementById('department_id');
+
+                department.addEventListener('change', function() {
+
+                    loadCostCenters(this.value);
+
+                });
+            @endif
 
             if (selectedCostCenter) {
 

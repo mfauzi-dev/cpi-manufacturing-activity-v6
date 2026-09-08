@@ -29,7 +29,7 @@
                 <form method="GET" action="{{ route('admin-production.overtime.index') }}">
                     <div class="row">
 
-                        @if (strtolower(auth()->user()->department?->name ?? '') === 'general affair')
+                        @if (strtolower(auth()->user()->department?->name ?? '') === 'personalia dan general affair')
                             <div class="form-group col-md-3">
                                 <label>Department</label>
                                 <select name="department_id" id="department_id" class="form-control">

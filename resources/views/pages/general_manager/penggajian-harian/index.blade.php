@@ -23,6 +23,7 @@
                 </div>
 
                 <div class="card-wrap">
+
                     <div class="card-header">
                         <h4>Total Karyawan</h4>
                     </div>
@@ -30,8 +31,8 @@
                     <div class="card-body">
                         {{ $payrolls->total() }} orang
                     </div>
-                </div>
 
+                </div>
             </div>
         </div>
 
@@ -44,6 +45,7 @@
                 </div>
 
                 <div class="card-wrap">
+
                     <div class="card-header">
                         <h4>Total Hari Kerja</h4>
                     </div>
@@ -51,8 +53,8 @@
                     <div class="card-body">
                         {{ number_format($grandTotalWorkDays, 0, ',', '.') }} Hari
                     </div>
-                </div>
 
+                </div>
             </div>
         </div>
 
@@ -65,6 +67,7 @@
                 </div>
 
                 <div class="card-wrap">
+
                     <div class="card-header">
                         <h4>Total Upah</h4>
                     </div>
@@ -72,8 +75,8 @@
                     <div class="card-body">
                         Rp {{ number_format($grandTotalUpahHarian, 0, ',', '.') }}
                     </div>
-                </div>
 
+                </div>
             </div>
         </div>
 
@@ -86,6 +89,7 @@
                 </div>
 
                 <div class="card-wrap">
+
                     <div class="card-header">
                         <h4>Grand Total Diterima</h4>
                     </div>
@@ -93,8 +97,8 @@
                     <div class="card-body">
                         Rp {{ number_format($grandTotalNetSalary, 0, ',', '.') }}
                     </div>
-                </div>
 
+                </div>
             </div>
         </div>
 
@@ -113,7 +117,7 @@
 
                 <div class="row">
 
-                    {{-- MONTH --}}
+                    {{-- BULAN --}}
                     <div class="col-md-3">
                         <div class="form-group">
 
@@ -134,7 +138,7 @@
                         </div>
                     </div>
 
-                    {{-- YEAR --}}
+                    {{-- TAHUN --}}
                     <div class="col-md-3">
                         <div class="form-group">
 
@@ -161,7 +165,7 @@
 
                             <label>Department</label>
 
-                            <select name="department_id" class="form-control">
+                            <select name="department_id" id="department_id" class="form-control">
 
                                 <option value="">
                                     Semua Department
@@ -175,6 +179,23 @@
 
                                     </option>
                                 @endforeach
+
+                            </select>
+
+                        </div>
+                    </div>
+
+                    {{-- COST CENTER --}}
+                    <div class="col-md-3">
+                        <div class="form-group">
+
+                            <label>Cost Center</label>
+
+                            <select name="cost_center_id" id="cost_center_id" class="form-control">
+
+                                <option value="">
+                                    Loading...
+                                </option>
 
                             </select>
 
@@ -207,13 +228,27 @@
                         </div>
                     </div>
 
+                    {{-- SEARCH --}}
+                    <div class="col-md-6">
+                        <div class="form-group">
+
+                            <label>Cari NIK / Nama</label>
+
+                            <input type="text" name="search" class="form-control" value="{{ $search ?? '' }}"
+                                placeholder="Masukkan NIK atau nama karyawan">
+
+                        </div>
+                    </div>
+
                 </div>
 
                 <div class="mt-3">
 
                     <button type="submit" class="btn btn-primary">
+
                         <i class="fas fa-search"></i>
                         Filter
+
                     </button>
 
                     <a href="{{ route('general-manager.penggajian-harian.index') }}" class="btn btn-secondary">
@@ -245,7 +280,9 @@
                     'month' => $month,
                     'year' => $year,
                     'department_id' => $departmentId,
+                    'cost_center_id' => $costCenterId,
                     'outsourcing_id' => $outsourcingId,
+                    'search' => $search ?? '',
                 ]) }}"
                     class="btn btn-success">
 
@@ -258,7 +295,9 @@
                     'month' => $month,
                     'year' => $year,
                     'department_id' => $departmentId,
+                    'cost_center_id' => $costCenterId,
                     'outsourcing_id' => $outsourcingId,
+                    'search' => $search ?? '',
                 ]) }}"
                     class="btn btn-danger" target="_blank">
 
@@ -391,6 +430,7 @@
                                     Rp {{ number_format($payroll->upah_harian ?? 0, 0, ',', '.') }}
                                 </td>
 
+                                {{-- OVERTIME --}}
                                 <td class="text-right">
                                     Rp {{ number_format($payroll->overtime_total ?? 0, 0, ',', '.') }}
                                 </td>
@@ -426,7 +466,7 @@
 
                             <tr>
 
-                                <td colspan="14" class="text-center py-4 text-muted">
+                                <td colspan="15" class="text-center py-4 text-muted">
 
                                     Belum ada penggajian harian untuk periode ini.
 
@@ -451,3 +491,96 @@
 
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        $(document).ready(function() {
+
+            let departmentId = $('#department_id').val();
+
+            let selectedCostCenter = "{{ $costCenterId ?? '' }}";
+
+            let costCenter = $('#cost_center_id');
+
+            function loadCostCenters(departmentId, selectedId = '') {
+
+                costCenter.html(
+                    '<option value="">Loading...</option>'
+                );
+
+                if (!departmentId) {
+
+                    costCenter.html(
+                        '<option value="">Semua Cost Center</option>'
+                    );
+
+                    return;
+                }
+
+                $.ajax({
+
+                    url: "{{ url('/penggajian-harian/cost-centers') }}/" + departmentId,
+
+                    type: "GET",
+
+                    dataType: "json",
+
+                    success: function(data) {
+
+                        costCenter.empty();
+
+                        costCenter.append(
+                            '<option value="">Semua Cost Center</option>'
+                        );
+
+                        $.each(data, function(key, value) {
+
+                            let selected =
+                                String(value.id) === String(selectedId) ?
+                                'selected' :
+                                '';
+
+                            costCenter.append(
+                                '<option value="' +
+                                value.id +
+                                '" ' +
+                                selected +
+                                '>' +
+                                value.name +
+                                '</option>'
+                            );
+
+                        });
+
+                    },
+
+                    error: function() {
+
+                        costCenter.empty();
+
+                        costCenter.append(
+                            '<option value="">Gagal memuat Cost Center</option>'
+                        );
+
+                    }
+
+                });
+
+            }
+
+            loadCostCenters(
+                departmentId,
+                selectedCostCenter
+            );
+
+            $('#department_id').on('change', function() {
+
+                let departmentId = $(this).val();
+
+                loadCostCenters(departmentId);
+
+            });
+
+        });
+    </script>
+@endpush

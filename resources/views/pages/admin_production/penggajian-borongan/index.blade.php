@@ -35,10 +35,7 @@
         </div>
     </div>
 
-    {{-- SUMMARY --}}
     <div class="row">
-
-        {{-- TOTAL KARYAWAN --}}
         <div class="col-lg-4 col-md-6 col-sm-6 col-12">
             <div class="card card-statistic-1">
                 <div class="card-icon bg-primary">
@@ -57,7 +54,6 @@
             </div>
         </div>
 
-        {{-- TOTAL KG --}}
         <div class="col-lg-4 col-md-6 col-sm-6 col-12">
             <div class="card card-statistic-1">
                 <div class="card-icon bg-info">
@@ -76,7 +72,6 @@
             </div>
         </div>
 
-        {{-- TOTAL UPAH --}}
         <div class="col-lg-4 col-md-6 col-sm-6 col-12">
             <div class="card card-statistic-1">
                 <div class="card-icon bg-warning">
@@ -94,23 +89,17 @@
                 </div>
             </div>
         </div>
-
     </div>
 
-    {{-- FILTER --}}
     <div class="card">
-
         <div class="card-header">
             <h4>{{ $periodLabel }}</h4>
         </div>
 
         <div class="card-body">
-
-            <form method="GET">
-
+            <form method="GET" id="filterForm">
                 <div class="row">
 
-                    {{-- MONTH --}}
                     <div class="col-md-3">
                         <div class="form-group">
                             <label>Bulan</label>
@@ -125,7 +114,6 @@
                         </div>
                     </div>
 
-                    {{-- YEAR --}}
                     <div class="col-md-3">
                         <div class="form-group">
                             <label>Tahun</label>
@@ -140,13 +128,42 @@
                         </div>
                     </div>
 
-                    {{-- OUTSOURCING --}}
+                    @if ($isHrDepartment)
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Department</label>
+                                <select name="department_id" id="department_id" class="form-control">
+                                    <option value="">
+                                        Pilih Department
+                                    </option>
+                                    @foreach ($departments as $department)
+                                        <option value="{{ $department->id }}"
+                                            {{ (string) $departmentId === (string) $department->id ? 'selected' : '' }}>
+                                            {{ $department->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    @else
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>Department</label>
+                                <input type="hidden" name="department_id" id="department_id" value="{{ $departmentId }}">
+
+                                <input type="text" class="form-control" value="{{ $departmentName }}" readonly>
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="col-md-3">
                         <div class="form-group">
                             <label>Outsourcing</label>
 
                             <select name="outsourcing_id" class="form-control">
-                                <option value="">Semua Outsourcing</option>
+                                <option value="">
+                                    Semua Outsourcing
+                                </option>
 
                                 @foreach ($outsourcings as $outsourcing)
                                     <option value="{{ $outsourcing->id }}"
@@ -158,28 +175,38 @@
                         </div>
                     </div>
 
-                    {{-- COST CENTER --}}
                     <div class="col-md-3">
                         <div class="form-group">
                             <label>Cost Center</label>
 
-                            <select name="cost_center_id" class="form-control">
-                                <option value="">Semua Cost Center</option>
+                            <select name="cost_center_id" id="cost_center_id" class="form-control">
+
+                                <option value="">
+                                    Pilih Cost Center
+                                </option>
 
                                 @foreach ($costCenters as $costCenter)
                                     <option value="{{ $costCenter->id }}"
                                         {{ (string) $costCenterId === (string) $costCenter->id ? 'selected' : '' }}>
-                                        {{ $costCenter->name }}
+                                        {{ $costCenter->code }} - {{ $costCenter->name }}
                                     </option>
                                 @endforeach
                             </select>
                         </div>
                     </div>
 
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Search</label>
+
+                            <input type="text" name="search" class="form-control" value="{{ $search }}"
+                                placeholder="Nama / NIK / No. KTP">
+                        </div>
+                    </div>
+
                 </div>
 
                 <div class="mt-3">
-
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-search"></i>
                         Filter
@@ -188,37 +215,39 @@
                     <a href="{{ route('admin-production.penggajian-borongan.index') }}" class="btn btn-secondary">
                         Reset
                     </a>
-
                 </div>
-
             </form>
-
         </div>
-
     </div>
 
     <div class="card">
-
         <div class="card-header">
             <h4>Data Penggajian Borongan</h4>
         </div>
 
         <div class="card-body">
+
             <div class="mb-3">
                 <a href="{{ route('admin-production.penggajian-borongan.export-excel', [
                     'month' => $month,
                     'year' => $year,
+                    'department_id' => $isHrDepartment ? $departmentId : null,
                     'outsourcing_id' => $outsourcingId,
                     'cost_center_id' => $costCenterId,
+                    'search' => $search,
                 ]) }}"
-                    class="btn btn-success"> <i class="fas fa-file-excel"></i> Excel </a>
-
+                    class="btn btn-success">
+                    <i class="fas fa-file-excel"></i>
+                    Excel
+                </a>
 
                 <a href="{{ route('admin-production.penggajian-borongan.export-pdf', [
                     'month' => $month,
                     'year' => $year,
+                    'department_id' => $isHrDepartment ? $departmentId : null,
                     'outsourcing_id' => $outsourcingId,
                     'cost_center_id' => $costCenterId,
+                    'search' => $search,
                 ]) }}"
                     class="btn btn-danger" target="_blank">
                     <i class="fas fa-file-pdf"></i>
@@ -227,11 +256,11 @@
             </div>
 
             <div class="table-responsive">
-
                 <table class="table table-striped table-bordered payroll-table mb-0">
+
                     <thead>
                         <tr>
-                            <th rowspan="2" class="text-center" width="50">
+                            <th rowspan="2" width="50">
                                 No.
                             </th>
 
@@ -247,51 +276,54 @@
                                 Nama
                             </th>
 
-                            <th rowspan="2" class="text-center">
+                            <th rowspan="2">
                                 Hasil Proses (Kg)/Jam
                             </th>
 
-                            <th rowspan="2" class="text-center">
+                            <th rowspan="2">
                                 Total Hari
                             </th>
 
-                            <th colspan="{{ $costCenters->count() }}" class="text-center">
+                            <th colspan="{{ $allCostCenters->count() }}" class="text-center">
                                 UPAH YANG DITERIMA
                             </th>
 
-                            <th rowspan="2" class="text-center">
+                            <th rowspan="2">
                                 Total Upah yang Diterima
                             </th>
 
-                            <th rowspan="2" class="text-center">
+                            <th rowspan="2">
                                 Jamsostek (4.89%)
                             </th>
 
-                            <th rowspan="2" class="text-center">
+                            <th rowspan="2">
                                 BPJS Kesehatan (4%)
                             </th>
 
-                            <th rowspan="2" class="text-center">
+                            <th rowspan="2">
                                 BPJS Pensiun (2%)
                             </th>
 
-                            <th rowspan="2" class="text-center">
+                            <th rowspan="2">
                                 Managemen Fee
                                 <br>
                                 (175000/25)
                             </th>
 
-                            <th rowspan="2" class="text-center">
+                            <th rowspan="2">
                                 Grand Total Upah Diterima
                             </th>
                         </tr>
 
                         <tr>
-                            @foreach ($costCenters as $costCenter)
+                            @foreach ($allCostCenters as $costCenter)
                                 <th class="text-center">
                                     {{ $costCenter->code }}
                                     <br>
-                                    <small class="cost-center-name">{{ $costCenter->name }}</small>
+
+                                    <small class="cost-center-name">
+                                        {{ $costCenter->name }}
+                                    </small>
                                 </th>
                             @endforeach
                         </tr>
@@ -324,12 +356,12 @@
                                     {{ $payroll->total_hari_kerja ?? 0 }}
                                 </td>
 
-                                @foreach ($costCenters as $costCenter)
-                                    <td class="text-right">
-                                        @php
-                                            $upahCostCenter = $payroll->cost_center_upah[$costCenter->id] ?? 0;
-                                        @endphp
+                                @foreach ($allCostCenters as $costCenter)
+                                    @php
+                                        $upahCostCenter = $payroll->cost_center_upah[$costCenter->id] ?? 0;
+                                    @endphp
 
+                                    <td class="text-right">
                                         @if ($upahCostCenter > 0)
                                             Rp {{ number_format($upahCostCenter, 0, ',', '.') }}
                                         @else
@@ -362,23 +394,149 @@
                                     Rp {{ number_format($payroll->grand_total_upah ?? 0, 0, ',', '.') }}
                                 </td>
                             </tr>
+
                         @empty
+
                             <tr>
-                                <td colspan="{{ 13 + $costCenters->count() }}" class="text-center py-4 text-muted">
+                                <td colspan="{{ 13 + $allCostCenters->count() }}" class="text-center py-4 text-muted">
                                     Belum ada penggajian borongan untuk periode ini.
                                 </td>
                             </tr>
                         @endforelse
                     </tbody>
-                </table>
 
+                </table>
             </div>
         </div>
 
         <div class="card-footer text-right">
-
             {{ $payrolls->withQueryString()->links() }}
-
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        $(function() {
+
+            function loadCostCenters(departmentId, selectedCostCenterId = '') {
+
+                const costCenterSelect = $('#cost_center_id');
+
+                if (!costCenterSelect.length) {
+                    return;
+                }
+
+                if (!departmentId) {
+                    costCenterSelect
+                        .empty()
+                        .append(
+                            $('<option>', {
+                                value: '',
+                                text: 'Pilih Cost Center'
+                            })
+                        );
+
+                    return;
+                }
+
+                costCenterSelect
+                    .empty()
+                    .append(
+                        $('<option>', {
+                            value: '',
+                            text: 'Pilih Cost Center'
+                        })
+                    )
+
+                $.ajax({
+                    url: "{{ route('manager.penggajian-borongan.cost-centers', ':departmentId') }}"
+                        .replace(':departmentId', departmentId),
+                    method: 'GET',
+                    dataType: 'json',
+                    cache: false,
+
+                    success: function(data) {
+
+                        costCenterSelect.empty();
+
+                        costCenterSelect.append(
+                            $('<option>', {
+                                value: '',
+                                text: 'Pilih Cost Center'
+                            })
+                        );
+
+                        $.each(data, function(index, costCenter) {
+
+                            const option = $('<option>', {
+                                value: costCenter.id,
+                                text: costCenter.code + ' - ' + costCenter.name
+                            });
+
+                            if (
+                                selectedCostCenterId &&
+                                String(selectedCostCenterId) === String(costCenter.id)
+                            ) {
+                                option.prop('selected', true);
+                            }
+
+                            costCenterSelect.append(option);
+                        });
+
+                        costCenterSelect.prop('disabled', false);
+                    },
+
+                    error: function(xhr) {
+
+                        console.error('AJAX Cost Center Error:', xhr.status);
+                        console.error(xhr.responseText);
+
+                        costCenterSelect
+                            .empty()
+                            .append(
+                                $('<option>', {
+                                    value: '',
+                                    text: 'Gagal mengambil Cost Center'
+                                })
+                            )
+                            .prop('disabled', true);
+                    }
+                });
+            }
+
+            $('#department_id').on('change', function() {
+
+                const departmentId = $(this).val();
+
+                loadCostCenters(departmentId);
+            });
+
+            const departmentId = $('#department_id').val();
+
+            if (departmentId) {
+
+                loadCostCenters(
+                    departmentId,
+                    "{{ $costCenterId ?? '' }}"
+                );
+
+            } else {
+
+                const costCenterSelect = $('#cost_center_id');
+
+                if (costCenterSelect.length) {
+                    costCenterSelect
+                        .empty()
+                        .append(
+                            $('<option>', {
+                                value: '',
+                                text: 'Pilih Cost Center'
+                            })
+                        )
+                }
+            }
+
+        });
+    </script>
+@endpush
