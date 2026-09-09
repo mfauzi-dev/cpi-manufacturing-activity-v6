@@ -6,6 +6,8 @@ use App\Models\CostCenter;
 use App\Models\DailyActivityDetail;
 use App\Models\DailyActivityDetailSlaughterHouse;
 use App\Models\PenggajianBorongan;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -34,6 +36,12 @@ class PenggajianBoronganExport implements
     protected $costCenters;
     protected array $costCenterUpah = [];
 
+    /** @var Carbon[] semua tanggal dalam periode, dipakai untuk kolom per-tanggal */
+    protected array $dates = [];
+
+    /** @var array<int, array<string, float>> [employee_id][Y-m-d] => total upah hari itu */
+    protected array $dailyUpah = [];
+
     public function __construct(
         int $month,
         int $year,
@@ -57,6 +65,13 @@ class PenggajianBoronganExport implements
         } else {
             $this->costCenters = CostCenter::orderBy('name')->get();
         }
+
+        $start = Carbon::create($year, $month, 1)->startOfMonth();
+        $end = (clone $start)->endOfMonth();
+
+        $this->dates = iterator_to_array(
+            CarbonPeriod::create($start, $end)
+        );
     }
 
     public function collection()
@@ -109,6 +124,7 @@ class PenggajianBoronganExport implements
             ->values();
 
         $this->costCenterUpah = [];
+        $this->dailyUpah = [];
 
         if ($employeeIds->isNotEmpty()) {
 
@@ -136,6 +152,12 @@ class PenggajianBoronganExport implements
                 ->unique()
                 ->values();
 
+            // Catatan: query di bawah sekarang ikut group by tanggal (bukan
+            // cuma employee_id + cost_center_id) supaya dari satu query yang
+            // sama kita bisa mengisi dua rekap sekaligus:
+            // 1) total upah per cost center (sepanjang bulan)  -> costCenterUpah
+            // 2) total upah per tanggal (semua cost center digabung) -> dailyUpah
+
             if ($sausageEmployeeIds->isNotEmpty()) {
 
                 $sausageUpah = DailyActivityDetail::query()
@@ -160,35 +182,18 @@ class PenggajianBoronganExport implements
                     ->selectRaw('
                         daily_activities.employee_id,
                         daily_activities.cost_center_id,
+                        daily_activities.tanggal,
                         SUM(daily_activity_details.total_harga) as total_upah
                     ')
                     ->groupBy(
                         'daily_activities.employee_id',
-                        'daily_activities.cost_center_id'
+                        'daily_activities.cost_center_id',
+                        'daily_activities.tanggal'
                     )
                     ->get();
 
                 foreach ($sausageUpah as $row) {
-
-                    if (!isset(
-                        $this->costCenterUpah[
-                            $row->employee_id
-                        ][
-                            $row->cost_center_id
-                        ]
-                    )) {
-                        $this->costCenterUpah[
-                            $row->employee_id
-                        ][
-                            $row->cost_center_id
-                        ] = 0;
-                    }
-
-                    $this->costCenterUpah[
-                        $row->employee_id
-                    ][
-                        $row->cost_center_id
-                    ] += (float) $row->total_upah;
+                    $this->accumulateUpah($row);
                 }
             }
 
@@ -217,42 +222,44 @@ class PenggajianBoronganExport implements
                     ->selectRaw('
                         daily_activity_slaughter_houses.employee_id,
                         daily_activity_slaughter_houses.cost_center_id,
+                        daily_activity_slaughter_houses.tanggal,
                         SUM(
                             daily_activity_detail_slaughter_houses.total_harga
                         ) as total_upah
                     ')
                     ->groupBy(
                         'daily_activity_slaughter_houses.employee_id',
-                        'daily_activity_slaughter_houses.cost_center_id'
+                        'daily_activity_slaughter_houses.cost_center_id',
+                        'daily_activity_slaughter_houses.tanggal'
                     )
                     ->get();
 
                 foreach ($slaughterHouseUpah as $row) {
-
-                    if (!isset(
-                        $this->costCenterUpah[
-                            $row->employee_id
-                        ][
-                            $row->cost_center_id
-                        ]
-                    )) {
-                        $this->costCenterUpah[
-                            $row->employee_id
-                        ][
-                            $row->cost_center_id
-                        ] = 0;
-                    }
-
-                    $this->costCenterUpah[
-                        $row->employee_id
-                    ][
-                        $row->cost_center_id
-                    ] += (float) $row->total_upah;
+                    $this->accumulateUpah($row);
                 }
             }
         }
 
         return $payrolls;
+    }
+
+    /**
+     * Tambahkan satu baris hasil query (employee_id, cost_center_id,
+     * tanggal, total_upah) ke dua rekap: costCenterUpah dan dailyUpah.
+     */
+    protected function accumulateUpah($row): void
+    {
+        if (!isset($this->costCenterUpah[$row->employee_id][$row->cost_center_id])) {
+            $this->costCenterUpah[$row->employee_id][$row->cost_center_id] = 0;
+        }
+        $this->costCenterUpah[$row->employee_id][$row->cost_center_id] += (float) $row->total_upah;
+
+        $dateKey = Carbon::parse($row->tanggal)->format('Y-m-d');
+
+        if (!isset($this->dailyUpah[$row->employee_id][$dateKey])) {
+            $this->dailyUpah[$row->employee_id][$dateKey] = 0;
+        }
+        $this->dailyUpah[$row->employee_id][$dateKey] += (float) $row->total_upah;
     }
 
     public function headings(): array
@@ -266,9 +273,19 @@ class PenggajianBoronganExport implements
             'HASIL PROSES (Kg)/Jam',
             'TOTAL HARI',
         ];
+        $row2 = ['', '', '', '', '', '', ''];
 
-        for ($i = 0; $i < $this->costCenters->count(); $i++) {
+        // Blok per tanggal: row1 nanti di-merge jadi satu judul "UPAH HARIAN"
+        // di registerEvents(), di sini cukup kosongkan dan isi tanggal di row2.
+        foreach ($this->dates as $date) {
             $row1[] = '';
+            $row2[] = $date->translatedFormat('D') . "\n" . $date->format('d/m');
+        }
+
+        // Blok cost center (sama seperti sebelumnya)
+        foreach ($this->costCenters as $costCenter) {
+            $row1[] = '';
+            $row2[] = $costCenter->code . "\n" . $costCenter->name;
         }
 
         $row1[] = 'TOTAL UPAH YANG DITERIMA';
@@ -277,20 +294,6 @@ class PenggajianBoronganExport implements
         $row1[] = 'BPJS PENSIUN (2%)';
         $row1[] = 'MANAGEMEN FEE (175000/25)';
         $row1[] = 'GRAND TOTAL UPAH DITERIMA';
-
-        $row2 = [
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
-        ];
-
-        foreach ($this->costCenters as $costCenter) {
-            $row2[] = $costCenter->code . "\n" . $costCenter->name;
-        }
 
         $row2[] = '';
         $row2[] = '';
@@ -318,6 +321,11 @@ class PenggajianBoronganExport implements
             (float) ($payroll->total_kg ?? 0),
             (int) ($payroll->total_hari_kerja ?? 0),
         ];
+
+        foreach ($this->dates as $date) {
+            $dateKey = $date->format('Y-m-d');
+            $row[] = (float) ($this->dailyUpah[$payroll->employee_id][$dateKey] ?? 0);
+        }
 
         foreach ($this->costCenters as $costCenter) {
 
@@ -353,19 +361,26 @@ class PenggajianBoronganExport implements
             'G' => 12,
         ];
 
-        $startColumn = 8;
+        $dateStartColumn = 8;
+
+        foreach ($this->dates as $index => $date) {
+            $column = $this->getColumnLetter($dateStartColumn + $index);
+            $widths[$column] = 10;
+        }
+
+        $costCenterStartColumn = $dateStartColumn + count($this->dates);
 
         foreach ($this->costCenters as $index => $costCenter) {
 
             $column = $this->getColumnLetter(
-                $startColumn + $index
+                $costCenterStartColumn + $index
             );
 
             $widths[$column] = 22;
         }
 
         $afterCostCenter =
-            $startColumn +
+            $costCenterStartColumn +
             $this->costCenters->count();
 
         $widths[
@@ -432,43 +447,34 @@ class PenggajianBoronganExport implements
                 $lastDataRow = $sheet->getHighestRow();
                 $lastColumn = $sheet->getHighestColumn();
 
-                $startCostCenterColumn = 8;
+                // --- Posisi kolom, dihitung dinamis ---
+                $dateStartColumn = 8;
+                $dateCount = count($this->dates);
+                $dateEndColumn = $dateStartColumn + $dateCount - 1;
 
-                $costCenterCount =
-                    $this->costCenters->count();
+                $startCostCenterColumn = $dateStartColumn + $dateCount;
+                $costCenterCount = $this->costCenters->count();
+                $endCostCenterColumn = $startCostCenterColumn + $costCenterCount - 1;
 
-                $endCostCenterColumn =
-                    $startCostCenterColumn +
-                    $costCenterCount -
-                    1;
+                $totalUpahColumn = $startCostCenterColumn + $costCenterCount;
+                $grandTotalColumn = $totalUpahColumn + 5;
 
-                $totalUpahColumn =
-                    $startCostCenterColumn +
-                    $costCenterCount;
+                $dateStartLetter = $this->getColumnLetter($dateStartColumn);
+                $dateEndLetter = $this->getColumnLetter($dateEndColumn);
 
-                $grandTotalColumn =
-                    $totalUpahColumn + 5;
+                $startCostCenterLetter = $this->getColumnLetter($startCostCenterColumn);
+                $endCostCenterLetter = $this->getColumnLetter($endCostCenterColumn);
 
-                $startCostCenterLetter =
-                    $this->getColumnLetter(
-                        $startCostCenterColumn
-                    );
+                $totalUpahLetter = $this->getColumnLetter($totalUpahColumn);
+                $grandTotalLetter = $this->getColumnLetter($grandTotalColumn);
 
-                $endCostCenterLetter =
-                    $this->getColumnLetter(
-                        $endCostCenterColumn
-                    );
+                // --- Merge header blok tanggal (row1) ---
+                if ($dateCount > 0) {
+                    $sheet->mergeCells("{$dateStartLetter}1:{$dateEndLetter}1");
+                    $sheet->setCellValue("{$dateStartLetter}1", 'UPAH HARIAN (Rp)');
+                }
 
-                $totalUpahLetter =
-                    $this->getColumnLetter(
-                        $totalUpahColumn
-                    );
-
-                $grandTotalLetter =
-                    $this->getColumnLetter(
-                        $grandTotalColumn
-                    );
-
+                // --- Merge header blok cost center (row1) ---
                 if ($costCenterCount > 0) {
 
                     $sheet->mergeCells(
@@ -575,6 +581,17 @@ class PenggajianBoronganExport implements
                         '#,##0.00'
                     );
 
+                if ($dateCount > 0) {
+                    $sheet
+                        ->getStyle(
+                            "{$dateStartLetter}3:{$dateEndLetter}{$lastDataRow}"
+                        )
+                        ->getNumberFormat()
+                        ->setFormatCode(
+                            '#,##0'
+                        );
+                }
+
                 if ($costCenterCount > 0) {
 
                     $sheet
@@ -646,6 +663,20 @@ class PenggajianBoronganExport implements
                     "G{$grandTotalRow}",
                     "=SUM(G3:G{$lastDataRow})"
                 );
+
+                /*
+                 * Total upah per tanggal
+                 */
+                if ($dateCount > 0) {
+                    for ($i = 0; $i < $dateCount; $i++) {
+                        $column = $this->getColumnLetter($dateStartColumn + $i);
+
+                        $sheet->setCellValue(
+                            "{$column}{$grandTotalRow}",
+                            "=SUM({$column}3:{$column}{$lastDataRow})"
+                        );
+                    }
+                }
 
                 /*
                  * Total masing-masing Cost Center
@@ -804,6 +835,17 @@ class PenggajianBoronganExport implements
                     ->setFormatCode(
                         '#,##0.00'
                     );
+
+                if ($dateCount > 0) {
+                    $sheet
+                        ->getStyle(
+                            "{$dateStartLetter}{$grandTotalRow}:{$dateEndLetter}{$grandTotalRow}"
+                        )
+                        ->getNumberFormat()
+                        ->setFormatCode(
+                            '#,##0'
+                        );
+                }
 
                 if ($costCenterCount > 0) {
 

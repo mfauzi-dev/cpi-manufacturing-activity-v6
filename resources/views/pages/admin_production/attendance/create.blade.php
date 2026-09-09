@@ -1,8 +1,6 @@
 @extends('layouts.master')
 
 @section('content')
-
-    ```
     <div class="section-header">
         <h1>Input Attendance Manual</h1>
     </div>
@@ -393,17 +391,17 @@
         </form>
 
     </div>
-    ```
+
 
 @endsection
 
 @push('scripts')
     <script>
         /*
-        |--------------------------------------------------------------------------
-        | Attendance Status
-        |--------------------------------------------------------------------------
-        */
+                |--------------------------------------------------------------------------
+                | Attendance Status
+                |--------------------------------------------------------------------------
+                */
 
         document.querySelectorAll('tbody tr').forEach(row => {
 
