@@ -728,18 +728,31 @@ class PenggajianHarianController extends Controller
  
     public function exportExcel(Request $request)
     {
+        $user = Auth::user();
+
+        $departmentName = strtolower(trim($user->department?->name ?? ''));
+
+        $isGeneralAffair = $departmentName === 'personalia dan general affair';
+
         $month = (int) $request->input('month', now()->month);
         $year = (int) $request->input('year', now()->year);
 
         $outsourcingId = $request->input('outsourcing_id');
         $costCenterId = $request->input('cost_center_id');
-        $departmentId = Auth::user()->department_id;
 
-        abort_unless(
-            $departmentId,
-            403,
-            'Akun Anda belum terhubung ke department manapun.'
-        );
+        if ($isGeneralAffair) {
+            $departmentId = $request->filled('department_id')
+                ? (int) $request->input('department_id')
+                : null;
+        } else {
+            $departmentId = $user->department_id;
+
+            abort_unless(
+                $departmentId,
+                403,
+                'Akun Anda belum terhubung ke department manapun.'
+            );
+        }
 
         $periodLabel = Carbon::create($year, $month, 1)
             ->translatedFormat('F-Y');
@@ -761,7 +774,6 @@ class PenggajianHarianController extends Controller
         $user = Auth::user();
 
         $departmentName = strtolower(trim($user->department?->name ?? ''));
-
         $isGeneralAffair = $departmentName === 'personalia dan general affair';
 
         $month = (int) $request->input('month', now()->month);
@@ -770,20 +782,18 @@ class PenggajianHarianController extends Controller
         $outsourcingId = $request->input('outsourcing_id');
         $costCenterId = $request->input('cost_center_id');
 
-        $managerDepartmentId = $user->department_id;
-
-        abort_unless(
-            $managerDepartmentId,
-            403,
-            'Akun Anda belum terhubung ke department manapun.'
-        );
-
         if ($isGeneralAffair) {
             $departmentId = $request->filled('department_id')
                 ? (int) $request->input('department_id')
                 : null;
         } else {
-            $departmentId = $managerDepartmentId;
+            $departmentId = $user->department_id;
+
+            abort_unless(
+                $departmentId,
+                403,
+                'Akun Anda belum terhubung ke department manapun.'
+            );
         }
 
         $periodLabel = Carbon::create($year, $month, 1)
