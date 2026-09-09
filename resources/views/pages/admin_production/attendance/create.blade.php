@@ -58,6 +58,11 @@
                                         CPI
                                     </option>
 
+                                    <option value="harian_kontrak"
+                                        {{ request('employee_status') == 'harian' ? 'selected' : '' }}>
+                                        Harian Kontrak
+                                    </option>
+
                                 </select>
                             </div>
                         </div>
