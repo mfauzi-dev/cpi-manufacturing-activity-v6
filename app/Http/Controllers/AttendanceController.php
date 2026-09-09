@@ -1085,10 +1085,7 @@ class AttendanceController extends Controller
                     $upahPerHari = $ump / $hariKerjaStandar;
 
                     if ($employee->employee_status === 'harian_kontrak') {
-                        $upahHarian = min(
-                            $upahPerHari * $workDays,
-                            $ump
-                        );
+                        $upahHarian = $ump;
                     } else {
                         $upahHarian = $upahPerHari * $workDays;
                     }
@@ -1215,10 +1212,7 @@ class AttendanceController extends Controller
                     $upahPerHari = $ump / $hariKerjaStandar;
 
                     if ($employee->employee_status === 'harian_kontrak') {
-                        $upahHarian = min(
-                            $upahPerHari * $workDays,
-                            $ump
-                        );
+                        $upahHarian = $ump;
                     } else {
                         $upahHarian = $upahPerHari * $workDays;
                     }
@@ -1345,10 +1339,7 @@ class AttendanceController extends Controller
                     $upahPerHari = $ump / $hariKerjaStandar;
 
                     if ($employee->employee_status === 'harian_kontrak') {
-                        $upahHarian = min(
-                            $upahPerHari * $workDays,
-                            $ump
-                        );
+                        $upahHarian = $ump;
                     } else {
                         $upahHarian = $upahPerHari * $workDays;
                     }
