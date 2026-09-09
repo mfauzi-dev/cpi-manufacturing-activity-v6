@@ -25,7 +25,7 @@ class PenggajianHarianExport implements
     protected int $month;
     protected int $year;
     protected ?int $departmentId;
-    protected ?int $costCentertId;
+    protected ?int $costCenterId;
     protected $outsourcingId;
     protected int $no = 0;
 
@@ -56,6 +56,12 @@ class PenggajianHarianExport implements
         if ($this->departmentId) {
             $query->whereHas('employee', function ($q) {
                 $q->where('department_id', $this->departmentId);
+            });
+        }
+
+        if ($this->costCenterId) {
+            $query->whereHas('employee', function ($q) {
+                $q->where('cost_center_id', $this->costCenterId);
             });
         }
 
@@ -161,7 +167,6 @@ class PenggajianHarianExport implements
     {
         return [
             AfterSheet::class => function (AfterSheet $event) {
-
                 $sheet = $event->sheet->getDelegate();
 
                 $lastDataRow = $sheet->getHighestRow();
@@ -242,17 +247,19 @@ class PenggajianHarianExport implements
                         Alignment::VERTICAL_CENTER
                     );
 
-                $sheet->getStyle("A2:A{$lastDataRow}")
-                    ->getAlignment()
-                    ->setHorizontal(
-                        Alignment::HORIZONTAL_CENTER
-                    );
+                if ($lastDataRow >= 2) {
+                    $sheet->getStyle("A2:A{$lastDataRow}")
+                        ->getAlignment()
+                        ->setHorizontal(
+                            Alignment::HORIZONTAL_CENTER
+                        );
 
-                $sheet->getStyle("H2:I{$lastDataRow}")
-                    ->getAlignment()
-                    ->setHorizontal(
-                        Alignment::HORIZONTAL_CENTER
-                    );
+                    $sheet->getStyle("H2:I{$lastDataRow}")
+                        ->getAlignment()
+                        ->setHorizontal(
+                            Alignment::HORIZONTAL_CENTER
+                        );
+                }
 
                 $sheet->getStyle("G2:Q{$grandTotalRow}")
                     ->getNumberFormat()
