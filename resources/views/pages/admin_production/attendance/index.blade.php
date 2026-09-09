@@ -29,6 +29,24 @@
 
                     <div class="row">
 
+                        @if ($isGeneralAffair)
+                            <div class="col-md-3 mb-2">
+                                <div class="form-group">
+                                    <label>Department</label>
+                                    <select name="department_id" id="department_id" class="form-control">
+                                        <option value="">Semua Department</option>
+
+                                        @foreach ($departments as $department)
+                                            <option value="{{ $department->id }}"
+                                                {{ (string) request('department_id') === (string) $department->id ? 'selected' : '' }}>
+                                                {{ $department->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        @endif
+
                         <div class="col-md-3 mb-2">
                             <div class="form-group">
                                 <label>Tanggal</label>
@@ -216,6 +234,9 @@
                         <tr>
                             <th>NIK</th>
                             <th>Nama</th>
+                            @if ($isGeneralAffair)
+                                <th>Department</th>
+                            @endif
                             <th>OS</th>
                             <th>Group</th>
                             @if (strtolower(auth()->user()->department->name) === 'further processing')
@@ -239,6 +260,12 @@
                                 <td>{{ $employee->nik }}</td>
 
                                 <td>{{ $employee->name }}</td>
+
+                                @if ($isGeneralAffair)
+                                    <td>
+                                        {{ $employee->department?->name ?? '-' }}
+                                    </td>
+                                @endif
 
                                 <td>
                                     {{ $employee->outsourcing?->name ?? '-' }}
@@ -327,7 +354,49 @@
                 loadPsGroups();
             });
 
+            $('#department_id').change(function() {
+                loadCostCenters();
+            });
+
         });
+
+        function loadCostCenters() {
+
+            let departmentId = $('#department_id').val();
+
+            if (departmentId == '') {
+
+                $('#cost_center_id').html(
+                    '<option value="">Semua Cost Center</option>'
+                );
+
+                loadPsGroups();
+
+                return;
+            }
+
+            $.get('/attendance/cost-centers/' + departmentId, function(res) {
+
+                let html = '<option value="">Semua Cost Center</option>';
+
+                $.each(res, function(i, item) {
+
+                    html += `
+                <option value="${item.id}"
+                    ${item.id == "{{ request('cost_center_id') }}" ? 'selected' : ''}>
+                    ${item.name}
+                </option>
+            `;
+
+                });
+
+                $('#cost_center_id').html(html);
+
+                loadPsGroups();
+
+            });
+
+        }
 
         function loadPsGroups() {
 

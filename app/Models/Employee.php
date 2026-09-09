@@ -23,10 +23,12 @@ class Employee extends Model
         'employee_status',
         'gender',
         'is_active',
+        'join_date',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'join_date' => 'date',
     ];
 
     public function outsourcing()

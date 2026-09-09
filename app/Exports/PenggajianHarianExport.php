@@ -25,6 +25,7 @@ class PenggajianHarianExport implements
     protected int $month;
     protected int $year;
     protected ?int $departmentId;
+    protected ?int $costCentertId;
     protected $outsourcingId;
     protected int $no = 0;
 
@@ -32,11 +33,13 @@ class PenggajianHarianExport implements
         int $month,
         int $year,
         ?int $departmentId = null,
+        ?int $costCenterId = null,
         $outsourcingId = null
     ) {
         $this->month = $month;
         $this->year = $year;
         $this->departmentId = $departmentId;
+        $this->costCenterId = $costCenterId;
         $this->outsourcingId = $outsourcingId;
     }
 

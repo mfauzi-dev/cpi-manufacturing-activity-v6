@@ -81,6 +81,9 @@ class AttendanceController extends Controller
     {
         $user = auth()->user();
 
+        $isGeneralAffair = strtolower(optional($user->department)->name ?? '')
+            === strtolower('personalia dan general affair');
+
         $request->validate([
             'date' => ['nullable', 'date'],
             'status' => ['nullable', 'string'],
@@ -89,6 +92,7 @@ class AttendanceController extends Controller
             'cost_center_id' => ['nullable', 'integer'],
             'ps_group_id' => ['nullable', 'integer'],
             'line_id' => ['nullable', 'integer'],
+            'department_id' => ['nullable', 'integer'],
             'search' => ['nullable', 'string'],
             'size' => ['nullable', 'integer'],
         ]);
@@ -100,6 +104,7 @@ class AttendanceController extends Controller
         $costCenterId = $request->cost_center_id;
         $groupId = $request->ps_group_id;
         $lineId = $request->line_id;
+        $departmentId = $request->department_id;
         $search = $request->search;
         $size = $request->size ?? 50;
 
@@ -107,11 +112,20 @@ class AttendanceController extends Controller
             'costCenter',
             'psGroup',
             'outsourcing',
+            'department',
             'attendances' => function ($q) use ($date) {
                 $q->whereDate('date', $date)
                 ->with('inputBy');
             }
-        ])->where('department_id', $user->department_id);
+        ]);
+
+        if ($isGeneralAffair) {
+            if ($departmentId) {
+                $query->where('employees.department_id', $departmentId);
+            }
+        } else {
+            $query->where('employees.department_id', $user->department_id);
+        }
 
         if ($request->outsourcing_id) {
             $query->where('employees.outsourcing_id', $request->outsourcing_id);
@@ -164,11 +178,23 @@ class AttendanceController extends Controller
 
         $outsourcings = Outsourcing::orderBy('name')->get();
 
-        $costCenters = CostCenter::where('department_id', auth()->user()->department_id)->get();
+        // Kalau GA: cost center mengikuti department yang dipilih (di-load ulang via AJAX saat department berubah)
+        // Kalau bukan GA: tetap cost center milik department sendiri
+        $costCenterDepartmentId = $isGeneralAffair ? $departmentId : $user->department_id;
 
-        $lineList = Line::where('department_id', $user->department_id)->get();
+        $costCenters = $costCenterDepartmentId
+            ? CostCenter::where('department_id', $costCenterDepartmentId)->orderBy('name')->get()
+            : collect();
+
+        $lineList = $isGeneralAffair
+            ? ($departmentId
+                ? Line::where('department_id', $departmentId)->orderBy('name')->get()
+                : collect())
+            : Line::where('department_id', $user->department_id)->get();
 
         $groups = PsGroup::orderBy('name')->get();
+
+        $departments = $isGeneralAffair ? Department::orderBy('name')->get() : collect();
 
         return view(
             'pages.admin_production.attendance.index',
@@ -178,7 +204,10 @@ class AttendanceController extends Controller
                 'costCenters',
                 'date',
                 'lineList',
-                'totalEmployee'
+                'totalEmployee',
+                'isGeneralAffair',
+                'departments',
+                'departmentId'
             )
         );
     }
@@ -252,6 +281,8 @@ class AttendanceController extends Controller
             });
         }
 
+        $totalEmployee = (clone $query)->count();
+
         $employees = $query
             ->leftJoin('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
             ->leftJoin('departments', 'employees.department_id', '=', 'departments.id')
@@ -268,13 +299,18 @@ class AttendanceController extends Controller
             'departments' => Department::orderBy('name')->get(),
             'date' => $date,
             'lineId' => $lineId,
+            'totalEmployee' => $totalEmployee
         ]);
     }
 
     public function managerIndex(Request $request)
     {
-        $managerDepartmentId = auth()->user()->department_id;
+        $user = auth()->user();
+        $managerDepartmentId = $user->department_id;
         abort_unless($managerDepartmentId, 403, 'Akun Anda belum terhubung ke department manapun.');
+
+        $isGeneralAffair = strtolower(optional($user->department)->name ?? '')
+            === strtolower('personalia dan general affair');
 
         $request->validate([
             'date' => ['nullable', 'date'],
@@ -284,6 +320,7 @@ class AttendanceController extends Controller
             'cost_center_id' => ['nullable', 'integer'],
             'ps_group_id' => ['nullable', 'integer'],
             'line_id' => ['nullable', 'integer'],
+            'department_id' => ['nullable', 'integer'],
             'search' => ['nullable', 'string'],
             'size' => ['nullable', 'integer'],
         ]);
@@ -291,6 +328,7 @@ class AttendanceController extends Controller
         $date = $request->date ?? now()->toDateString();
         $employeeStatus = $request->employee_status;
         $lineId = $request->line_id;
+        $departmentId = $request->department_id;
 
         $query = Employee::with([
             'costCenter',
@@ -300,7 +338,15 @@ class AttendanceController extends Controller
             'attendances' => function ($q) use ($date) {
                 $q->whereDate('date', $date)->with('inputBy');
             }
-        ])->where('employees.department_id', $managerDepartmentId);
+        ]);
+
+        if ($isGeneralAffair) {
+            if ($departmentId) {
+                $query->where('employees.department_id', $departmentId);
+            }
+        } else {
+            $query->where('employees.department_id', $managerDepartmentId);
+        }
 
         if ($request->outsourcing_id) {
             $query->where('employees.outsourcing_id', $request->outsourcing_id);
@@ -338,15 +384,31 @@ class AttendanceController extends Controller
             });
         }
 
+        $totalEmployee = (clone $query)->count();
+
         $employees = $query
             ->leftJoin('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
+            ->leftJoin('departments', 'employees.department_id', '=', 'departments.id')
             ->select('employees.*')
+            ->orderBy('departments.name')
             ->orderBy('ps_groups.name')
             ->orderBy('employees.name')
             ->paginate($request->size ?? 50)
             ->withQueryString();
 
-        $lineList = Line::where('department_id', $managerDepartmentId)->orderBy('name')->get();
+        $lineList = $isGeneralAffair
+            ? ($departmentId
+                ? Line::where('department_id', $departmentId)->orderBy('name')->get()
+                : collect())
+            : Line::where('department_id', $managerDepartmentId)->orderBy('name')->get();
+
+        $costCenterDepartmentId = $isGeneralAffair ? $departmentId : $managerDepartmentId;
+
+        $costCenters = $costCenterDepartmentId
+            ? CostCenter::where('department_id', $costCenterDepartmentId)->orderBy('name')->get()
+            : collect();
+
+        $departments = $isGeneralAffair ? Department::orderBy('name')->get() : collect();
 
         return view('pages.manager.attendance.index', [
             'employees' => $employees,
@@ -354,12 +416,20 @@ class AttendanceController extends Controller
             'managerDepartment' => Department::find($managerDepartmentId),
             'date' => $date,
             'lineList' => $lineList,
+            'costCenters' => $costCenters,
+            'isGeneralAffair' => $isGeneralAffair,
+            'departments' => $departments,
+            'departmentId' => $departmentId,
+            'totalEmployee' => $totalEmployee
         ]);
     }
 
     public function summary(Request $request)
     {
         $user = auth()->user();
+
+        $isGeneralAffair = strtolower(optional($user->department)->name ?? '')
+            === strtolower('personalia dan general affair');
  
         $request->validate([
             'month' => ['nullable', 'integer', 'min:1', 'max:12'],
@@ -369,6 +439,7 @@ class AttendanceController extends Controller
             'cost_center_id' => ['nullable', 'integer'],
             'ps_group_id' => ['nullable', 'integer'],
             'line_id' => ['nullable', 'integer'],
+            'department_id' => ['nullable', 'integer'],
             'search' => ['nullable', 'string'],
             'size' => ['nullable', 'integer'],
         ]);
@@ -380,10 +451,19 @@ class AttendanceController extends Controller
         $costCenterId = $request->cost_center_id;
         $psGroupId = $request->ps_group_id;
         $lineId = $request->line_id;
+        $departmentId = $request->department_id;
         $search = $request->search;
         $size = $request->size ?? 50;
  
-        $query = Employee::with(['psGroup', 'outsourcing'])->where('department_id', $user->department_id);
+        $query = Employee::with(['psGroup', 'outsourcing', 'department']);
+
+        if ($isGeneralAffair) {
+            if ($departmentId) {
+                $query->where('employees.department_id', $departmentId);
+            }
+        } else {
+            $query->where('employees.department_id', $user->department_id);
+        }
         
         if ($request->outsourcing_id) {
             $query->where('employees.outsourcing_id', $request->outsourcing_id);
@@ -442,17 +522,29 @@ class AttendanceController extends Controller
  
         $employees = $query
             ->leftJoin('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
+            ->leftJoin('departments', 'employees.department_id', '=', 'departments.id')
             ->addSelect('employees.*')
+            ->orderBy('departments.name')
             ->orderBy('ps_groups.name')
             ->orderBy('employees.name')
             ->paginate($size)
             ->withQueryString();
  
         $outsourcings = Outsourcing::orderBy('name')->get();
- 
-        $costCenters = CostCenter::where('department_id', auth()->user()->department_id)->get();
 
-        $lineList = Line::where('department_id', $user->department_id)->orderBy('name')->get();
+        $costCenterDepartmentId = $isGeneralAffair ? $departmentId : $user->department_id;
+
+        $costCenters = $costCenterDepartmentId
+            ? CostCenter::where('department_id', $costCenterDepartmentId)->orderBy('name')->get()
+            : collect();
+
+        $lineList = $isGeneralAffair
+            ? ($departmentId
+                ? Line::where('department_id', $departmentId)->orderBy('name')->get()
+                : collect())
+            : Line::where('department_id', $user->department_id)->orderBy('name')->get();
+
+        $departments = $isGeneralAffair ? Department::orderBy('name')->get() : collect();
 
         return view(
             'pages.admin_production.attendance.summary',
@@ -463,7 +555,10 @@ class AttendanceController extends Controller
                 'monthNum',
                 'year',
                 'totalEmployee',
-                'lineList'
+                'lineList',
+                'isGeneralAffair',
+                'departments',
+                'departmentId'
             )
         );
     }
@@ -596,7 +691,9 @@ class AttendanceController extends Controller
  
         $employees = $query
             ->leftJoin('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
+            ->leftJoin('departments', 'employees.department_id', '=', 'departments.id')
             ->addSelect('employees.*')
+            ->orderBy('departments.name')
             ->orderBy('ps_groups.name')
             ->orderBy('employees.name')
             ->paginate($size)
@@ -625,8 +722,12 @@ class AttendanceController extends Controller
 
     public function managerSummary(Request $request)
     {
-        $managerDepartmentId = auth()->user()->department_id;
+        $user = auth()->user();
+        $managerDepartmentId = $user->department_id;
         abort_unless($managerDepartmentId, 403, 'Akun Anda belum terhubung ke department manapun.');
+
+        $isGeneralAffair = strtolower(optional($user->department)->name ?? '')
+            === strtolower('personalia dan general affair');
 
         $request->validate([
             'month' => ['nullable', 'integer', 'min:1', 'max:12'],
@@ -636,6 +737,7 @@ class AttendanceController extends Controller
             'cost_center_id' => ['nullable', 'integer'],
             'ps_group_id' => ['nullable', 'integer'],
             'line_id' => ['nullable', 'integer'],
+            'department_id' => ['nullable', 'integer'],
             'search' => ['nullable', 'string'],
             'size' => ['nullable', 'integer'],
         ]);
@@ -647,11 +749,19 @@ class AttendanceController extends Controller
         $costCenterId = $request->cost_center_id;
         $psGroupId = $request->ps_group_id;
         $lineId = $request->line_id;
+        $departmentId = $request->department_id;
         $search = $request->search;
         $size = $request->size ?? 50;
 
-        $query = Employee::with(['department', 'costCenter', 'psGroup', 'outsourcing'])
-            ->where('employees.department_id', $managerDepartmentId);
+        $query = Employee::with(['department', 'costCenter', 'psGroup', 'outsourcing']);
+
+        if ($isGeneralAffair) {
+            if ($departmentId) {
+                $query->where('employees.department_id', $departmentId);
+            }
+        } else {
+            $query->where('employees.department_id', $managerDepartmentId);
+        }
 
         if ($request->outsourcing_id) {
             $query->where('employees.outsourcing_id', $request->outsourcing_id);
@@ -708,7 +818,9 @@ class AttendanceController extends Controller
 
         $employees = $query
             ->leftJoin('ps_groups', 'employees.ps_group_id', '=', 'ps_groups.id')
+            ->leftJoin('departments', 'employees.department_id', '=', 'departments.id')
             ->addSelect('employees.*')
+            ->orderBy('departments.name')
             ->orderBy('ps_groups.name')
             ->orderBy('employees.name')
             ->paginate($size)
@@ -717,7 +829,19 @@ class AttendanceController extends Controller
         $outsourcings = Outsourcing::orderBy('name')->get();
         $managerDepartment = Department::find($managerDepartmentId);
         
-        $lineList = Line::where('department_id', $managerDepartmentId)->orderBy('name')->get();
+        $lineList = $isGeneralAffair
+            ? ($departmentId
+                ? Line::where('department_id', $departmentId)->orderBy('name')->get()
+                : collect())
+            : Line::where('department_id', $managerDepartmentId)->orderBy('name')->get();
+
+        $costCenterDepartmentId = $isGeneralAffair ? $departmentId : $managerDepartmentId;
+
+        $costCenters = $costCenterDepartmentId
+            ? CostCenter::where('department_id', $costCenterDepartmentId)->orderBy('name')->get()
+            : collect();
+
+        $departments = $isGeneralAffair ? Department::orderBy('name')->get() : collect();
         
         return view(
             'pages.manager.attendance.summary',
@@ -728,7 +852,11 @@ class AttendanceController extends Controller
                 'monthNum',
                 'year',
                 'totalEmployee',
-                'lineList'
+                'lineList',
+                'costCenters',
+                'isGeneralAffair',
+                'departments',
+                'departmentId'
             )
         );
     }
@@ -891,11 +1019,8 @@ class AttendanceController extends Controller
     {
         $user = auth()->user();
 
-        $departmentId = $user->department_id;
-
-        $costCenters = CostCenter::where('department_id', $departmentId)
-            ->orderBy('name')
-            ->get();
+        $isGeneralAffair = strtolower(optional($user->department)->name ?? '')
+            === strtolower('personalia dan general affair');
 
         $employeeStatus = $request->employee_status;
         $costCenterId = $request->cost_center_id;
@@ -903,11 +1028,34 @@ class AttendanceController extends Controller
         $search = $request->search;
         $date = $request->date ?? now()->toDateString();
 
+        if ($isGeneralAffair) {
+            $departmentId = $request->department_id;
+
+            $costCenters = $departmentId
+                ? CostCenter::where('department_id', $departmentId)->orderBy('name')->get()
+                : collect();
+        } else {
+            $departmentId = $user->department_id;
+
+            $costCenters = CostCenter::where('department_id', $departmentId)
+                ->orderBy('name')
+                ->get();
+        }
+
         $query = Employee::with([
             'outsourcing',
             'psGroup',
-            'costCenter'
-        ])->where('department_id', $departmentId);
+            'costCenter',
+            'department'
+        ]);
+
+        if ($isGeneralAffair) {
+            if ($departmentId) {
+                $query->where('department_id', $departmentId);
+            }
+        } else {
+            $query->where('department_id', $departmentId);
+        }
 
         if ($employeeStatus) {
             $query->where('employee_status', $employeeStatus);
@@ -928,7 +1076,11 @@ class AttendanceController extends Controller
             });
         }
 
-        $lineList = Line::where('department_id', $departmentId)->get();
+        $lineList = $isGeneralAffair
+            ? ($departmentId
+                ? Line::where('department_id', $departmentId)->get()
+                : collect())
+            : Line::where('department_id', $departmentId)->get();
 
         $employees = $query
             ->with([
@@ -939,6 +1091,8 @@ class AttendanceController extends Controller
             ->orderBy('name')
             ->paginate(10)
             ->withQueryString();
+
+        $departments = $isGeneralAffair ? Department::orderBy('name')->get() : collect();
 
         return view(
             'pages.manager.attendance.create',
@@ -948,7 +1102,10 @@ class AttendanceController extends Controller
                 'date',
                 'costCenterId',
                 'psGroupId',
-                'lineList'
+                'lineList',
+                'isGeneralAffair',
+                'departments',
+                'departmentId'
             )
         );
     }
@@ -957,11 +1114,8 @@ class AttendanceController extends Controller
     {
         $user = auth()->user();
 
-        $departmentId = $user->department_id;
-
-        $costCenters = CostCenter::where('department_id', $departmentId)
-            ->orderBy('name')
-            ->get();
+        $isGeneralAffair = strtolower(optional($user->department)->name ?? '')
+            === strtolower('personalia dan general affair');
 
         $employeeStatus = $request->employee_status;
         $costCenterId = $request->cost_center_id;
@@ -969,11 +1123,36 @@ class AttendanceController extends Controller
         $search = $request->search;
         $date = $request->date ?? now()->toDateString();
 
+        if ($isGeneralAffair) {
+            // GA bisa pilih department mana aja, cost center di-load ulang via AJAX
+            $departmentId = $request->department_id;
+
+            $costCenters = $departmentId
+                ? CostCenter::where('department_id', $departmentId)->orderBy('name')->get()
+                : collect();
+        } else {
+            // Selain GA, tetap terbatas ke department sendiri
+            $departmentId = $user->department_id;
+
+            $costCenters = CostCenter::where('department_id', $departmentId)
+                ->orderBy('name')
+                ->get();
+        }
+
         $query = Employee::with([
             'outsourcing',
             'psGroup',
-            'costCenter'
-        ])->where('department_id', $departmentId);
+            'costCenter',
+            'department'
+        ]);
+
+        if ($isGeneralAffair) {
+            if ($departmentId) {
+                $query->where('department_id', $departmentId);
+            }
+        } else {
+            $query->where('department_id', $departmentId);
+        }
 
         if ($employeeStatus) {
             $query->where('employee_status', $employeeStatus);
@@ -1004,7 +1183,13 @@ class AttendanceController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $lineList = Line::where('department_id', $departmentId)->get();
+        $lineList = $isGeneralAffair
+            ? ($departmentId
+                ? Line::where('department_id', $departmentId)->get()
+                : collect())
+            : Line::where('department_id', $departmentId)->get();
+
+        $departments = $isGeneralAffair ? Department::orderBy('name')->get() : collect();
 
         return view(
             'pages.admin_production.attendance.create',
@@ -1014,7 +1199,10 @@ class AttendanceController extends Controller
                 'date',
                 'costCenterId',
                 'psGroupId',
-                'lineList'
+                'lineList',
+                'isGeneralAffair',
+                'departments',
+                'departmentId'
             )
         );
     }
@@ -1090,9 +1278,20 @@ class AttendanceController extends Controller
                         $upahHarian = $upahPerHari * $workDays;
                     }
 
-                    $jamsostek = round($ump * 0.0489, 2);
+                    // Karyawan baru: bulan pertama kerja mengikuti bulan & tahun join_date
+                    $isNewEmployeeThisMonth = $employee->join_date
+                        && $employee->join_date->isSameMonth($date)
+                        && $employee->join_date->isSameYear($date);
+
+                    if ($isNewEmployeeThisMonth) {
+                        $jamsostek = round($upahPerHari * $workDays * 0.0489, 2);
+                        $bpjsPensiun = round($upahPerHari * $workDays * 0.02, 2);
+                    } else {
+                        $jamsostek = round($ump * 0.0489, 2);
+                        $bpjsPensiun = round($ump * 0.02, 2);
+                    }
+
                     $bpjsKesehatan = round($ump * 0.04, 2);
-                    $bpjsPensiun = round($ump * 0.02, 2);
 
                     $managemenFeePerDay = 175000 / $hariKerjaStandar;
 
@@ -1217,9 +1416,20 @@ class AttendanceController extends Controller
                         $upahHarian = $upahPerHari * $workDays;
                     }
 
-                    $jamsostek = round($ump * 0.0489, 2);
+                    // Karyawan baru: bulan pertama kerja mengikuti bulan & tahun join_date
+                    $isNewEmployeeThisMonth = $employee->join_date
+                        && $employee->join_date->isSameMonth($date)
+                        && $employee->join_date->isSameYear($date);
+
+                    if ($isNewEmployeeThisMonth) {
+                        $jamsostek = round($upahPerHari * $workDays * 0.0489, 2);
+                        $bpjsPensiun = round($upahPerHari * $workDays * 0.02, 2);
+                    } else {
+                        $jamsostek = round($ump * 0.0489, 2);
+                        $bpjsPensiun = round($ump * 0.02, 2);
+                    }
+
                     $bpjsKesehatan = round($ump * 0.04, 2);
-                    $bpjsPensiun = round($ump * 0.02, 2);
 
                     $managemenFeePerDay = 175000 / $hariKerjaStandar;
 
@@ -1344,9 +1554,20 @@ class AttendanceController extends Controller
                         $upahHarian = $upahPerHari * $workDays;
                     }
 
-                    $jamsostek = round($ump * 0.0489, 2);
+                    // Karyawan baru: bulan pertama kerja mengikuti bulan & tahun join_date
+                    $isNewEmployeeThisMonth = $employee->join_date
+                        && $employee->join_date->isSameMonth($date)
+                        && $employee->join_date->isSameYear($date);
+
+                    if ($isNewEmployeeThisMonth) {
+                        $jamsostek = round($upahPerHari * $workDays * 0.0489, 2);
+                        $bpjsPensiun = round($upahPerHari * $workDays * 0.02, 2);
+                    } else {
+                        $jamsostek = round($ump * 0.0489, 2);
+                        $bpjsPensiun = round($ump * 0.02, 2);
+                    }
+
                     $bpjsKesehatan = round($ump * 0.04, 2);
-                    $bpjsPensiun = round($ump * 0.02, 2);
 
                     $managemenFeePerDay = 175000 / $hariKerjaStandar;
 
@@ -1443,7 +1664,6 @@ class AttendanceController extends Controller
 
         $month = $request->month ?? now()->month;
         $year = $request->year ?? now()->year;
-
         $outsourcingId = $request->outsourcing_id;
         $costCenterId = $request->cost_center_id;
         $psGroupId = $request->ps_group_id;
@@ -1472,17 +1692,23 @@ class AttendanceController extends Controller
 
     public function exportSummaryExcel(Request $request)
     {
-        $departmentId = auth()->user()->department_id;
+        $user = auth()->user();
 
-        abort_unless(
-            $departmentId,
-            403,
-            'Akun Anda belum terhubung ke department manapun.'
-        );
+        $departmentName = strtolower($user->department?->name ?? '');
+        $isGeneralAffair = $departmentName === 'personalia dan general affair';
+
+        $departmentId = $request->department_id;
+
+        if (!$isGeneralAffair) {
+            $departmentId = $user->department_id;
+        }
+
+        if (!$departmentId && !$isGeneralAffair) {
+            abort(403, 'Akun Anda belum terhubung ke department manapun.');
+        }
 
         $month = $request->month ?? now()->month;
         $year = $request->year ?? now()->year;
-
         $outsourcingId = $request->outsourcing_id;
         $costCenterId = $request->cost_center_id;
         $psGroupId = $request->ps_group_id;
@@ -1511,16 +1737,21 @@ class AttendanceController extends Controller
 
     public function exportSummaryPdf(Request $request)
     {
-        $managerDepartmentId = auth()->user()->department_id;
+        $user = auth()->user();
+
+        $managerDepartmentId = $user->department_id;
 
         abort_unless(
             $managerDepartmentId,
             403,
             'Akun Anda belum terhubung ke department manapun.'
         );
+
+        $departmentName = strtolower($user->department?->name ?? '');
+        $isGeneralAffair = $departmentName === 'personalia dan general affair';
+
         $month = $request->month ?? now()->month;
         $year = $request->year ?? now()->year;
-
         $outsourcingId = $request->outsourcing_id;
         $costCenterId = $request->cost_center_id;
         $psGroupId = $request->ps_group_id;
@@ -1540,39 +1771,37 @@ class AttendanceController extends Controller
         )->endOfMonth();
 
         $query = Employee::query()
-            ->where('department_id', $managerDepartmentId)
             ->with([
                 'department',
                 'outsourcing',
                 'psGroup',
             ])
-
             ->withCount([
                 'attendances as total_hadir' => function ($q) use ($startDate, $endDate) {
                     $q->whereBetween('date', [$startDate, $endDate])
                         ->where('status', 'hadir');
                 },
-
                 'attendances as total_izin' => function ($q) use ($startDate, $endDate) {
                     $q->whereBetween('date', [$startDate, $endDate])
                         ->where('status', 'izin');
                 },
-
                 'attendances as total_sakit' => function ($q) use ($startDate, $endDate) {
                     $q->whereBetween('date', [$startDate, $endDate])
                         ->where('status', 'sakit');
                 },
-
                 'attendances as total_cuti' => function ($q) use ($startDate, $endDate) {
                     $q->whereBetween('date', [$startDate, $endDate])
                         ->where('status', 'cuti');
                 },
-
                 'attendances as total_alfa' => function ($q) use ($startDate, $endDate) {
                     $q->whereBetween('date', [$startDate, $endDate])
                         ->where('status', 'alfa');
                 },
             ]);
+
+        if (!$isGeneralAffair) {
+            $query->where('department_id', $managerDepartmentId);
+        }
 
         if ($outsourcingId) {
             $query->where('outsourcing_id', $outsourcingId);
@@ -1598,7 +1827,11 @@ class AttendanceController extends Controller
         }
 
         $employees = $query
-            ->orderBy('name')
+            ->orderBy(
+                Department::select('name')
+                    ->whereColumn('departments.id', 'employees.department_id')
+            )
+            ->orderBy('employees.name')
             ->get();
 
         $monthNames = [
@@ -1616,7 +1849,6 @@ class AttendanceController extends Controller
             12 => 'Desember',
         ];
 
-        // Nama filter
         $outsourcingName = 'Semua OS';
 
         if ($outsourcingId) {
@@ -1644,7 +1876,6 @@ class AttendanceController extends Controller
         $employeeStatusName = $employeeStatus
             ? ($employeeStatusLabels[$employeeStatus] ?? $employeeStatus)
             : 'Semua Status Karyawan';
-        
 
         $pdf = Pdf::loadView(
             'pages.admin_production.attendance.summary-pdf',
@@ -1749,7 +1980,11 @@ class AttendanceController extends Controller
         }
 
         $employees = $query
-            ->orderBy('name')
+            ->orderBy(
+                Department::select('name')
+                    ->whereColumn('departments.id', 'employees.department_id')
+            )
+            ->orderBy('employees.name')
             ->get();
 
         $monthNames = [
@@ -1820,8 +2055,19 @@ class AttendanceController extends Controller
 
     public function exportSummaryPdfManager(Request $request)
     {
-        $managerDepartmentId = auth()->user()->department_id;
-        abort_unless($managerDepartmentId, 403, 'Akun Anda belum terhubung ke department manapun.');
+        $user = auth()->user();
+
+        $managerDepartmentId = $user->department_id;
+
+        abort_unless(
+            $managerDepartmentId,
+            403,
+            'Akun Anda belum terhubung ke department manapun.'
+        );
+
+        $departmentName = strtolower($user->department?->name ?? '');
+
+        $isGeneralAffair = $departmentName === 'personalia dan general affair';
 
         $month = $request->month ?? now()->month;
         $year = $request->year ?? now()->year;
@@ -1829,7 +2075,7 @@ class AttendanceController extends Controller
         $outsourcingId = $request->outsourcing_id;
         $costCenterId = $request->cost_center_id;
         $psGroupId = $request->ps_group_id;
-        $employeeStatus = $request->employee_status; 
+        $employeeStatus = $request->employee_status;
         $search = $request->search;
 
         $startDate = Carbon::create(
@@ -1845,13 +2091,11 @@ class AttendanceController extends Controller
         )->endOfMonth();
 
         $query = Employee::query()
-            ->where('department_id', $managerDepartmentId)
             ->with([
                 'department',
                 'outsourcing',
                 'psGroup',
             ])
-
             ->withCount([
                 'attendances as total_hadir' => function ($q) use ($startDate, $endDate) {
                     $q->whereBetween('date', [$startDate, $endDate])
@@ -1879,31 +2123,39 @@ class AttendanceController extends Controller
                 },
             ]);
 
+        if (!$isGeneralAffair) {
+            $query->where('employees.department_id', $managerDepartmentId);
+        }
+
         if ($outsourcingId) {
-            $query->where('outsourcing_id', $outsourcingId);
+            $query->where('employees.outsourcing_id', $outsourcingId);
         }
 
         if ($costCenterId) {
-            $query->where('cost_center_id', $costCenterId);
+            $query->where('employees.cost_center_id', $costCenterId);
         }
 
         if ($psGroupId) {
-            $query->where('ps_group_id', $psGroupId);
+            $query->where('employees.ps_group_id', $psGroupId);
         }
 
         if ($employeeStatus) {
-            $query->where('employee_status', $employeeStatus);
+            $query->where('employees.employee_status', $employeeStatus);
         }
 
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('nik', 'like', "%{$search}%")
-                    ->orWhere('name', 'like', "%{$search}%");
+                $q->where('employees.nik', 'like', "%{$search}%")
+                    ->orWhere('employees.name', 'like', "%{$search}%");
             });
         }
 
         $employees = $query
-            ->orderBy('name')
+            ->orderBy(
+                Department::select('name')
+                    ->whereColumn('departments.id', 'employees.department_id')
+            )
+            ->orderBy('employees.name')
             ->get();
 
         $monthNames = [
@@ -1921,7 +2173,6 @@ class AttendanceController extends Controller
             12 => 'Desember',
         ];
 
-        // Nama filter
         $outsourcingName = 'Semua OS';
 
         if ($outsourcingId) {

@@ -5,18 +5,25 @@
     <meta charset="utf-8">
 
     <style>
+        @page {
+            margin: 20px 20px 25px 20px;
+        }
+
         body {
-            font-family: sans-serif;
-            font-size: 10px;
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 9px;
+            color: #222;
         }
 
         h3 {
-            margin: 0 0 5px 0;
+            margin: 0 0 4px 0;
+            font-size: 15px;
         }
 
         .subtitle {
-            margin: 0 0 12px 0;
+            margin: 0 0 10px 0;
             color: #555;
+            font-size: 9px;
         }
 
         .filter-info {
@@ -30,31 +37,67 @@
 
         .filter-info td {
             border: none;
-            padding: 2px 8px 2px 0;
+            padding: 2px 10px 2px 0;
+            vertical-align: top;
         }
 
         .filter-info .label {
             font-weight: bold;
+            width: 100px;
         }
 
         table.summary {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
         }
 
         table.summary th,
         table.summary td {
             border: 1px solid #999;
-            padding: 5px;
+            padding: 4px 5px;
         }
 
         table.summary th {
-            background-color: #f0f0f0;
+            background-color: #eeeeee;
             text-align: center;
+            font-weight: bold;
+        }
+
+        table.summary td {
+            vertical-align: middle;
         }
 
         .text-center {
             text-align: center;
+        }
+
+        .text-left {
+            text-align: left;
+        }
+
+        .nik {
+            width: 11%;
+        }
+
+        .name {
+            width: 18%;
+        }
+
+        .department {
+            width: 18%;
+        }
+
+        .outsourcing {
+            width: 12%;
+        }
+
+        .group {
+            width: 14%;
+        }
+
+        .attendance {
+            width: 5%;
         }
 
         tr {
@@ -64,22 +107,33 @@
         thead {
             display: table-header-group;
         }
+
+        .department-row td {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
     </style>
 </head>
 
 <body>
 
-    <h3>
-        Summary Attendance
-    </h3>
+    <h3>Summary Attendance</h3>
 
     <p class="subtitle">
         Periode: {{ $month }} {{ $year }}
     </p>
 
     <div class="filter-info">
-
         <table>
+
+            <tr>
+                <td class="label">
+                    Department
+                </td>
+                <td>
+                    : Semua Department
+                </td>
+            </tr>
 
             <tr>
                 <td class="label">
@@ -129,71 +183,88 @@
             @endif
 
         </table>
-
     </div>
 
     <table class="summary">
 
         <thead>
-
             <tr>
-                <th>NIK</th>
-                <th>Nama</th>
-                <th>Department</th>
-                <th>OS</th>
-                <th>Group</th>
-                <th>Hadir</th>
-                <th>Izin</th>
-                <th>Sakit</th>
-                <th>Cuti</th>
-                <th>Alfa</th>
+                <th class="nik">NIK</th>
+                <th class="name">Nama</th>
+                <th class="department">Department</th>
+                <th class="outsourcing">OS</th>
+                <th class="group">Group</th>
+                <th class="attendance">Hadir</th>
+                <th class="attendance">Izin</th>
+                <th class="attendance">Sakit</th>
+                <th class="attendance">Cuti</th>
+                <th class="attendance">Alfa</th>
             </tr>
-
         </thead>
 
         <tbody>
 
+            @php
+                $currentDepartment = null;
+            @endphp
+
             @forelse ($employees as $employee)
+                @php
+                    $department = $employee->department->name ?? '-';
+                @endphp
+
+                @if ($currentDepartment !== $department)
+                    @php
+                        $currentDepartment = $department;
+                    @endphp
+
+                    <tr class="department-row">
+                        <td colspan="10">
+                            {{ $department }}
+                        </td>
+                    </tr>
+                @endif
+
                 <tr>
 
-                    <td>
-                        {{ $employee->nik }}
+                    <td class="text-left">
+                        {{ $employee->nik ?? '-' }}
                     </td>
 
-                    <td>
-                        {{ $employee->name }}
+                    <td class="text-left">
+                        {{ $employee->name ?? '-' }}
                     </td>
 
-                    <td>
-                        {{ $employee->department->name ?? '-' }}
+                    <td class="text-left">
+                        {{ $department }}
                     </td>
 
-                    <td>
+                    <td class="text-left">
                         {{ $employee->outsourcing->name ?? '-' }}
                     </td>
 
-                    <td>
+                    <td class="text-left">
                         {{ $employee->psGroup->name ?? '-' }}
                     </td>
 
                     <td class="text-center">
-                        {{ $employee->total_hadir }}
+                        {{ $employee->total_hadir ?? 0 }}
                     </td>
 
                     <td class="text-center">
-                        {{ $employee->total_izin }}
+                        {{ $employee->total_izin ?? 0 }}
                     </td>
 
                     <td class="text-center">
-                        {{ $employee->total_sakit }}
+                        {{ $employee->total_sakit ?? 0 }}
                     </td>
 
                     <td class="text-center">
-                        {{ $employee->total_cuti }}
+                        {{ $employee->total_cuti ?? 0 }}
                     </td>
 
                     <td class="text-center">
-                        {{ $employee->total_alfa }}
+                        {{ $employee->total_alfa ?? 0 }}
                     </td>
 
                 </tr>
@@ -201,7 +272,7 @@
             @empty
 
                 <tr>
-                    <td colspan="10" style="text-align: center;">
+                    <td colspan="10" style="text-align: center; padding: 10px;">
                         Tidak ada data employee
                     </td>
                 </tr>

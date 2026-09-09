@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Models\Department;
 use App\Models\Employee;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromQuery;
@@ -36,7 +37,6 @@ class AttendanceSummaryExport implements
         $search = null,
         $departmentId = null,
         $employeeStatus = null
-        
     ) {
         $this->month = $month;
         $this->year = $year;
@@ -68,7 +68,6 @@ class AttendanceSummaryExport implements
                 'outsourcing',
                 'psGroup',
             ])
-
             ->withCount([
                 'attendances as total_hadir' => function ($q) use ($startDate, $endDate) {
                     $q->whereBetween('date', [$startDate, $endDate])
@@ -90,7 +89,6 @@ class AttendanceSummaryExport implements
                         ->where('status', 'cuti');
                 },
 
-                // DATABASE KAMU: alfa
                 'attendances as total_alfa' => function ($q) use ($startDate, $endDate) {
                     $q->whereBetween('date', [$startDate, $endDate])
                         ->where('status', 'alfa');
@@ -126,7 +124,12 @@ class AttendanceSummaryExport implements
             });
         }
 
-        return $query->orderBy('name');
+        return $query
+            ->orderBy(
+                Department::select('name')
+                    ->whereColumn('departments.id', 'employees.department_id')
+            )
+            ->orderBy('name');
     }
 
     public function headings(): array
