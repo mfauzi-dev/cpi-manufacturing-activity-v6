@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use App\Exports\AttendanceSummaryExport;
 use App\Models\Line;
 use App\Models\PenggajianHarian;
+use App\Models\Shift;
 use App\Models\WageConfig;
 use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
@@ -1191,6 +1192,11 @@ class AttendanceController extends Controller
 
         $departments = $isGeneralAffair ? Department::orderBy('name')->get() : collect();
 
+        $shifts = Shift::where(
+            'department_id',
+            auth()->user()->department_id
+        )->orderBy('name')->get();
+
         return view(
             'pages.admin_production.attendance.create',
             compact(
@@ -1202,7 +1208,8 @@ class AttendanceController extends Controller
                 'lineList',
                 'isGeneralAffair',
                 'departments',
-                'departmentId'
+                'departmentId',
+                'shifts'
             )
         );
     }
@@ -1240,6 +1247,8 @@ class AttendanceController extends Controller
                         'status' => $status,
                         'keterangan_izin' => $data['keterangan_izin'] ?? null,
                         'line_id' => $data['line_id'] ?? null,
+                        'shift_id' => $data['shift_id'] ?? null,
+                        'jumlah_hk' => $data['jumlah_hk'] ?? null,
                         'input_by' => auth()->id(),
                     ]
                 );

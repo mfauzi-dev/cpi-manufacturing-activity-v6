@@ -36,6 +36,11 @@ class Employee extends Model
         return $this->belongsTo(Outsourcing::class);
     }
 
+    public function overtime()
+    {
+        return $this->hasMany(Overtime::class);
+    }
+
     public function costCenter()
     {
         return $this->belongsTo(CostCenter::class);
