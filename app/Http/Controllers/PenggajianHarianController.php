@@ -725,15 +725,15 @@ class PenggajianHarianController extends Controller
         );
     }
 
+ 
     public function exportExcel(Request $request)
     {
         $month = (int) $request->input('month', now()->month);
         $year = (int) $request->input('year', now()->year);
+
         $outsourcingId = $request->input('outsourcing_id');
         $costCenterId = $request->input('cost_center_id');
-
         $departmentId = Auth::user()->department_id;
-        
 
         abort_unless(
             $departmentId,
@@ -749,8 +749,8 @@ class PenggajianHarianController extends Controller
                 $month,
                 $year,
                 $departmentId,
-                $outsourcingId,
-                $costCenterId
+                $costCenterId,
+                $outsourcingId
             ),
             'Penggajian-Harian-' . $periodLabel . '.xlsx'
         );
@@ -759,12 +759,16 @@ class PenggajianHarianController extends Controller
     public function exportExcelManager(Request $request)
     {
         $user = Auth::user();
-        $departmentName = strtolower($user->department?->name ?? '');
-        $isHrDepartment = $departmentName === 'personalia dan general affair';
+
+        $departmentName = strtolower(trim($user->department?->name ?? ''));
+
+        $isGeneralAffair = $departmentName === 'personalia dan general affair';
 
         $month = (int) $request->input('month', now()->month);
         $year = (int) $request->input('year', now()->year);
+
         $outsourcingId = $request->input('outsourcing_id');
+        $costCenterId = $request->input('cost_center_id');
 
         $managerDepartmentId = $user->department_id;
 
@@ -774,9 +778,13 @@ class PenggajianHarianController extends Controller
             'Akun Anda belum terhubung ke department manapun.'
         );
 
-        $departmentId = $isHrDepartment
-            ? ($request->input('department_id') ? (int) $request->input('department_id') : null)
-            : $managerDepartmentId;
+        if ($isGeneralAffair) {
+            $departmentId = $request->filled('department_id')
+                ? (int) $request->input('department_id')
+                : null;
+        } else {
+            $departmentId = $managerDepartmentId;
+        }
 
         $periodLabel = Carbon::create($year, $month, 1)
             ->translatedFormat('F-Y');
@@ -786,6 +794,7 @@ class PenggajianHarianController extends Controller
                 $month,
                 $year,
                 $departmentId,
+                $costCenterId,
                 $outsourcingId
             ),
             'Penggajian-Harian-' . $periodLabel . '.xlsx'
