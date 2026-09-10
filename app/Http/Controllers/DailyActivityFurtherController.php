@@ -1429,8 +1429,6 @@ class DailyActivityFurtherController extends Controller
 
         $costCenterId = $request->input('cost_center_id');
         $psGroupId = $request->input('ps_group_id');
-        $lineId = $request->input('line_id');
-
         $fromDate = $request->input('start_date');
         $toDate = $request->input('end_date');
 
@@ -1446,7 +1444,6 @@ class DailyActivityFurtherController extends Controller
             new DailyActivityFurtherIndexExport(
                 $costCenterId,
                 $psGroupId,
-                $lineId,
                 $fromDate,
                 $toDate,
                 $adminDepartmentId
@@ -1467,8 +1464,6 @@ class DailyActivityFurtherController extends Controller
 
         $costCenterId = $request->input('cost_center_id');
         $psGroupId = $request->input('ps_group_id');
-        $lineId = $request->input('line_id');
-
         $fromDate = $request->input('start_date');
         $toDate = $request->input('end_date');
 
@@ -1484,7 +1479,6 @@ class DailyActivityFurtherController extends Controller
             new DailyActivityFurtherIndexExport(
                 $costCenterId,
                 $psGroupId,
-                $lineId,
                 $fromDate,
                 $toDate,
                 $managerDepartmentId
@@ -1497,10 +1491,10 @@ class DailyActivityFurtherController extends Controller
     {
         $costCenterId = $request->input('cost_center_id');
         $psGroupId = $request->input('ps_group_id');
-        $lineId = $request->input('line_id');
-
         $fromDate = $request->input('start_date');
         $toDate = $request->input('end_date');
+
+        $departmentId = $request->input('department_id');
 
         $fileName = 'daily-activity-further-general-manager';
 
@@ -1514,15 +1508,13 @@ class DailyActivityFurtherController extends Controller
             new DailyActivityFurtherIndexExport(
                 $costCenterId,
                 $psGroupId,
-                $lineId,
                 $fromDate,
                 $toDate,
-                null
+                $departmentId
             ),
             $fileName
         );
     }
-
     public function exportPdf(Request $request, $costCenterId, $psGroupId)
     {
         $fromDate = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
