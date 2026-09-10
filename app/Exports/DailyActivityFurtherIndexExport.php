@@ -66,13 +66,20 @@ class DailyActivityFurtherIndexExport implements
 
     public function collection()
     {
-        $this->lines = Line::query()
-            ->when($this->departmentId, function ($q) {
-                $q->where('department_id', $this->departmentId);
-            })
-            ->orderByRaw('CAST(name AS UNSIGNED)')
-            ->orderBy('name')
-            ->get();
+        $this->lines = Line::query();
+
+        if ($this->departmentId) {
+            $this->lines->where(
+                'department_id',
+                $this->departmentId
+            );
+        } elseif (auth()->user()->department_id) {
+            $this->lines->where(
+                'department_id',
+                auth()->user()->department_id
+            );
+        }
+
 
         $activities = DB::table('daily_activity_furthers as daf')
             ->leftJoin(
