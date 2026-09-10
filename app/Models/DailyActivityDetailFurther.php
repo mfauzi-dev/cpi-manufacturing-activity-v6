@@ -9,18 +9,19 @@ class DailyActivityDetailFurther extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
+   protected $fillable = [
         'daily_activity_further_id',
         'product_id',
-        'total_kg',
-        'lama_packing',
+        'total_kg_rm',
+        'total_kg_fg',
+        'man_power',
         'productivity',
     ];
- 
+
     protected $casts = [
-        'total_kg' => 'decimal:2',
-        'harga_per_kg' => 'decimal:2',
-        'lama_packing' => 'decimal:2',
+        'total_kg_rm' => 'decimal:2',
+        'total_kg_fg' => 'decimal:2',
+        'man_power' => 'decimal:2',
         'productivity' => 'decimal:2',
     ];
 

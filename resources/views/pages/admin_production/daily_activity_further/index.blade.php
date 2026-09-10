@@ -130,7 +130,8 @@
                             <th>Cost Center</th>
                             <th>PS Group</th>
                             <th>Line</th>
-                            <th class="text-right">Total Kg</th>
+                            <th class="text-right">Total Kg RM</th>
+                            <th class="text-right">Total Kg FG</th>
                             <th width="100">Action</th>
                         </tr>
                     </thead>
@@ -144,7 +145,8 @@
                                 <td>{{ $summary->cost_center_name }}</td>
                                 <td>{{ $summary->ps_group_name }}</td>
                                 <td>{{ $summary->line_name ?? '-' }}</td>
-                                <td class="text-right">{{ number_format($summary->total_kg, 2, ',', '.') }}</td>
+                                <td class="text-right">{{ number_format($summary->total_kg_rm, 2, ',', '.') }}</td>
+                                <td class="text-right">{{ number_format($summary->total_kg_fg, 2, ',', '.') }}</td>
                                 <td class="text-center">
                                     <a href="{{ route('admin-production.daily-activity-further.detail', [
                                         'costCenter' => $summary->cost_center_id,

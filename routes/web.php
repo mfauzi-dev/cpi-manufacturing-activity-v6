@@ -85,6 +85,7 @@ Route::middleware(['auth'])->group(function() {
     Route::get('/penggajian-karyawan-tetap/cost-centers/{departmentId}', [PenggajianKaryawanTetapController::class, 'getCostCenters'])->name('manager.penggajian-karyawan-tetap.cost-centers');
     Route::get('/penggajian-harian/cost-centers/{departmentId}', [PenggajianHarianController::class, 'getCostCenters'])->name('penggajian-harian.cost-centers');
     Route::get('/penggajian-borongan/cost-centers/{departmentId}',[PenggajianBoronganController::class, 'getCostCenters'])->name('manager.penggajian-borongan.cost-centers');
+    Route::get('daily-activity-further/man-hours',[DailyActivityFurtherController::class, 'getManHours'])->name('admin-production.daily-activity-further.man-hours');
 });
 
 
@@ -195,6 +196,8 @@ Route::prefix('admin-production')->middleware(['auth', 'role:Admin Production'])
         Route::put('/{id}/update',[DailyActivityFurtherController::class, 'update'])->name('admin-production.daily-activity-further.update');
 
         Route::delete('/{id}/delete', [DailyActivityFurtherController::class, 'destroy'])->name('admin-production.daily-activity-further.destroy');
+
+        Route::delete('/bulk-destroy', [DailyActivityFurtherController::class, 'bulkDestroy'])->name('admin-production.daily-activity-further.bulk-destroy');
 
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel', [DailyActivityFurtherController::class, 'exportExcel'])->name('admin-production.daily-activity-further.export-excel');
         

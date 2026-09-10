@@ -416,7 +416,7 @@ class DashboardController extends Controller
                 [$startDate, $endDate]
             )
             ->selectRaw('
-                SUM(daily_activity_detail_furthers.total_kg) as total_kg
+                SUM(daily_activity_detail_furthers.total_kg_fg) as total_kg
             ')
             ->first();
 
@@ -601,7 +601,7 @@ class DashboardController extends Controller
                 )
                 ->selectRaw('
                     daily_activity_furthers.cost_center_id as entity_id,
-                    SUM(daily_activity_detail_furthers.total_kg) as total_kg
+                    SUM(daily_activity_detail_furthers.total_kg_fg) as total_kg
                 ')
                 ->groupBy('daily_activity_furthers.cost_center_id')
                 ->get();
@@ -709,7 +709,7 @@ class DashboardController extends Controller
                 ->selectRaw('
                     daily_activity_furthers.cost_center_id as entity_id,
                     daily_activity_furthers.tanggal as tanggal,
-                    SUM(daily_activity_detail_furthers.total_kg) as total_kg
+                    SUM(daily_activity_detail_furthers.total_kg_fg) as total_kg
                 ')
                 ->groupBy(
                     'daily_activity_furthers.cost_center_id',
@@ -820,7 +820,7 @@ class DashboardController extends Controller
                 )
                 ->selectRaw('
                     daily_activity_furthers.department_id as entity_id,
-                    SUM(daily_activity_detail_furthers.total_kg) as total_kg
+                    SUM(daily_activity_detail_furthers.total_kg_fg) as total_kg
                 ')
                 ->groupBy('daily_activity_furthers.department_id')
                 ->get();
@@ -912,7 +912,7 @@ class DashboardController extends Controller
                 ->selectRaw('
                     daily_activity_furthers.department_id as entity_id,
                     daily_activity_furthers.tanggal as tanggal,
-                    SUM(daily_activity_detail_furthers.total_kg) as total_kg
+                    SUM(daily_activity_detail_furthers.total_kg_fg) as total_kg
                 ')
                 ->groupBy(
                     'daily_activity_furthers.department_id',
@@ -1222,7 +1222,7 @@ class DashboardController extends Controller
                 )
                 ->selectRaw('
                     daily_activity_furthers.tanggal as tanggal,
-                    SUM(daily_activity_detail_furthers.total_kg) as total_kg
+                    SUM(daily_activity_detail_furthers.total_kg_fg) as total_kg
                 ')
                 ->groupBy('daily_activity_furthers.tanggal')
                 ->get();
@@ -1390,7 +1390,6 @@ class DashboardController extends Controller
         $recentActivitiesFurther = DailyActivityFurther::with([
             'costCenter',
             'psGroup',
-            'employee'
         ])
         ->latest()
         ->take(10)
@@ -1533,12 +1532,12 @@ class DashboardController extends Controller
 
         $summaryFurther = (clone $dailyActivityFurther)
             ->selectRaw("
-                SUM(total_kg) as total_kg,
+                SUM(total_kg_fg) as total_kg,
                 COUNT(DISTINCT daily_activity_further_id) as total_activity
             ")
             ->first();
 
-        $totalKgFurther      = $summaryFurther->total_kg ?? 0;
+        $totalKgFurther      = $summaryFurther->total_kg_fg ?? 0;
         $totalActivityFurther = $summaryFurther->total_activity ?? 0;
         // further gak punya total_harga, jadi gak ada total_rupiah / averageHargaKg
 
@@ -1594,7 +1593,7 @@ class DashboardController extends Controller
             ->selectRaw("
                 departments.id,
                 departments.name,
-                SUM(total_kg) as total_kg
+                SUM(total_kg_fg) as total_kg
             ")
             ->where('daily_activity_furthers.department_id', $departmentId)
             ->whereBetween('daily_activity_furthers.tanggal', [$startDate, $endDate])
@@ -1642,7 +1641,7 @@ class DashboardController extends Controller
             ->take(10)
             ->get();
 
-        $recentActivitiesFurther = DailyActivityFurther::with(['costCenter', 'psGroup', 'employee', 'line'])
+        $recentActivitiesFurther = DailyActivityFurther::with(['costCenter', 'psGroup', 'line'])
             ->where('department_id', $departmentId)
             ->latest()
             ->take(10)
@@ -1678,7 +1677,7 @@ class DashboardController extends Controller
             ->whereBetween('daily_activity_furthers.tanggal', [$startDate, $endDate])
             ->selectRaw("
                 daily_activity_furthers.tanggal as tanggal,
-                SUM(daily_activity_detail_furthers.total_kg) as total_kg
+                SUM(daily_activity_detail_furthers.total_kg_fg) as total_kg
             ")
             ->groupBy('daily_activity_furthers.tanggal')
             ->orderBy('daily_activity_furthers.tanggal')
@@ -1824,7 +1823,7 @@ class DashboardController extends Controller
             ->selectRaw("
                 cost_centers.id,
                 cost_centers.name,
-                SUM(total_kg) as total_kg
+                SUM(total_kg_fg) as total_kg
             ")
             ->where('daily_activity_furthers.department_id', $departmentId)
             ->when($costCenterId, function ($q) use ($costCenterId) {
@@ -2020,7 +2019,7 @@ class DashboardController extends Controller
             ->join('daily_activity_furthers', 'daily_activity_furthers.id', '=', 'daily_activity_detail_furthers.daily_activity_further_id')
             ->where('daily_activity_furthers.department_id', $departmentId)
             ->whereDate('daily_activity_furthers.tanggal', $today)
-            ->sum('daily_activity_detail_furthers.total_kg');
+            ->sum('daily_activity_detail_furthers.total_kg_fg');
         
         $outputHariIniSlaughterHouse = DailyActivityDetailSlaughterHouse::query()
             ->join('daily_activity_slaughter_houses', 'daily_activity_slaughter_houses.id', '=', 'daily_activity_detail_slaughter_houses.daily_activity_slaughter_house_id')
@@ -2066,7 +2065,7 @@ class DashboardController extends Controller
             ->whereBetween('daily_activity_furthers.tanggal', [$startTrend, $today])
             ->selectRaw("
                 daily_activity_furthers.tanggal as tanggal,
-                SUM(daily_activity_detail_furthers.total_kg) as total_kg
+                SUM(daily_activity_detail_furthers.total_kg_fg) as total_kg
             ")
             ->groupBy('daily_activity_furthers.tanggal')
             ->orderBy('daily_activity_furthers.tanggal')
@@ -2170,7 +2169,7 @@ class DashboardController extends Controller
                 ->selectRaw("
                     cost_centers.id as cost_center_id,
                     cost_centers.name as cost_center_name,
-                    SUM(daily_activity_detail_furthers.total_kg) as total_kg
+                    SUM(daily_activity_detail_furthers.total_kg_fg) as total_kg
                 ")
                 ->groupBy('cost_centers.id', 'cost_centers.name')
                 ->orderBy('cost_centers.name')

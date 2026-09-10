@@ -76,9 +76,17 @@ class Employee extends Model
         return $this->hasMany(PenggajianHarian::class);
     }
 
+    // Relasi many-to-many ke DailyActivityFurther lewat pivot,
+    // menggantikan hasMany lama (sudah tidak relevan sejak employee_id
+    // di daily_activity_furthers digantikan tabel pivot).
     public function dailyActivityFurthers()
     {
-        return $this->hasMany(DailyActivityFurther::class);
+        return $this->belongsToMany(
+            DailyActivityFurther::class,
+            'daily_activity_further_employees'
+        )
+            ->withPivot('jumlah_hk')
+            ->withTimestamps();
     }
 
     public function dailyActivitySlaughterHouses()
