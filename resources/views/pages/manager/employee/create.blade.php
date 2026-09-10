@@ -223,6 +223,16 @@
 
                 </div>
 
+                <div class="form-group">
+                    <label>Join Date</label>
+                    <input type="date" name="join_date" value="{{ old('join_date') }}"
+                        class="form-control @error('join_date') is-invalid @enderror">
+
+                    @error('join_date')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
 
                 {{-- POSITION --}}
                 <div class="form-group">

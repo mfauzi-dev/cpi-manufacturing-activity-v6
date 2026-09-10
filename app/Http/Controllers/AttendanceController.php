@@ -118,7 +118,7 @@ class AttendanceController extends Controller
                 $q->whereDate('date', $date)
                 ->with('inputBy');
             }
-        ]);
+        ])->where('is_active', 1);
 
         if ($isGeneralAffair) {
             if ($departmentId) {
@@ -240,7 +240,7 @@ class AttendanceController extends Controller
             'attendances' => function ($q) use ($date) {
                 $q->whereDate('date', $date)->with('inputBy');
             }
-        ]);
+        ])->where('is_active', 1);
 
         if ($request->department_id) {
             $query->where('employees.department_id', $request->department_id);
@@ -339,7 +339,7 @@ class AttendanceController extends Controller
             'attendances' => function ($q) use ($date) {
                 $q->whereDate('date', $date)->with('inputBy');
             }
-        ]);
+        ])->where('is_active', 1);
 
         if ($isGeneralAffair) {
             if ($departmentId) {
@@ -456,7 +456,7 @@ class AttendanceController extends Controller
         $search = $request->search;
         $size = $request->size ?? 50;
  
-        $query = Employee::with(['psGroup', 'outsourcing', 'department']);
+        $query = Employee::with(['psGroup', 'outsourcing', 'department'])->where('is_active', 1);
 
         if ($isGeneralAffair) {
             if ($departmentId) {
@@ -629,7 +629,7 @@ class AttendanceController extends Controller
         $search = $request->search;
         $size = $request->size ?? 50;
  
-        $query = Employee::with(['department', 'costCenter', 'psGroup', 'outsourcing']);
+        $query = Employee::with(['department', 'costCenter', 'psGroup', 'outsourcing'])->where('is_active', 1);
  
         if ($request->department_id) {
             $query->where('employees.department_id', $request->department_id);
@@ -754,7 +754,7 @@ class AttendanceController extends Controller
         $search = $request->search;
         $size = $request->size ?? 50;
 
-        $query = Employee::with(['department', 'costCenter', 'psGroup', 'outsourcing']);
+        $query = Employee::with(['department', 'costCenter', 'psGroup', 'outsourcing'])->where('is_active', 1);
 
         if ($isGeneralAffair) {
             if ($departmentId) {
@@ -967,7 +967,7 @@ class AttendanceController extends Controller
             'outsourcing',
             'costCenter',
             'psGroup'
-        ]);
+        ])->where('is_active', 1);
 
         if ($departmentId) {
             $query->where('department_id', $departmentId);
@@ -1048,7 +1048,7 @@ class AttendanceController extends Controller
             'psGroup',
             'costCenter',
             'department'
-        ]);
+        ])->where('is_active', 1);
 
         if ($isGeneralAffair) {
             if ($departmentId) {
@@ -1145,7 +1145,7 @@ class AttendanceController extends Controller
             'psGroup',
             'costCenter',
             'department'
-        ]);
+        ])->where('is_active', 1);
 
         if ($isGeneralAffair) {
             if ($departmentId) {

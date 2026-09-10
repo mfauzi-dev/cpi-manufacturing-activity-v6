@@ -150,8 +150,9 @@ class DailyActivitySlaughterHouseController extends Controller
                     : 0;
 
                 $productivity = $product->productivity;
-                
+
                 foreach ($detail['employee_id'] as $employeeId) {
+                    $employee = Employee::findOrFail($employeeId);
 
                     $dailyActivitySlaughterHouse = DailyActivitySlaughterHouse::firstOrCreate(
                         [
@@ -175,7 +176,7 @@ class DailyActivitySlaughterHouseController extends Controller
                         'total_harga' => $totalHarga,
                         'lama_packing' => $lamaPacking,
                         'productivity' => $productivity,
-                        'productivity_actual' => $productivityActual
+                        'productivity_actual' => $productivityActual,
                     ]);
 
                     $payroll = PenggajianBorongan::firstOrCreate(
@@ -233,7 +234,10 @@ class DailyActivitySlaughterHouseController extends Controller
                         ->distinct()
                         ->count('tanggal');
 
-                    $wageConfig = WageConfig::where('tahun', $tanggal->year)->first();
+                    $wageConfig = WageConfig::where(
+                        'tahun',
+                        $tanggal->year
+                    )->first();
 
                     if (!$wageConfig) {
                         throw new \Exception(
@@ -242,12 +246,50 @@ class DailyActivitySlaughterHouseController extends Controller
                     }
 
                     $ump = (float) $wageConfig->ump;
+                    $hariKerjaStandar = $wageConfig->hari_kerja_standar;
 
-                    $jamsostek = round($ump * 0.0489, 2);
-                    $bpjsKesehatan = round($ump * 0.04, 2);
-                    $bpjsPensiun = round($ump * 0.02, 2);
+                    if ($hariKerjaStandar <= 0) {
+                        throw new \Exception(
+                            'Hari kerja standar untuk tahun ' . $tanggal->year . ' harus lebih dari 0.'
+                        );
+                    }
 
-                    $managemenFeePerDay = 175000 / $wageConfig->hari_kerja_standar;
+                    $upahPerHari = $ump / $hariKerjaStandar;
+                    $workDays = $totalHariKerja;
+
+                    $isNewEmployeeThisMonth =
+                        $employee->join_date
+                        && $employee->join_date->isSameMonth($tanggal)
+                        && $employee->join_date->isSameYear($tanggal);
+
+                    if ($isNewEmployeeThisMonth) {
+                        $jamsostek = round(
+                            $upahPerHari * $workDays * 0.0489,
+                            2
+                        );
+
+                        $bpjsPensiun = round(
+                            $upahPerHari * $workDays * 0.02,
+                            2
+                        );
+                    } else {
+                        $jamsostek = round(
+                            $ump * 0.0489,
+                            2
+                        );
+
+                        $bpjsPensiun = round(
+                            $ump * 0.02,
+                            2
+                        );
+                    }
+
+                    $bpjsKesehatan = round(
+                        $ump * 0.04,
+                        2
+                    );
+
+                    $managemenFeePerDay = 175000 / $hariKerjaStandar;
 
                     $managemenFee = min(
                         $totalHariKerja * $managemenFeePerDay,
@@ -284,7 +326,6 @@ class DailyActivitySlaughterHouseController extends Controller
                 );
 
         } catch (\Throwable $e) {
-
             DB::rollBack();
 
             return redirect()
@@ -1198,12 +1239,14 @@ class DailyActivitySlaughterHouseController extends Controller
 
         try {
             $detail = DailyActivityDetailSlaughterHouse::with(
-                'dailyActivitySlaughterHouse'
+                'dailyActivitySlaughterHouse.employee'
             )->findOrFail($id);
 
             $dailyActivitySlaughterHouse = $detail->dailyActivitySlaughterHouse;
 
             $employeeId = $dailyActivitySlaughterHouse->employee_id;
+            $employee = $dailyActivitySlaughterHouse->employee;
+
             $tanggal = Carbon::parse($dailyActivitySlaughterHouse->tanggal);
 
             $product = Product::findOrFail($request->product_id);
@@ -1267,34 +1310,74 @@ class DailyActivitySlaughterHouseController extends Controller
                 ->distinct()
                 ->count('tanggal');
 
-                $wageConfig = WageConfig::where('tahun', $tanggal->year)->first();
+            $wageConfig = WageConfig::where(
+                'tahun',
+                $tanggal->year
+            )->first();
 
-                if (!$wageConfig) {
-                    throw new \Exception(
-                        'Wage Config untuk tahun ' . $tanggal->year . ' belum tersedia.'
-                    );
-                }
+            if (!$wageConfig) {
+                throw new \Exception(
+                    'Wage Config untuk tahun ' . $tanggal->year . ' belum tersedia.'
+                );
+            }
 
-                $ump = (float) $wageConfig->ump;
+            $ump = (float) $wageConfig->ump;
+            $hariKerjaStandar = $wageConfig->hari_kerja_standar;
 
-                $jamsostek = round($ump * 0.0489, 2);
-                $bpjsKesehatan = round($ump * 0.04, 2);
-                $bpjsPensiun = round($ump * 0.02, 2);
+            if ($hariKerjaStandar <= 0) {
+                throw new \Exception(
+                    'Hari kerja standar untuk tahun ' . $tanggal->year . ' harus lebih dari 0.'
+                );
+            }
 
-                $managemenFeePerDay = 175000 / $wageConfig->hari_kerja_standar;
+            $upahPerHari = $ump / $hariKerjaStandar;
+            $workDays = $totalHariKerja;
 
-                $managemenFee = min(
-                    $totalHariKerja * $managemenFeePerDay,
-                    175000
+            $isNewEmployeeThisMonth =
+                $employee->join_date
+                && $employee->join_date->isSameMonth($tanggal)
+                && $employee->join_date->isSameYear($tanggal);
+
+            if ($isNewEmployeeThisMonth) {
+                $jamsostek = round(
+                    $upahPerHari * $workDays * 0.0489,
+                    2
                 );
 
-                $grandTotalUpah =
-                    $totalUpah
-                    + $jamsostek
-                    + $bpjsKesehatan
-                    + $bpjsPensiun
-                    + $managemenFee;
+                $bpjsPensiun = round(
+                    $upahPerHari * $workDays * 0.02,
+                    2
+                );
+            } else {
+                $jamsostek = round(
+                    $ump * 0.0489,
+                    2
+                );
 
+                $bpjsPensiun = round(
+                    $ump * 0.02,
+                    2
+                );
+            }
+
+            $bpjsKesehatan = round(
+                $ump * 0.04,
+                2
+            );
+
+            $managemenFeePerDay = 175000 / $hariKerjaStandar;
+
+            $managemenFee = min(
+                $totalHariKerja * $managemenFeePerDay,
+                175000
+            );
+
+            $grandTotalUpah =
+                $totalUpah
+                + $jamsostek
+                + $bpjsKesehatan
+                + $bpjsPensiun
+                + $managemenFee;
 
             PenggajianBorongan::updateOrCreate(
                 [
@@ -1338,7 +1421,6 @@ class DailyActivitySlaughterHouseController extends Controller
                 );
 
         } catch (\Throwable $e) {
-
             DB::rollBack();
 
             return redirect()

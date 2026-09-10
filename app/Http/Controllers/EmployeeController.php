@@ -21,7 +21,7 @@ class EmployeeController extends Controller
     {
         $costCenters = CostCenter::where('department_id', $departmentId)
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'code']);
 
         return response()->json($costCenters);
     }
@@ -115,6 +115,8 @@ class EmployeeController extends Controller
             ->paginate($size)
             ->withQueryString();
 
+        $totalEmployee = (clone $query)->count();
+
         $costCenterList = CostCenter::orderBy('name')->get();
         $positionList = Position::orderBy('name')->get();
         $levelList = Level::orderBy('name')->get();
@@ -132,7 +134,8 @@ class EmployeeController extends Controller
                 'levelId',
                 'costCenterList',
                 'positionList',
-                'levelList'
+                'levelList',
+                'totalEmployee'
             )
         );
     }
@@ -145,6 +148,7 @@ class EmployeeController extends Controller
             'employment_status' => ['nullable', 'in:permanent,outsourcing'],
             'employee_status' => ['nullable', 'in:cpi,borongan,harian'],
             'is_active' => ['nullable', 'in:0,1'],
+            'department_id' => ['nullable', 'exists:departments,id'],
             'cost_center_id' => ['nullable', 'exists:cost_centers,id'],
             'position_id' => ['nullable', 'exists:positions,id'],
             'level_id' => ['nullable', 'exists:levels,id'],
@@ -155,17 +159,23 @@ class EmployeeController extends Controller
         $employmentStatus = $request->employment_status;
         $employeeStatus = $request->employee_status;
         $isActive = $request->is_active;
+        $departmentId = $request->department_id;
         $costCenterId = $request->cost_center_id;
         $positionId = $request->position_id;
         $levelId = $request->level_id;
 
         $query = Employee::with([
             'outsourcing',
+            'department',
             'costCenter',
             'psGroup',
             'position',
             'level',
         ]);
+
+        if ($departmentId) {
+            $query->where('department_id', $departmentId);
+        }
 
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -200,6 +210,10 @@ class EmployeeController extends Controller
 
         $query
             ->orderBy(
+                Department::select('name')
+                    ->whereColumn('departments.id', 'employees.department_id')
+            )
+            ->orderBy(
                 CostCenter::select('name')
                     ->whereColumn('cost_centers.id', 'employees.cost_center_id')
             )
@@ -217,7 +231,21 @@ class EmployeeController extends Controller
             ->paginate($size)
             ->withQueryString();
 
-        $costCenterList = CostCenter::orderBy('name')->get();
+        $totalEmployee = (clone $query)->count();
+
+        $departmentList = Department::orderBy('name')->get();
+
+        if ($departmentId) {
+            $costCenterList = CostCenter::where(
+                'department_id',
+                $departmentId
+            )
+                ->orderBy('name')
+                ->get();
+        } else {
+            $costCenterList = collect();
+        }
+
         $positionList = Position::orderBy('name')->get();
         $levelList = Level::orderBy('name')->get();
 
@@ -229,12 +257,15 @@ class EmployeeController extends Controller
                 'employmentStatus',
                 'employeeStatus',
                 'isActive',
+                'departmentId',
                 'costCenterId',
                 'positionId',
                 'levelId',
+                'departmentList',
                 'costCenterList',
                 'positionList',
-                'levelList'
+                'levelList',
+                'totalEmployee'
             )
         );
     }
@@ -337,6 +368,8 @@ class EmployeeController extends Controller
             ->paginate($size)
             ->withQueryString();
 
+        $totalEmployee = (clone $query)->count();
+
         // Dropdown department: cuma HR yang butuh, non-HR gak perlu pilih (udah fix ke departmentnya)
         $departmentList = $isHrDepartment
             ? Department::orderBy('name')->get()
@@ -370,7 +403,8 @@ class EmployeeController extends Controller
                 'costCenterList',
                 'positionList',
                 'levelList',
-                'isHrDepartment'
+                'isHrDepartment',
+                'totalEmployee'
             )
         );
     }
@@ -413,65 +447,57 @@ class EmployeeController extends Controller
                 'max:50',
                 'unique:employees,nik',
             ],
-
             'name' => [
                 'required',
                 'string',
                 'max:255',
             ],
-
+            'join_date' => [
+                'nullable',
+                'date',
+            ],
             'employment_status' => [
                 'required',
                 'in:permanent,outsourcing',
             ],
-
             'employee_status' => [
                 'required_if:employment_status,outsourcing',
                 'nullable',
                 'in:borongan,harian,harian_kontrak',
             ],
-
             'outsourcing_id' => [
                 'required_if:employment_status,outsourcing',
                 'nullable',
                 'exists:outsourcings,id',
             ],
-
             'department_id' => [
                 'nullable',
                 'exists:departments,id',
             ],
-
             'cost_center_id' => [
                 'nullable',
                 'exists:cost_centers,id',
             ],
-
             'ps_group_id' => [
                 'nullable',
                 'exists:ps_groups,id',
             ],
-
             'position_id' => [
                 'nullable',
                 'exists:positions,id',
             ],
-
             'level_id' => [
                 'nullable',
                 'exists:levels,id',
             ],
-
             'personel_area' => [
                 'nullable',
                 'string',
             ],
-
             'gender' => [
                 'nullable',
                 'string',
             ],
-
             'is_active' => [
                 'required',
                 'boolean',
@@ -489,6 +515,7 @@ class EmployeeController extends Controller
         Employee::create([
             'nik' => $request->nik,
             'name' => $request->name,
+            'join_date' => $request->join_date,
             'employment_status' => $request->employment_status,
             'employee_status' => $employeeStatus,
             'outsourcing_id' => $outsourcingId,
@@ -630,65 +657,57 @@ class EmployeeController extends Controller
                 'nullable',
                 Rule::unique('employees', 'nik')->ignore($id),
             ],
-
             'name' => [
                 'required',
                 'string',
                 'max:255',
             ],
-
+            'join_date' => [
+                'nullable',
+                'date',
+            ],
             'employment_status' => [
                 'required',
                 'in:permanent,outsourcing',
             ],
-
             'outsourcing_id' => [
                 'nullable',
                 'required_if:employment_status,outsourcing',
                 'exists:outsourcings,id',
             ],
-
             'employee_status' => [
                 'nullable',
                 'required_if:employment_status,outsourcing',
                 'in:cpi,borongan,harian,harian_kontrak',
             ],
-
             'department_id' => [
                 'nullable',
                 'exists:departments,id',
             ],
-
             'cost_center_id' => [
                 'nullable',
                 'exists:cost_centers,id',
             ],
-
             'ps_group_id' => [
                 'nullable',
                 'exists:ps_groups,id',
             ],
-
             'position_id' => [
                 'nullable',
                 'exists:positions,id',
             ],
-
             'level_id' => [
                 'nullable',
                 'exists:levels,id',
             ],
-
             'personel_area' => [
                 'nullable',
                 'string',
             ],
-
             'gender' => [
                 'nullable',
                 'string',
             ],
-
             'is_active' => [
                 'required',
                 'boolean',
@@ -698,16 +717,14 @@ class EmployeeController extends Controller
         $employee->update([
             'nik' => $request->nik,
             'name' => $request->name,
+            'join_date' => $request->join_date,
             'employment_status' => $request->employment_status,
-
             'outsourcing_id' => $request->employment_status === 'outsourcing'
                 ? $request->outsourcing_id
                 : null,
-
             'employee_status' => $request->employment_status === 'outsourcing'
                 ? $request->employee_status
                 : 'cpi',
-
             'department_id' => $request->department_id,
             'cost_center_id' => $request->cost_center_id,
             'ps_group_id' => $request->ps_group_id,

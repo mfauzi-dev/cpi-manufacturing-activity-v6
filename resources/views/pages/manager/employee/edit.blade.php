@@ -232,6 +232,17 @@
                     @enderror
                 </div>
 
+                <div class="form-group">
+                    <label>Join Date</label>
+                    <input type="date" name="join_date"
+                        value="{{ old('join_date', $employee->join_date ? $employee->join_date->format('Y-m-d') : '') }}"
+                        class="form-control @error('join_date') is-invalid @enderror">
+
+                    @error('join_date')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
                 {{-- POSITION --}}
                 <div class="form-group">
                     <label>Posisi</label>
@@ -281,7 +292,8 @@
                 <div class="form-group">
                     <label>Personel Area</label>
 
-                    <input type="text" name="personel_area" value="{{ old('personel_area', $employee->personel_area) }}"
+                    <input type="text" name="personel_area"
+                        value="{{ old('personel_area', $employee->personel_area) }}"
                         class="form-control @error('personel_area') is-invalid @enderror">
 
                     @error('personel_area')

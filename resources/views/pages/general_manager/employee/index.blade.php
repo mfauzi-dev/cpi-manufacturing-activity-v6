@@ -17,7 +17,6 @@
             </div>
         @endif
 
-        {{-- FILTER --}}
         <div class="card mb-3">
             <div class="card-body">
 
@@ -26,81 +25,171 @@
                     <div class="row">
 
                         <div class="col-md-3 mb-2">
-                            <select name="employment_status" class="form-control">
-                                <option value="">Jenis Karyawan</option>
+                            <div class="form-group">
+                                <label>Jenis Karyawan</label>
 
-                                <option value="permanent"
-                                    {{ request('employment_status') == 'permanent' ? 'selected' : '' }}>
-                                    Permanent
-                                </option>
+                                <select name="employment_status" class="form-control">
+                                    <option value="">Jenis Karyawan</option>
 
-                                <option value="outsourcing"
-                                    {{ request('employment_status') == 'outsourcing' ? 'selected' : '' }}>
-                                    Outsourcing
-                                </option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-3 mb-2">
-                            <select name="employee_status" class="form-control">
-                                <option value="">Status</option>
-
-                                <option value="cpi" {{ request('employee_status') == 'cpi' ? 'selected' : '' }}>
-                                    CPI
-                                </option>
-
-                                <option value="borongan" {{ request('employee_status') == 'borongan' ? 'selected' : '' }}>
-                                    Borongan
-                                </option>
-
-                                <option value="harian" {{ request('employee_status') == 'harian' ? 'selected' : '' }}>
-                                    Harian
-                                </option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-3 mb-2">
-                            <select name="cost_center_id" class="form-control">
-                                <option value="">Semua Cost Center</option>
-
-                                @foreach ($costCenterList as $costCenter)
-                                    <option value="{{ $costCenter->id }}"
-                                        {{ request('cost_center_id') == $costCenter->id ? 'selected' : '' }}>
-                                        {{ $costCenter->code }} - {{ $costCenter->name }}
+                                    <option value="permanent"
+                                        {{ request('employment_status') == 'permanent' ? 'selected' : '' }}>
+                                        Permanent
                                     </option>
-                                @endforeach
-                            </select>
-                        </div>
 
-                        <div class="col-md-3 mb-2">
-                            <select name="position_id" class="form-control">
-                                <option value="">Semua Position</option>
-
-                                @foreach ($positionList as $position)
-                                    <option value="{{ $position->id }}"
-                                        {{ request('position_id') == $position->id ? 'selected' : '' }}>
-                                        {{ $position->name }}
+                                    <option value="outsourcing"
+                                        {{ request('employment_status') == 'outsourcing' ? 'selected' : '' }}>
+                                        Outsourcing
                                     </option>
-                                @endforeach
-                            </select>
+                                </select>
+                            </div>
                         </div>
 
+                        <div class="col-md-3 mb-2">
+                            <div class="form-group">
+                                <label>Status</label>
+
+                                <select name="employee_status" class="form-control">
+                                    <option value="">Status</option>
+
+                                    <option value="cpi" {{ request('employee_status') == 'cpi' ? 'selected' : '' }}>
+                                        CPI
+                                    </option>
+
+                                    <option value="borongan"
+                                        {{ request('employee_status') == 'borongan' ? 'selected' : '' }}>
+                                        Borongan
+                                    </option>
+
+                                    <option value="harian" {{ request('employee_status') == 'harian' ? 'selected' : '' }}>
+                                        Harian
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
 
                         <div class="col-md-3 mb-2">
-                            <input type="text" name="search" class="form-control" placeholder="NIK / Nama"
-                                value="{{ request('search') }}">
+                            <div class="form-group">
+                                <label>Status Aktif</label>
+
+                                <select name="is_active" class="form-control">
+                                    <option value="">Status Aktif</option>
+
+                                    <option value="1" {{ request('is_active') === '1' ? 'selected' : '' }}>
+                                        Aktif
+                                    </option>
+
+                                    <option value="0" {{ request('is_active') === '0' ? 'selected' : '' }}>
+                                        Tidak Aktif
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 mb-2">
+                            <div class="form-group">
+                                <label>Department</label>
+
+                                <select name="department_id" id="department_id" class="form-control">
+
+                                    <option value="">
+                                        Semua Department
+                                    </option>
+
+                                    @foreach ($departmentList as $department)
+                                        <option value="{{ $department->id }}"
+                                            {{ request('department_id') == $department->id ? 'selected' : '' }}>
+                                            {{ $department->name }}
+                                        </option>
+                                    @endforeach
+
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 mb-2">
+                            <div class="form-group">
+                                <label>Cost Center</label>
+
+                                <select name="cost_center_id" id="cost_center_id" class="form-control">
+
+                                    <option value="">
+                                        Semua Cost Center
+                                    </option>
+
+                                    @foreach ($costCenterList as $costCenter)
+                                        <option value="{{ $costCenter->id }}"
+                                            {{ request('cost_center_id') == $costCenter->id ? 'selected' : '' }}>
+                                            {{ $costCenter->code }} - {{ $costCenter->name }}
+                                        </option>
+                                    @endforeach
+
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 mb-2">
+                            <div class="form-group">
+                                <label>Position</label>
+
+                                <select name="position_id" class="form-control">
+
+                                    <option value="">
+                                        Semua Position
+                                    </option>
+
+                                    @foreach ($positionList as $position)
+                                        <option value="{{ $position->id }}"
+                                            {{ request('position_id') == $position->id ? 'selected' : '' }}>
+                                            {{ $position->name }}
+                                        </option>
+                                    @endforeach
+
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 mb-2">
+                            <div class="form-group">
+                                <label>Level</label>
+
+                                <select name="level_id" class="form-control">
+
+                                    <option value="">
+                                        Semua Level
+                                    </option>
+
+                                    @foreach ($levelList as $level)
+                                        <option value="{{ $level->id }}"
+                                            {{ request('level_id') == $level->id ? 'selected' : '' }}>
+                                            {{ $level->name }}
+                                        </option>
+                                    @endforeach
+
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 mb-2">
+                            <div class="form-group">
+                                <label>Search</label>
+
+                                <input type="text" name="search" class="form-control" placeholder="NIK / Nama"
+                                    value="{{ request('search') }}">
+                            </div>
                         </div>
 
                     </div>
 
                     <div class="mt-2">
-                        <button class="btn btn-primary">
+
+                        <button type="submit" class="btn btn-primary">
                             Terapkan Filter
                         </button>
 
                         <a href="{{ route('general-manager.employee.index') }}" class="btn btn-secondary">
                             Reset
                         </a>
+
                     </div>
 
                 </form>
@@ -108,32 +197,77 @@
             </div>
         </div>
 
-        {{-- TABLE --}}
+        <div class="row mb-2">
+
+            <div class="col-md-3">
+
+                <div class="card card-primary">
+
+                    <div class="card-body">
+
+                        <div class="text-muted">
+                            Total Karyawan
+                        </div>
+
+                        <h3 class="mb-0">
+                            {{ $totalEmployee }} Orang
+                        </h3>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
         <div class="card">
+
+            <div class="card-header">
+                <h4 class="mb-0">
+                    Data Karyawan
+                </h4>
+            </div>
+
             <div class="card-body table-responsive">
 
                 <table class="table table-bordered table-hover">
 
                     <thead class="thead-light">
+
                         <tr>
                             <th>NIK</th>
                             <th>Nama</th>
+                            <th>Department</th>
                             <th>Status</th>
+                            <th>Status Aktif</th>
                             <th>Cost Center</th>
                             <th>PS Group</th>
                             <th>Position</th>
                             <th>Gender</th>
                         </tr>
+
                     </thead>
 
                     <tbody>
 
                         @forelse ($employees as $employee)
                             <tr>
-                                <td>{{ $employee->nik ?? '-' }}</td>
-                                <td>{{ $employee->name }}</td>
 
                                 <td>
+                                    {{ $employee->nik ?? '-' }}
+                                </td>
+
+                                <td>
+                                    {{ $employee->name }}
+                                </td>
+
+                                <td>
+                                    {{ $employee->department->name ?? '-' }}
+                                </td>
+
+                                <td>
+
                                     @if ($employee->employment_status == 'permanent')
                                         <span class="badge badge-primary">
                                             Permanent
@@ -143,22 +277,49 @@
                                             Outsourcing
                                         </span>
                                     @endif
+
                                 </td>
 
+                                <td>
 
-                                <td>{{ $employee->costCenter->name ?? '-' }}</td>
+                                    @if ($employee->is_active)
+                                        <span class="badge badge-success">
+                                            Aktif
+                                        </span>
+                                    @else
+                                        <span class="badge badge-danger">
+                                            Tidak Aktif
+                                        </span>
+                                    @endif
 
-                                <td>{{ $employee->psGroup->name ?? '-' }}</td>
+                                </td>
 
-                                <td>{{ $employee->position->name ?? '-' }}</td>
+                                <td>
+                                    {{ $employee->costCenter->name ?? '-' }}
+                                </td>
 
-                                <td>{{ $employee->gender ?? '-' }}</td>
+                                <td>
+                                    {{ $employee->psGroup->name ?? '-' }}
+                                </td>
+
+                                <td>
+                                    {{ $employee->position->name ?? '-' }}
+                                </td>
+
+                                <td>
+                                    {{ $employee->gender ?? '-' }}
+                                </td>
+
                             </tr>
+
                         @empty
+
                             <tr>
-                                <td colspan="12" class="text-center text-muted">
+
+                                <td colspan="9" class="text-center text-muted">
                                     Tidak ada data
                                 </td>
+
                             </tr>
                         @endforelse
 
@@ -176,3 +337,57 @@
 
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        $(document).ready(function() {
+
+            $('#department_id').on('change', function() {
+
+                let departmentId = $(this).val();
+                let $costCenter = $('#cost_center_id');
+
+                $costCenter.html(
+                    '<option value="">Semua Cost Center</option>'
+                );
+
+                if (!departmentId) {
+                    return;
+                }
+
+                $.ajax({
+
+                    url: "{{ url('/employee/cost-centers-by-department') }}/" + departmentId,
+
+                    type: "GET",
+
+                    success: function(costCenters) {
+
+                        costCenters.forEach(function(cc) {
+
+                            $costCenter.append(
+                                '<option value="' + cc.id + '">' +
+                                cc.code + ' - ' + cc.name +
+                                '</option>'
+                            );
+
+                        });
+
+                    },
+
+                    error: function(xhr) {
+
+                        console.log(
+                            'Gagal mengambil cost center:',
+                            xhr.responseText
+                        );
+
+                    }
+
+                });
+
+            });
+
+        });
+    </script>
+@endpush

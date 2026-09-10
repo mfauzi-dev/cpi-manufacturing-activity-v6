@@ -151,6 +151,7 @@ class DailyActivityController extends Controller
                     : 0;
 
                 foreach ($detail['employee_id'] as $employeeId) {
+                    $employee = Employee::findOrFail($employeeId);
                     $dailyActivity = DailyActivity::firstOrCreate([
                         'employee_id' => $employeeId,
                         'tanggal' => $request->tanggal,
@@ -209,12 +210,38 @@ class DailyActivityController extends Controller
 
                     $ump = (float) $wageConfig->ump;
                     $hariKerjaStandar = $wageConfig->hari_kerja_standar;
+                    $upahPerHari = $ump / $hariKerjaStandar;
+                    $workDays = $payroll->total_hari_kerja;
 
-                    $jamsostek = round($ump * 0.0489, 2);
+                    $isNewEmployeeThisMonth =
+                        $employee->join_date
+                        && $employee->join_date->isSameMonth($tanggal)
+                        && $employee->join_date->isSameYear($tanggal);
+
+                    if ($isNewEmployeeThisMonth) {
+                        $jamsostek = round(
+                            $upahPerHari * $workDays * 0.0489,
+                            2
+                        );
+
+                        $bpjsPensiun = round(
+                            $upahPerHari * $workDays * 0.02,
+                            2
+                        );
+                    } else {
+                        $jamsostek = round(
+                            $ump * 0.0489,
+                            2
+                        );
+
+                        $bpjsPensiun = round(
+                            $ump * 0.02,
+                            2
+                        );
+                    }
+
 
                     $bpjsKesehatan = round($ump * 0.04, 2);
-
-                    $bpjsPensiun = round($ump * 0.02, 2);
 
                     $managemenFeePerDay = 175000 / $hariKerjaStandar;
 
@@ -888,8 +915,9 @@ class DailyActivityController extends Controller
                 ->findOrFail($id);
 
             $dailyActivity = $detail->dailyActivity;
-
             $employeeId = $dailyActivity->employee_id;
+            $employee = $dailyActivity->employee;
+
             $tanggal = Carbon::parse($dailyActivity->tanggal);
 
             $product = Product::findOrFail($request->product_id);
@@ -904,7 +932,6 @@ class DailyActivityController extends Controller
                 ? $outputKg / $lamaPacking
                 : 0;
 
-            // Update Daily Activity Detail
             $detail->update([
                 'product_id' => $product->id,
                 'total_kg' => $outputKg,
@@ -956,11 +983,41 @@ class DailyActivityController extends Controller
                 );
             }
 
-            $jamsostek = round($ump * 0.0489, 2);
+            $upahPerHari = $ump / $hariKerjaStandar;
 
-            $bpjsKesehatan = round($ump * 0.04, 2);
+            $workDays = $totalHariKerja;
 
-            $bpjsPensiun = round($ump * 0.02, 2);
+            $isNewEmployeeThisMonth =
+                $employee->join_date
+                && $employee->join_date->isSameMonth($tanggal)
+                && $employee->join_date->isSameYear($tanggal);
+
+            if ($isNewEmployeeThisMonth) {
+                $jamsostek = round(
+                    $upahPerHari * $workDays * 0.0489,
+                    2
+                );
+
+                $bpjsPensiun = round(
+                    $upahPerHari * $workDays * 0.02,
+                    2
+                );
+            } else {
+                $jamsostek = round(
+                    $ump * 0.0489,
+                    2
+                );
+
+                $bpjsPensiun = round(
+                    $ump * 0.02,
+                    2
+                );
+            }
+
+            $bpjsKesehatan = round(
+                $ump * 0.04,
+                2
+            );
 
             $managemenFeePerDay = 175000 / $hariKerjaStandar;
 
@@ -976,7 +1033,6 @@ class DailyActivityController extends Controller
                 + $bpjsPensiun
                 + $managemenFee;
 
-            // Ambil payroll bulan tersebut
             PenggajianBorongan::updateOrCreate(
                 [
                     'employee_id' => $employeeId,
@@ -1008,14 +1064,20 @@ class DailyActivityController extends Controller
                     'date_from' => $dateFrom,
                     'date_to' => $dateFrom,
                 ])
-                ->with('success', 'Data berhasil diupdate dan penggajian borongan berhasil diperbarui.');
+                ->with(
+                    'success',
+                    'Data berhasil diupdate dan penggajian borongan berhasil diperbarui.'
+                );
 
         } catch (\Throwable $e) {
             DB::rollBack();
 
             return redirect()
                 ->back()
-                ->with('error', 'Gagal mengupdate data: ' . $e->getMessage());
+                ->with(
+                    'error',
+                    'Gagal mengupdate data: ' . $e->getMessage()
+                );
         }
     }
 

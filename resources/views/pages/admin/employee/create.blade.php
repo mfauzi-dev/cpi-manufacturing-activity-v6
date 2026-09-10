@@ -187,6 +187,16 @@
                 </div>
 
                 <div class="form-group">
+                    <label>Join Date</label>
+                    <input type="date" name="join_date" value="{{ old('join_date') }}"
+                        class="form-control @error('join_date') is-invalid @enderror">
+
+                    @error('join_date')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="form-group">
                     <label>Posisi</label>
 
                     <select name="position_id" class="form-control @error('position_id') is-invalid @enderror">
