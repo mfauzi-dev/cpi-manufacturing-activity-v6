@@ -29,6 +29,13 @@
                 </a>
             </li>
 
+            <li class="{{ Request::is('admin/shifts*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('admin.shift.index') }}">
+                    <i class="fas fa-clock"></i>
+                    <span>Shift</span>
+                </a>
+            </li>
+
             <li class="{{ Request::is('admin/positions*') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('position.index') }}">
                     <i class="fas fa-user-tie"></i>

@@ -5,6 +5,7 @@ namespace App\Exports;
 use App\Models\CostCenter;
 use App\Models\DailyActivityDetail;
 use App\Models\DailyActivityDetailSlaughterHouse;
+use App\Models\Department;
 use App\Models\PenggajianBorongan;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
@@ -36,11 +37,17 @@ class PenggajianBoronganExport implements
     protected $costCenters;
     protected array $costCenterUpah = [];
 
-    /** @var Carbon[] semua tanggal dalam periode, dipakai untuk kolom per-tanggal */
     protected array $dates = [];
 
-    /** @var array<int, array<string, float>> [employee_id][Y-m-d] => total upah hari itu */
     protected array $dailyUpah = [];
+
+    protected ?string $departmentName = null;
+    protected ?string $outsourcingName = null;
+
+    protected bool $showDateColumns = true;
+    protected bool $showCostCenterColumns = true;
+
+    protected const TITLE_ROWS = 8;
 
     public function __construct(
         int $month,
@@ -62,6 +69,18 @@ class PenggajianBoronganExport implements
             )
                 ->orderBy('name')
                 ->get();
+
+            $this->departmentName = Department::find($this->departmentId)->name ?? null;
+
+            $normalizedName = strtolower(trim($this->departmentName ?? ''));
+
+            if ($normalizedName === 'sausage') {
+                $this->showDateColumns = true;
+                $this->showCostCenterColumns = false;
+            } elseif ($normalizedName === 'slaughter house') {
+                $this->showDateColumns = false;
+                $this->showCostCenterColumns = true;
+            }
         } else {
             $this->costCenters = CostCenter::orderBy('name')->get();
         }
@@ -123,8 +142,28 @@ class PenggajianBoronganExport implements
             ->unique()
             ->values();
 
+        if ($this->outsourcingId) {
+            $this->outsourcingName = \App\Models\Outsourcing::find($this->outsourcingId)->name ?? null;
+        } else {
+            $this->outsourcingName = $payrolls->first()->employee->outsourcing->name ?? null;
+        }
+
         $this->costCenterUpah = [];
         $this->dailyUpah = [];
+
+        $accumulateUpah = function ($row) {
+            if (!isset($this->costCenterUpah[$row->employee_id][$row->cost_center_id])) {
+                $this->costCenterUpah[$row->employee_id][$row->cost_center_id] = 0;
+            }
+            $this->costCenterUpah[$row->employee_id][$row->cost_center_id] += (float) $row->total_upah;
+
+            $dateKey = Carbon::parse($row->tanggal)->format('Y-m-d');
+
+            if (!isset($this->dailyUpah[$row->employee_id][$dateKey])) {
+                $this->dailyUpah[$row->employee_id][$dateKey] = 0;
+            }
+            $this->dailyUpah[$row->employee_id][$dateKey] += (float) $row->total_upah;
+        };
 
         if ($employeeIds->isNotEmpty()) {
 
@@ -151,12 +190,6 @@ class PenggajianBoronganExport implements
                 ->pluck('employee_id')
                 ->unique()
                 ->values();
-
-            // Catatan: query di bawah sekarang ikut group by tanggal (bukan
-            // cuma employee_id + cost_center_id) supaya dari satu query yang
-            // sama kita bisa mengisi dua rekap sekaligus:
-            // 1) total upah per cost center (sepanjang bulan)  -> costCenterUpah
-            // 2) total upah per tanggal (semua cost center digabung) -> dailyUpah
 
             if ($sausageEmployeeIds->isNotEmpty()) {
 
@@ -193,7 +226,7 @@ class PenggajianBoronganExport implements
                     ->get();
 
                 foreach ($sausageUpah as $row) {
-                    $this->accumulateUpah($row);
+                    $accumulateUpah($row);
                 }
             }
 
@@ -235,31 +268,12 @@ class PenggajianBoronganExport implements
                     ->get();
 
                 foreach ($slaughterHouseUpah as $row) {
-                    $this->accumulateUpah($row);
+                    $accumulateUpah($row);
                 }
             }
         }
 
         return $payrolls;
-    }
-
-    /**
-     * Tambahkan satu baris hasil query (employee_id, cost_center_id,
-     * tanggal, total_upah) ke dua rekap: costCenterUpah dan dailyUpah.
-     */
-    protected function accumulateUpah($row): void
-    {
-        if (!isset($this->costCenterUpah[$row->employee_id][$row->cost_center_id])) {
-            $this->costCenterUpah[$row->employee_id][$row->cost_center_id] = 0;
-        }
-        $this->costCenterUpah[$row->employee_id][$row->cost_center_id] += (float) $row->total_upah;
-
-        $dateKey = Carbon::parse($row->tanggal)->format('Y-m-d');
-
-        if (!isset($this->dailyUpah[$row->employee_id][$dateKey])) {
-            $this->dailyUpah[$row->employee_id][$dateKey] = 0;
-        }
-        $this->dailyUpah[$row->employee_id][$dateKey] += (float) $row->total_upah;
     }
 
     public function headings(): array
@@ -275,17 +289,18 @@ class PenggajianBoronganExport implements
         ];
         $row2 = ['', '', '', '', '', '', ''];
 
-        // Blok per tanggal: row1 nanti di-merge jadi satu judul "UPAH HARIAN"
-        // di registerEvents(), di sini cukup kosongkan dan isi tanggal di row2.
-        foreach ($this->dates as $date) {
-            $row1[] = '';
-            $row2[] = $date->translatedFormat('D') . "\n" . $date->format('d/m');
+        if ($this->showDateColumns) {
+            foreach ($this->dates as $date) {
+                $row1[] = '';
+                $row2[] = $date->translatedFormat('D') . "\n" . $date->format('d/m');
+            }
         }
 
-        // Blok cost center (sama seperti sebelumnya)
-        foreach ($this->costCenters as $costCenter) {
-            $row1[] = '';
-            $row2[] = $costCenter->code . "\n" . $costCenter->name;
+        if ($this->showCostCenterColumns) {
+            foreach ($this->costCenters as $costCenter) {
+                $row1[] = '';
+                $row2[] = $costCenter->code . "\n" . $costCenter->name;
+            }
         }
 
         $row1[] = 'TOTAL UPAH YANG DITERIMA';
@@ -322,21 +337,25 @@ class PenggajianBoronganExport implements
             (int) ($payroll->total_hari_kerja ?? 0),
         ];
 
-        foreach ($this->dates as $date) {
-            $dateKey = $date->format('Y-m-d');
-            $row[] = (float) ($this->dailyUpah[$payroll->employee_id][$dateKey] ?? 0);
+        if ($this->showDateColumns) {
+            foreach ($this->dates as $date) {
+                $dateKey = $date->format('Y-m-d');
+                $row[] = (float) ($this->dailyUpah[$payroll->employee_id][$dateKey] ?? 0);
+            }
         }
 
-        foreach ($this->costCenters as $costCenter) {
+        if ($this->showCostCenterColumns) {
+            foreach ($this->costCenters as $costCenter) {
 
-            $upahCostCenter =
-                $this->costCenterUpah[
-                    $payroll->employee_id
-                ][
-                    $costCenter->id
-                ] ?? 0;
+                $upahCostCenter =
+                    $this->costCenterUpah[
+                        $payroll->employee_id
+                    ][
+                        $costCenter->id
+                    ] ?? 0;
 
-            $row[] = (float) $upahCostCenter;
+                $row[] = (float) $upahCostCenter;
+            }
         }
 
         $row[] = (float) ($payroll->total_upah ?? 0);
@@ -351,6 +370,17 @@ class PenggajianBoronganExport implements
 
     public function columnWidths(): array
     {
+        // Closure lokal konversi index kolom (1,2,3...) ke huruf (A,B,C...AA...)
+        $getColumnLetter = function (int $column): string {
+            $letter = '';
+            while ($column > 0) {
+                $modulo = ($column - 1) % 26;
+                $letter = chr(65 + $modulo) . $letter;
+                $column = (int) (($column - $modulo) / 26);
+            }
+            return $letter;
+        };
+
         $widths = [
             'A' => 5,
             'B' => 18,
@@ -362,50 +392,33 @@ class PenggajianBoronganExport implements
         ];
 
         $dateStartColumn = 8;
+        $dateCount = $this->showDateColumns ? count($this->dates) : 0;
 
-        foreach ($this->dates as $index => $date) {
-            $column = $this->getColumnLetter($dateStartColumn + $index);
-            $widths[$column] = 10;
+        if ($this->showDateColumns) {
+            foreach ($this->dates as $index => $date) {
+                $column = $getColumnLetter($dateStartColumn + $index);
+                $widths[$column] = 10;
+            }
         }
 
-        $costCenterStartColumn = $dateStartColumn + count($this->dates);
+        $costCenterStartColumn = $dateStartColumn + $dateCount;
+        $costCenterCount = $this->showCostCenterColumns ? $this->costCenters->count() : 0;
 
-        foreach ($this->costCenters as $index => $costCenter) {
-
-            $column = $this->getColumnLetter(
-                $costCenterStartColumn + $index
-            );
-
-            $widths[$column] = 22;
+        if ($this->showCostCenterColumns) {
+            foreach ($this->costCenters as $index => $costCenter) {
+                $column = $getColumnLetter($costCenterStartColumn + $index);
+                $widths[$column] = 22;
+            }
         }
 
-        $afterCostCenter =
-            $costCenterStartColumn +
-            $this->costCenters->count();
+        $afterCostCenter = $costCenterStartColumn + $costCenterCount;
 
-        $widths[
-            $this->getColumnLetter($afterCostCenter)
-        ] = 25;
-
-        $widths[
-            $this->getColumnLetter($afterCostCenter + 1)
-        ] = 20;
-
-        $widths[
-            $this->getColumnLetter($afterCostCenter + 2)
-        ] = 22;
-
-        $widths[
-            $this->getColumnLetter($afterCostCenter + 3)
-        ] = 20;
-
-        $widths[
-            $this->getColumnLetter($afterCostCenter + 4)
-        ] = 28;
-
-        $widths[
-            $this->getColumnLetter($afterCostCenter + 5)
-        ] = 25;
+        $widths[$getColumnLetter($afterCostCenter)] = 25;
+        $widths[$getColumnLetter($afterCostCenter + 1)] = 20;
+        $widths[$getColumnLetter($afterCostCenter + 2)] = 22;
+        $widths[$getColumnLetter($afterCostCenter + 3)] = 20;
+        $widths[$getColumnLetter($afterCostCenter + 4)] = 28;
+        $widths[$getColumnLetter($afterCostCenter + 5)] = 25;
 
         return $widths;
     }
@@ -444,41 +457,83 @@ class PenggajianBoronganExport implements
 
                 $sheet = $event->sheet->getDelegate();
 
-                $lastDataRow = $sheet->getHighestRow();
-                $lastColumn = $sheet->getHighestColumn();
+                $getColumnLetter = function (int $column): string {
+                    $letter = '';
+                    while ($column > 0) {
+                        $modulo = ($column - 1) % 26;
+                        $letter = chr(65 + $modulo) . $letter;
+                        $column = (int) (($column - $modulo) / 26);
+                    }
+                    return $letter;
+                };
 
-                // --- Posisi kolom, dihitung dinamis ---
+                $originalLastRow = $sheet->getHighestRow();
+
                 $dateStartColumn = 8;
-                $dateCount = count($this->dates);
+                $dateCount = $this->showDateColumns ? count($this->dates) : 0;
                 $dateEndColumn = $dateStartColumn + $dateCount - 1;
 
                 $startCostCenterColumn = $dateStartColumn + $dateCount;
-                $costCenterCount = $this->costCenters->count();
+                $costCenterCount = $this->showCostCenterColumns ? $this->costCenters->count() : 0;
                 $endCostCenterColumn = $startCostCenterColumn + $costCenterCount - 1;
 
                 $totalUpahColumn = $startCostCenterColumn + $costCenterCount;
                 $grandTotalColumn = $totalUpahColumn + 5;
 
-                $dateStartLetter = $this->getColumnLetter($dateStartColumn);
-                $dateEndLetter = $this->getColumnLetter($dateEndColumn);
+                $dateStartLetter = $getColumnLetter($dateStartColumn);
+                $dateEndLetter = $getColumnLetter($dateEndColumn);
 
-                $startCostCenterLetter = $this->getColumnLetter($startCostCenterColumn);
-                $endCostCenterLetter = $this->getColumnLetter($endCostCenterColumn);
+                $startCostCenterLetter = $getColumnLetter($startCostCenterColumn);
+                $endCostCenterLetter = $getColumnLetter($endCostCenterColumn);
 
-                $totalUpahLetter = $this->getColumnLetter($totalUpahColumn);
-                $grandTotalLetter = $this->getColumnLetter($grandTotalColumn);
+                $totalUpahLetter = $getColumnLetter($totalUpahColumn);
+                $grandTotalLetter = $getColumnLetter($grandTotalColumn);
 
-                // --- Merge header blok tanggal (row1) ---
-                if ($dateCount > 0) {
-                    $sheet->mergeCells("{$dateStartLetter}1:{$dateEndLetter}1");
-                    $sheet->setCellValue("{$dateStartLetter}1", 'UPAH HARIAN (Rp)');
+                $sheet->insertNewRowBefore(1, self::TITLE_ROWS);
+
+                $headerRow1 = self::TITLE_ROWS + 1;
+                $headerRow2 = self::TITLE_ROWS + 2;
+                $dataStartRow = self::TITLE_ROWS + 3;
+                $lastDataRow = $originalLastRow + self::TITLE_ROWS;
+                $grandTotalRow = $lastDataRow + 1;
+
+                $lastColumn = $sheet->getHighestColumn();
+
+                $departmentLabel = $this->departmentName ?? 'SEMUA DEPARTEMENT';
+
+                $periodStart = $this->dates[0];
+                $periodEnd = end($this->dates);
+                $periodLabel = $periodStart->translatedFormat('d F Y') . ' S.D ' . $periodEnd->translatedFormat('d F Y');
+
+                $titleRows = [
+                    1 => $this->outsourcingName ?? 'PT. DELTA FORCE INDONESIA',
+                    3 => 'PT. CHAROEN POKPHAND INDONESIA - FOOD DIVISION',
+                    4 => 'DEPARTEMENT : ' . $departmentLabel,
+                    6 => 'REKAPITULASI PENGGAJIAN BORONGAN',
+                    7 => 'PERIODE : ' . $periodLabel,
+                ];
+
+                foreach ($titleRows as $row => $text) {
+                    $sheet->mergeCells("A{$row}:{$lastColumn}{$row}");
+                    $sheet->setCellValue("A{$row}", $text);
+                    $sheet->getStyle("A{$row}")->getFont()->setBold(true);
+                    $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
                 }
 
-                // --- Merge header blok cost center (row1) ---
+                $sheet->getStyle('A1')->getFont()->setSize(14);
+                $sheet->getStyle('A6')->getFont()->setSize(12);
+
+                // --- Merge header blok tanggal (hanya kalau showDateColumns) ---
+                if ($dateCount > 0) {
+                    $sheet->mergeCells("{$dateStartLetter}{$headerRow1}:{$dateEndLetter}{$headerRow1}");
+                    $sheet->setCellValue("{$dateStartLetter}{$headerRow1}", 'UPAH HARIAN (Rp)');
+                }
+
+                // --- Merge header blok cost center (hanya kalau showCostCenterColumns) ---
                 if ($costCenterCount > 0) {
 
                     $sheet->mergeCells(
-                        "{$startCostCenterLetter}1:{$endCostCenterLetter}1"
+                        "{$startCostCenterLetter}{$headerRow1}:{$endCostCenterLetter}{$headerRow1}"
                     );
                 }
 
@@ -491,38 +546,30 @@ class PenggajianBoronganExport implements
                     'F',
                     'G',
                     $totalUpahLetter,
-                    $this->getColumnLetter(
-                        $totalUpahColumn + 1
-                    ),
-                    $this->getColumnLetter(
-                        $totalUpahColumn + 2
-                    ),
-                    $this->getColumnLetter(
-                        $totalUpahColumn + 3
-                    ),
-                    $this->getColumnLetter(
-                        $totalUpahColumn + 4
-                    ),
+                    $getColumnLetter($totalUpahColumn + 1),
+                    $getColumnLetter($totalUpahColumn + 2),
+                    $getColumnLetter($totalUpahColumn + 3),
+                    $getColumnLetter($totalUpahColumn + 4),
                     $grandTotalLetter,
                 ];
 
                 foreach ($fixedColumns as $column) {
 
                     $sheet->mergeCells(
-                        "{$column}1:{$column}2"
+                        "{$column}{$headerRow1}:{$column}{$headerRow2}"
                     );
                 }
 
                 $sheet
                     ->getStyle(
-                        "A1:{$lastColumn}2"
+                        "A{$headerRow1}:{$lastColumn}{$headerRow2}"
                     )
                     ->getFont()
                     ->setBold(true);
 
                 $sheet
                     ->getStyle(
-                        "A1:{$lastColumn}2"
+                        "A{$headerRow1}:{$lastColumn}{$headerRow2}"
                     )
                     ->getAlignment()
                     ->setHorizontal(
@@ -531,7 +578,7 @@ class PenggajianBoronganExport implements
 
                 $sheet
                     ->getStyle(
-                        "A1:{$lastColumn}2"
+                        "A{$headerRow1}:{$lastColumn}{$headerRow2}"
                     )
                     ->getAlignment()
                     ->setVertical(
@@ -540,14 +587,14 @@ class PenggajianBoronganExport implements
 
                 $sheet
                     ->getStyle(
-                        "A1:{$lastColumn}2"
+                        "A{$headerRow1}:{$lastColumn}{$headerRow2}"
                     )
                     ->getAlignment()
                     ->setWrapText(true);
 
                 $sheet
                     ->getStyle(
-                        "A1:{$lastColumn}{$lastDataRow}"
+                        "A{$headerRow1}:{$lastColumn}{$lastDataRow}"
                     )
                     ->getBorders()
                     ->getAllBorders()
@@ -557,7 +604,7 @@ class PenggajianBoronganExport implements
 
                 $sheet
                     ->getStyle(
-                        "A1:{$lastColumn}{$lastDataRow}"
+                        "A{$headerRow1}:{$lastColumn}{$lastDataRow}"
                     )
                     ->getAlignment()
                     ->setVertical(
@@ -565,16 +612,16 @@ class PenggajianBoronganExport implements
                     );
 
                 $sheet
-                    ->getRowDimension(1)
+                    ->getRowDimension($headerRow1)
                     ->setRowHeight(25);
 
                 $sheet
-                    ->getRowDimension(2)
+                    ->getRowDimension($headerRow2)
                     ->setRowHeight(40);
 
                 $sheet
                     ->getStyle(
-                        "F3:F{$lastDataRow}"
+                        "F{$dataStartRow}:F{$lastDataRow}"
                     )
                     ->getNumberFormat()
                     ->setFormatCode(
@@ -584,7 +631,7 @@ class PenggajianBoronganExport implements
                 if ($dateCount > 0) {
                     $sheet
                         ->getStyle(
-                            "{$dateStartLetter}3:{$dateEndLetter}{$lastDataRow}"
+                            "{$dateStartLetter}{$dataStartRow}:{$dateEndLetter}{$lastDataRow}"
                         )
                         ->getNumberFormat()
                         ->setFormatCode(
@@ -596,7 +643,7 @@ class PenggajianBoronganExport implements
 
                     $sheet
                         ->getStyle(
-                            "{$startCostCenterLetter}3:{$endCostCenterLetter}{$lastDataRow}"
+                            "{$startCostCenterLetter}{$dataStartRow}:{$endCostCenterLetter}{$lastDataRow}"
                         )
                         ->getNumberFormat()
                         ->setFormatCode(
@@ -606,7 +653,7 @@ class PenggajianBoronganExport implements
 
                 $sheet
                     ->getStyle(
-                        "{$totalUpahLetter}3:{$grandTotalLetter}{$lastDataRow}"
+                        "{$totalUpahLetter}{$dataStartRow}:{$grandTotalLetter}{$lastDataRow}"
                     )
                     ->getNumberFormat()
                     ->setFormatCode(
@@ -615,7 +662,7 @@ class PenggajianBoronganExport implements
 
                 $sheet
                     ->getStyle(
-                        "A3:A{$lastDataRow}"
+                        "A{$dataStartRow}:A{$lastDataRow}"
                     )
                     ->getAlignment()
                     ->setHorizontal(
@@ -624,7 +671,7 @@ class PenggajianBoronganExport implements
 
                 $sheet
                     ->getStyle(
-                        "F3:G{$lastDataRow}"
+                        "F{$dataStartRow}:G{$lastDataRow}"
                     )
                     ->getAlignment()
                     ->setHorizontal(
@@ -634,53 +681,36 @@ class PenggajianBoronganExport implements
                 /*
                  * GRAND TOTAL
                  */
-                $grandTotalRow = $lastDataRow + 1;
-
                 $sheet->setCellValue(
                     "A{$grandTotalRow}",
                     'GRAND TOTAL'
                 );
 
-                /*
-                 * Merge A sampai E
-                 */
                 $sheet->mergeCells(
                     "A{$grandTotalRow}:E{$grandTotalRow}"
                 );
 
-                /*
-                 * Total Hasil Proses
-                 */
                 $sheet->setCellValue(
                     "F{$grandTotalRow}",
-                    "=SUM(F3:F{$lastDataRow})"
+                    "=SUM(F{$dataStartRow}:F{$lastDataRow})"
                 );
 
-                /*
-                 * Total Hari
-                 */
                 $sheet->setCellValue(
                     "G{$grandTotalRow}",
-                    "=SUM(G3:G{$lastDataRow})"
+                    "=SUM(G{$dataStartRow}:G{$lastDataRow})"
                 );
 
-                /*
-                 * Total upah per tanggal
-                 */
                 if ($dateCount > 0) {
                     for ($i = 0; $i < $dateCount; $i++) {
-                        $column = $this->getColumnLetter($dateStartColumn + $i);
+                        $column = $getColumnLetter($dateStartColumn + $i);
 
                         $sheet->setCellValue(
                             "{$column}{$grandTotalRow}",
-                            "=SUM({$column}3:{$column}{$lastDataRow})"
+                            "=SUM({$column}{$dataStartRow}:{$column}{$lastDataRow})"
                         );
                     }
                 }
 
-                /*
-                 * Total masing-masing Cost Center
-                 */
                 if ($costCenterCount > 0) {
 
                     for (
@@ -689,109 +719,61 @@ class PenggajianBoronganExport implements
                         $i++
                     ) {
 
-                        $column =
-                            $this->getColumnLetter(
-                                $startCostCenterColumn + $i
-                            );
+                        $column = $getColumnLetter($startCostCenterColumn + $i);
 
                         $sheet->setCellValue(
                             "{$column}{$grandTotalRow}",
-                            "=SUM({$column}3:{$column}{$lastDataRow})"
+                            "=SUM({$column}{$dataStartRow}:{$column}{$lastDataRow})"
                         );
                     }
                 }
 
-                /*
-                 * Total Upah
-                 */
                 $sheet->setCellValue(
                     "{$totalUpahLetter}{$grandTotalRow}",
-                    "=SUM({$totalUpahLetter}3:{$totalUpahLetter}{$lastDataRow})"
+                    "=SUM({$totalUpahLetter}{$dataStartRow}:{$totalUpahLetter}{$lastDataRow})"
                 );
 
-                /*
-                 * Jamsostek
-                 */
                 $sheet->setCellValue(
-                    $this->getColumnLetter(
-                        $totalUpahColumn + 1
-                    ) . $grandTotalRow,
+                    $getColumnLetter($totalUpahColumn + 1) . $grandTotalRow,
                     "=SUM(" .
-                    $this->getColumnLetter(
-                        $totalUpahColumn + 1
-                    ) .
-                    "3:" .
-                    $this->getColumnLetter(
-                        $totalUpahColumn + 1
-                    ) .
+                    $getColumnLetter($totalUpahColumn + 1) .
+                    "{$dataStartRow}:" .
+                    $getColumnLetter($totalUpahColumn + 1) .
                     "{$lastDataRow})"
                 );
 
-                /*
-                 * BPJS Kesehatan
-                 */
                 $sheet->setCellValue(
-                    $this->getColumnLetter(
-                        $totalUpahColumn + 2
-                    ) . $grandTotalRow,
+                    $getColumnLetter($totalUpahColumn + 2) . $grandTotalRow,
                     "=SUM(" .
-                    $this->getColumnLetter(
-                        $totalUpahColumn + 2
-                    ) .
-                    "3:" .
-                    $this->getColumnLetter(
-                        $totalUpahColumn + 2
-                    ) .
+                    $getColumnLetter($totalUpahColumn + 2) .
+                    "{$dataStartRow}:" .
+                    $getColumnLetter($totalUpahColumn + 2) .
                     "{$lastDataRow})"
                 );
 
-                /*
-                 * BPJS Pensiun
-                 */
                 $sheet->setCellValue(
-                    $this->getColumnLetter(
-                        $totalUpahColumn + 3
-                    ) . $grandTotalRow,
+                    $getColumnLetter($totalUpahColumn + 3) . $grandTotalRow,
                     "=SUM(" .
-                    $this->getColumnLetter(
-                        $totalUpahColumn + 3
-                    ) .
-                    "3:" .
-                    $this->getColumnLetter(
-                        $totalUpahColumn + 3
-                    ) .
+                    $getColumnLetter($totalUpahColumn + 3) .
+                    "{$dataStartRow}:" .
+                    $getColumnLetter($totalUpahColumn + 3) .
                     "{$lastDataRow})"
                 );
 
-                /*
-                 * Management Fee
-                 */
                 $sheet->setCellValue(
-                    $this->getColumnLetter(
-                        $totalUpahColumn + 4
-                    ) . $grandTotalRow,
+                    $getColumnLetter($totalUpahColumn + 4) . $grandTotalRow,
                     "=SUM(" .
-                    $this->getColumnLetter(
-                        $totalUpahColumn + 4
-                    ) .
-                    "3:" .
-                    $this->getColumnLetter(
-                        $totalUpahColumn + 4
-                    ) .
+                    $getColumnLetter($totalUpahColumn + 4) .
+                    "{$dataStartRow}:" .
+                    $getColumnLetter($totalUpahColumn + 4) .
                     "{$lastDataRow})"
                 );
 
-                /*
-                 * Grand Total Upah
-                 */
                 $sheet->setCellValue(
                     $grandTotalLetter . $grandTotalRow,
-                    "=SUM({$grandTotalLetter}3:{$grandTotalLetter}{$lastDataRow})"
+                    "=SUM({$grandTotalLetter}{$dataStartRow}:{$grandTotalLetter}{$lastDataRow})"
                 );
 
-                /*
-                 * Style GRAND TOTAL
-                 */
                 $sheet
                     ->getStyle(
                         "A{$grandTotalRow}:{$lastColumn}{$grandTotalRow}"
@@ -873,24 +855,5 @@ class PenggajianBoronganExport implements
                     ->setRowHeight(25);
             },
         ];
-    }
-
-    private function getColumnLetter(int $column): string
-    {
-        $letter = '';
-
-        while ($column > 0) {
-
-            $modulo = ($column - 1) % 26;
-
-            $letter =
-                chr(65 + $modulo) .
-                $letter;
-
-            $column =
-                (int) (($column - $modulo) / 26);
-        }
-
-        return $letter;
     }
 }

@@ -30,7 +30,11 @@ class ShiftController extends Controller
             });
         }
 
-        $shifts = $query->latest()
+        $shifts = $query
+            ->join('departments', 'departments.id', '=', 'shifts.department_id')
+            ->orderBy('departments.name')
+            ->orderBy('shifts.id')
+            ->select('shifts.*')
             ->paginate($size)
             ->withQueryString();
 
@@ -59,15 +63,11 @@ class ShiftController extends Controller
                     return $query->where('department_id', $request->department_id);
                 }),
             ],
-            'jam_masuk' => ['nullable', 'date_format:H:i'],
-            'jam_keluar' => ['nullable', 'date_format:H:i'],
         ], [
             'department_id.required' => 'Department wajib dipilih.',
             'department_id.exists' => 'Department tidak valid.',
             'name.required' => 'Nama shift wajib diisi.',
             'name.unique' => 'Nama shift sudah digunakan pada department tersebut.',
-            'jam_masuk.date_format' => 'Format jam masuk harus HH:MM.',
-            'jam_keluar.date_format' => 'Format jam keluar harus HH:MM.',
         ]);
 
         Shift::create([
@@ -78,7 +78,7 @@ class ShiftController extends Controller
         ]);
 
         return redirect()
-            ->route('shift.index')
+            ->route('admin.shift.index')
             ->with('success', 'Shift berhasil ditambahkan.');
     }
 
@@ -112,25 +112,19 @@ class ShiftController extends Controller
                         );
                     }),
             ],
-            'jam_masuk' => ['nullable', 'date_format:H:i'],
-            'jam_keluar' => ['nullable', 'date_format:H:i'],
         ], [
             'department_id.required' => 'Department wajib dipilih.',
             'department_id.exists' => 'Department tidak valid.',
             'name.required' => 'Nama shift wajib diisi.',
             'name.unique' => 'Nama shift sudah digunakan pada department tersebut.',
-            'jam_masuk.date_format' => 'Format jam masuk harus HH:MM.',
-            'jam_keluar.date_format' => 'Format jam keluar harus HH:MM.',
         ]);
 
         $shift->department_id = $request->department_id;
         $shift->name = $request->name;
-        $shift->jam_masuk = $request->jam_masuk;
-        $shift->jam_keluar = $request->jam_keluar;
         $shift->save();
 
         return redirect()
-            ->route('shift.index')
+            ->route('admin.shift.index')
             ->with('success', 'Shift berhasil diupdate.');
     }
 
@@ -141,7 +135,7 @@ class ShiftController extends Controller
         $shift->delete();
 
         return redirect()
-            ->route('shift.index')
+            ->route('admin.shift.index')
             ->with('success', 'Shift berhasil dihapus.');
     }
 }

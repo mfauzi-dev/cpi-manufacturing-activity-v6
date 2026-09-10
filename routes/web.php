@@ -25,6 +25,7 @@ use App\Http\Controllers\ProcessTypeController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductGroupController;
 use App\Http\Controllers\PsGroupController;
+use App\Http\Controllers\ShiftController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WageConfigController;
 use Illuminate\Support\Facades\Route;
@@ -272,6 +273,15 @@ Route::prefix('admin')->middleware(['auth', 'role:Admin'])->group(function() {
         Route::get('{id}/edit', [DepartmentController::class, 'edit'])->name('department.edit');
         Route::put('{id}/update', [DepartmentController::class, 'update'])->name('department.update');
         Route::delete('{id}/delete', [DepartmentController::class, 'destroy'])->name('department.destroy');
+    });
+
+    Route::prefix('shifts')->group(function() {
+        Route::get('/', [ShiftController::class, 'index'])->name('admin.shift.index');
+        Route::get('/create', [ShiftController::class, 'create'])->name('admin.shift.create');
+        Route::post('/store', [ShiftController::class, 'store'])->name('admin.shift.store');
+        Route::get('{id}/edit', [ShiftController::class, 'edit'])->name('admin.shift.edit');
+        Route::put('{id}/update', [ShiftController::class, 'update'])->name('admin.shift.update');
+        Route::delete('{id}/delete', [ShiftController::class, 'destroy'])->name('admin.shift.destroy');
     });
 
     Route::prefix('users')->group(function() {
