@@ -138,15 +138,21 @@
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label>Line</label>
+
                                 <select name="line_id" id="line_id"
                                     class="form-control @error('line_id') is-invalid @enderror">
-                                    <option value="">Pilih Line</option>
+
+                                    <option value="">
+                                        Pilih Line
+                                    </option>
+
                                     @foreach ($lines as $line)
                                         <option value="{{ $line->id }}"
                                             {{ old('line_id') == $line->id ? 'selected' : '' }}>
                                             {{ $line->name }}
                                         </option>
                                     @endforeach
+
                                 </select>
 
                                 @error('line_id')
@@ -159,28 +165,13 @@
 
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label>Nama Karyawan</label>
-
-                                <select id="employee_id_group" class="form-control select2" multiple>
-                                </select>
-
-                                <small class="text-muted">
-                                    Pilih satu atau beberapa karyawan.
-                                </small>
-
-                                @error('employees')
-                                    <div class="text-danger small mt-1">
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="col-md-3">
-                            <div class="form-group">
                                 <label>Total Man Hours</label>
 
                                 <input type="text" id="total_man_hours" class="form-control" value="0,00" readonly>
+
+                                <small class="text-muted">
+                                    Otomatis berdasarkan absensi hadir pada tanggal, group, dan line.
+                                </small>
                             </div>
                         </div>
 
@@ -372,7 +363,6 @@
     </div>
 @endsection
 
-
 @push('addon-style')
     <style>
         #detailTable td {
@@ -388,312 +378,716 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-
-        #employee_id_group+.select2-container {
-            width: 100% !important;
-        }
     </style>
 @endpush
-
 
 @push('scripts')
     <script>
         let rowIndex = 1;
+
         $(document).ready(function() {
+
             $('.select2').select2({
                 width: '100%'
             });
+
             if ($('#cost_center').val()) {
                 loadCostCenterDependents($('#cost_center').val());
             }
+
             if ($('#cost_center').val() && $('#process_type').val()) {
                 loadProducts();
             }
-        });
-        $('#cost_center').change(function() {
-            let costCenterId = $(this).val();
-            $('#process_type').val('');
-            $('#ps_group').html('<option value="">Pilih Group</option>');
-            resetEmployeeSelect();
-            $('.product').html('<option value="">Pilih Nama Material</option>');
-            if (!costCenterId) {
-                resetCalculation();
-                return;
-            }
-            loadCostCenterDependents(costCenterId);
-        });
-        $('#process_type').change(function() {
-            $('.product').html('<option value="">Pilih Nama Material</option>');
-            loadProducts();
+
+            updateManHours();
+
         });
 
-        function loadProducts() {
-            let costCenterId = $('#cost_center').val();
-            let processTypeId = $('#process_type').val();
-            let options = '<option value="">Pilih Nama Material</option>';
-            if (!costCenterId || !processTypeId) {
-                $('.product').each(function() {
-                    $(this).html(options).trigger('change');
-                });
+
+        $('#cost_center').change(function() {
+
+            let costCenterId = $(this).val();
+
+            $('#ps_group')
+                .html('<option value="">Pilih Group</option>');
+
+            $('.product')
+                .html('<option value="">Pilih Nama Material</option>')
+                .trigger('change');
+
+            if (!costCenterId) {
+
+                resetCalculation();
+
                 return;
             }
+
+            loadCostCenterDependents(costCenterId);
+
+        });
+
+
+        $('#process_type').change(function() {
+
+            $('.product')
+                .html('<option value="">Pilih Nama Material</option>')
+                .trigger('change');
+
+            loadProducts();
+
+        });
+
+
+        $('#tanggal, #ps_group, #line_id').change(function() {
+
+            updateManHours();
+
+        });
+
+
+        function loadProducts() {
+
+            let costCenterId = $('#cost_center').val();
+            let processTypeId = $('#process_type').val();
+
+            let options =
+                '<option value="">Pilih Nama Material</option>';
+
+            if (!costCenterId || !processTypeId) {
+
+                $('.product').each(function() {
+
+                    $(this)
+                        .html(options)
+                        .trigger('change');
+
+                });
+
+                return;
+            }
+
             $.ajax({
-                url: "{{ route('admin-production.daily-activity-further.products', ':id') }}".replace(':id',
-                    costCenterId),
+
+                url: "{{ route('admin-production.daily-activity-further.products', ':id') }}"
+                    .replace(':id', costCenterId),
+
                 type: 'GET',
+
                 data: {
                     process_type_id: processTypeId
                 },
+
                 success: function(res) {
+
                     $.each(res, function(i, item) {
+
                         let codePart = '';
+
                         if (item.material_code) {
-                            codePart = ' - ' + item.material_code;
+
+                            codePart =
+                                ' - ' + item.material_code;
+
                         }
+
                         options +=
-                            ` <option value="${item.id}"> ${item.material_name}${codePart} </option> `;
+                            `<option value="${item.id}">
+                            ${item.material_name}${codePart}
+                        </option>`;
+
                     });
+
                     $('.product').each(function() {
-                        let selectedValue = $(this).val();
+
+                        let selectedValue =
+                            $(this).val();
+
                         $(this).html(options);
+
                         if (selectedValue) {
-                            $(this).val(selectedValue);
+
+                            $(this)
+                                .val(selectedValue);
+
                         }
-                        $(this).trigger('change');
+
+                        $(this)
+                            .trigger('change');
+
                     });
+
                 },
+
                 error: function() {
+
                     $('.product').each(function() {
-                        $(this).html('<option value="">Gagal mengambil product</option>').trigger(
-                            'change');
+
+                        $(this)
+                            .html(
+                                '<option value="">Gagal mengambil product</option>'
+                            )
+                            .trigger('change');
+
                     });
+
                 }
+
             });
+
         }
+
 
         function loadCostCenterDependents(costCenterId) {
-            $.get("{{ route('daily-activity-further.ps-groups', ':id') }}".replace(':id', costCenterId), function(data) {
-                let html = '<option value="">Pilih Group</option>';
-                let oldPsGroup = "{{ old('ps_group_id') }}";
-                $.each(data, function(i, item) {
-                    let selected = '';
-                    if (oldPsGroup && oldPsGroup == item.id) {
-                        selected = 'selected';
-                    }
-                    html += ` <option value="${item.id}" ${selected}> ${item.name} </option> `;
-                });
-                $('#ps_group').html(html);
-                if ($('#ps_group').val()) {
-                    loadEmployees(costCenterId, $('#ps_group').val());
+
+            $.get(
+
+                "{{ route('daily-activity-further.ps-groups', ':id') }}"
+                .replace(':id', costCenterId),
+
+                function(data) {
+
+                    let html =
+                        '<option value="">Pilih Group</option>';
+
+                    let oldPsGroup =
+                        "{{ old('ps_group_id') }}";
+
+                    $.each(data, function(i, item) {
+
+                        let selected = '';
+
+                        if (oldPsGroup && oldPsGroup == item.id) {
+
+                            selected = 'selected';
+
+                        }
+
+                        html +=
+                            `<option value="${item.id}" ${selected}>
+                            ${item.name}
+                        </option>`;
+
+                    });
+
+                    $('#ps_group').html(html);
+
+                    updateManHours();
+
                 }
-            });
+
+            );
+
         }
-        $('#ps_group').change(function() {
-            let costCenterId = $('#cost_center').val();
-            let psGroupId = $(this).val();
-            resetEmployeeSelect();
-            if (!costCenterId || !psGroupId) {
+
+
+        function updateManHours() {
+
+            let tanggal =
+                $('#tanggal').val();
+
+            let psGroupId =
+                $('#ps_group').val();
+
+            let lineId =
+                $('#line_id').val();
+
+            if (!tanggal || !psGroupId || !lineId) {
+
+                $('#total_man_hours')
+                    .val('0,00');
+
+                updateProductivity(0);
+
                 return;
             }
-            loadEmployees(costCenterId, psGroupId);
-        });
 
-        function loadEmployees(costCenterId, psGroupId) {
-            $.get("{{ route('daily-activity-further.employees', [':costCenterId', ':psGroupId']) }}".replace(
-                ':costCenterId', costCenterId).replace(':psGroupId', psGroupId), function(data) {
-                let options = '';
-                $.each(data, function(i, item) {
-                    let employeeText = '';
-                    if (item.nik) {
-                        employeeText = item.nik + ' - ' + item.name;
-                    } else {
-                        employeeText = item.name;
-                    }
-                    options += ` <option value="${item.id}"> ${employeeText} </option> `;
-                });
-                $('#employee_id_group').html(options).val(null).trigger('change');
-            });
-        }
-        $('#employee_id_group').change(function() {
-            let employeeIds = $(this).val() || [];
-            updateManHours(employeeIds);
-        });
-        $('#tanggal').change(function() {
-            let employeeIds = $('#employee_id_group').val() || [];
-            if (employeeIds.length > 0) {
-                updateManHours(employeeIds);
-            } else {
-                $('#total_man_hours').val('0,00');
-                updateProductivity(0);
-            }
-        });
-
-        function updateManHours(employeeIds) {
-            let tanggal = $('#tanggal').val();
-            if (!tanggal || employeeIds.length === 0) {
-                $('#total_man_hours').val('0,00');
-                updateProductivity(0);
-                return;
-            }
             $.ajax({
+
                 url: "{{ route('admin-production.daily-activity-further.man-hours') }}",
+
                 type: 'GET',
+
                 data: {
+
                     tanggal: tanggal,
-                    employee_ids: employeeIds
+
+                    ps_group_id: psGroupId,
+
+                    line_id: lineId
+
                 },
+
                 success: function(response) {
-                    let manHours = parseFloat(response.man_hours) || 0;
-                    $('#total_man_hours').val(formatNumber(manHours));
+
+                    let manHours = 0;
+
+                    if (response.employee_hk) {
+
+                        $.each(
+                            response.employee_hk,
+                            function(employeeId, hk) {
+
+                                manHours +=
+                                    parseFloat(hk) || 0;
+
+                            }
+                        );
+
+                    }
+
+                    $('#total_man_hours')
+                        .val(formatNumber(manHours));
+
                     updateProductivity(manHours);
+
                 },
+
                 error: function() {
-                    $('#total_man_hours').val('0,00');
+
+                    $('#total_man_hours')
+                        .val('0,00');
+
                     updateProductivity(0);
+
                 }
+
             });
+
         }
+
 
         function updateProductivity(manHours) {
+
             let totalFg = 0;
+
             $('#detailTable tbody tr').each(function() {
-                let fg = parseFloat($(this).find('.total-kg-fg').val()) || 0;
+
+                let fg =
+                    parseFloat(
+                        $(this)
+                        .find('.total-kg-fg')
+                        .val()
+                    ) || 0;
+
                 totalFg += fg;
+
             });
-            $('#grand-total-kg').text(formatNumber(totalFg));
-            let productivity = manHours > 0 ? totalFg / manHours : 0;
+
+            $('#grand-total-kg')
+                .text(formatNumber(totalFg));
+
+            let productivity =
+                manHours > 0 ?
+                totalFg / manHours :
+                0;
+
             if (manHours > 0 && totalFg > 0) {
-                $('#grand-productivity').text(formatNumber(productivity));
+
+                $('#grand-productivity')
+                    .text(formatNumber(productivity));
+
             } else {
-                $('#grand-productivity').text('-');
+
+                $('#grand-productivity')
+                    .text('-');
+
             }
+
             $('#detailTable tbody tr').each(function() {
+
                 let row = $(this);
-                let fg = parseFloat(row.find('.total-kg-fg').val()) || 0;
-                row.find('.total-kg').text(formatNumber(fg));
+
+                let fg =
+                    parseFloat(
+                        row
+                        .find('.total-kg-fg')
+                        .val()
+                    ) || 0;
+
+                row.find('.total-kg')
+                    .text(formatNumber(fg));
+
                 if (manHours > 0 && totalFg > 0) {
-                    row.find('.productivity').text(formatNumber(productivity));
+
+                    row.find('.productivity')
+                        .text(formatNumber(productivity));
+
                 } else {
-                    row.find('.productivity').text('-');
+
+                    row.find('.productivity')
+                        .text('-');
+
                 }
+
             });
+
         }
 
+
         function getManHours() {
-            let value = $('#total_man_hours').val();
+
+            let value =
+                $('#total_man_hours').val();
+
             if (!value) {
                 return 0;
             }
-            value = value.replace(/\./g, '').replace(',', '.');
+
+            value =
+                value
+                .replace(/\./g, '')
+                .replace(',', '.');
+
             return parseFloat(value) || 0;
+
         }
+
 
         function formatNumber(value) {
+
             return Number(value).toLocaleString('id-ID', {
+
                 minimumFractionDigits: 2,
+
                 maximumFractionDigits: 2
+
             });
+
         }
+
+
         $('#btnAddRow').click(function() {
+
             let productOptions = '';
+
             $('.product:first option').each(function() {
-                productOptions += ` <option value="${$(this).val()}"> ${$(this).text()} </option> `;
+
+                productOptions +=
+                    `<option value="${$(this).val()}">
+                    ${$(this).text()}
+                </option>`;
+
             });
+
             let html =
-                ` <tr data-row-index="${rowIndex}"> <td class="text-center nomor"> </td> <td> <select name="details[${rowIndex}][product_id]" class="form-control select2 product"> ${productOptions} </select> </td> <td> <input type="number" step="0.01" min="0" name="details[${rowIndex}][total_kg_rm]" class="form-control total-kg-rm"> </td> <td> <input type="number" step="0.01" min="0" name="details[${rowIndex}][total_kg_fg]" class="form-control total-kg-fg"> </td> <td class="text-right align-middle"> <span class="total-kg"> 0,00 </span> </td> <td class="text-right align-middle"> <span class="productivity"> - </span> </td> <td class="text-center"> <button type="button" class="btn btn-danger btn-sm removeRow"> <i class="fas fa-trash"></i> </button> </td> </tr> `;
-            $('#detailTable tbody').append(html);
-            $('#detailTable tbody tr:last .select2').select2({
-                width: '100%'
-            });
+                `<tr data-row-index="${rowIndex}">
+
+                <td class="text-center nomor">
+                </td>
+
+                <td>
+
+                    <select
+                        name="details[${rowIndex}][product_id]"
+                        class="form-control select2 product">
+
+                        ${productOptions}
+
+                    </select>
+
+                </td>
+
+                <td>
+
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        name="details[${rowIndex}][total_kg_rm]"
+                        class="form-control total-kg-rm">
+
+                </td>
+
+                <td>
+
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        name="details[${rowIndex}][total_kg_fg]"
+                        class="form-control total-kg-fg">
+
+                </td>
+
+                <td class="text-right align-middle">
+
+                    <span class="total-kg">
+                        0,00
+                    </span>
+
+                </td>
+
+                <td class="text-right align-middle">
+
+                    <span class="productivity">
+                        -
+                    </span>
+
+                </td>
+
+                <td class="text-center">
+
+                    <button
+                        type="button"
+                        class="btn btn-danger btn-sm removeRow">
+
+                        <i class="fas fa-trash"></i>
+
+                    </button>
+
+                </td>
+
+            </tr>`;
+
+            $('#detailTable tbody')
+                .append(html);
+
+            $('#detailTable tbody tr:last .select2')
+                .select2({
+                    width: '100%'
+                });
+
             renumberRows();
+
             rowIndex++;
-            updateProductivity(getManHours());
+
+            updateProductivity(
+                getManHours()
+            );
+
         });
-        $(document).on('keyup change', '.total-kg-fg', function() {
-            updateProductivity(getManHours());
-        });
-        $(document).on('click', '.removeRow', function() {
-            if ($('#detailTable tbody tr').length <= 1) {
-                alert('Minimal harus ada 1 baris.');
-                return;
+
+
+        $(document).on(
+            'keyup change',
+            '.total-kg-fg',
+            function() {
+
+                updateProductivity(
+                    getManHours()
+                );
+
             }
-            $(this).closest('tr').remove();
-            renumberRows();
-            updateProductivity(getManHours());
-        });
+        );
+
+
+        $(document).on(
+            'click',
+            '.removeRow',
+            function() {
+
+                if (
+                    $('#detailTable tbody tr').length <= 1
+                ) {
+
+                    alert(
+                        'Minimal harus ada 1 baris.'
+                    );
+
+                    return;
+
+                }
+
+                $(this)
+                    .closest('tr')
+                    .remove();
+
+                renumberRows();
+
+                updateProductivity(
+                    getManHours()
+                );
+
+            }
+        );
+
 
         function renumberRows() {
-            $('#detailTable tbody tr').each(function(index) {
-                $(this).find('.nomor').text(index + 1);
-            });
+
+            $('#detailTable tbody tr').each(
+                function(index) {
+
+                    $(this)
+                        .find('.nomor')
+                        .text(index + 1);
+
+                }
+            );
+
         }
 
-        function resetEmployeeSelect() {
-            $('#employee_id_group').html('').val(null).trigger('change');
-            $('#total_man_hours').val('0,00');
-            updateProductivity(0);
-        }
 
         function resetCalculation() {
-            $('#grand-total-kg').text('0,00');
-            $('#grand-productivity').text('-');
+
+            $('#total_man_hours')
+                .val('0,00');
+
+            $('#grand-total-kg')
+                .text('0,00');
+
+            $('#grand-productivity')
+                .text('-');
+
             $('#detailTable tbody tr').each(function() {
-                $(this).find('.total-kg').text('0,00');
-                $(this).find('.productivity').text('-');
+
+                $(this)
+                    .find('.total-kg')
+                    .text('0,00');
+
+                $(this)
+                    .find('.productivity')
+                    .text('-');
+
             });
+
         }
+
+
         $('#dailyActivityForm').submit(function(e) {
-            let employeeIds = $('#employee_id_group').val() || [];
-            if (employeeIds.length === 0) {
+
+            let costCenter =
+                $('#cost_center').val();
+
+            let processType =
+                $('#process_type').val();
+
+            let psGroup =
+                $('#ps_group').val();
+
+            let line =
+                $('#line_id').val();
+
+            let tanggal =
+                $('#tanggal').val();
+
+
+            if (!tanggal) {
+
                 e.preventDefault();
-                alert('Pilih minimal 1 employee.');
+
+                alert(
+                    'Tanggal wajib dipilih.'
+                );
+
                 return false;
+
             }
-            let costCenter = $('#cost_center').val();
-            let processType = $('#process_type').val();
-            let psGroup = $('#ps_group').val();
+
+
             if (!costCenter) {
+
                 e.preventDefault();
-                alert('Cost Center wajib dipilih.');
+
+                alert(
+                    'Cost Center wajib dipilih.'
+                );
+
                 return false;
+
             }
+
+
             if (!processType) {
+
                 e.preventDefault();
-                alert('Process Type wajib dipilih.');
+
+                alert(
+                    'Process Type wajib dipilih.'
+                );
+
                 return false;
+
             }
+
+
             if (!psGroup) {
+
                 e.preventDefault();
-                alert('Group wajib dipilih.');
+
+                alert(
+                    'Group wajib dipilih.'
+                );
+
                 return false;
+
             }
-            $('.hidden-employee').remove();
-            employeeIds.forEach(function(employeeId, index) {
-                $('<input>').attr({
-                    type: 'hidden',
-                    name: `employees[${index}][employee_id]`,
-                    value: employeeId,
-                    class: 'hidden-employee'
-                }).appendTo('#dailyActivityForm');
-            });
-            let productRows = $('#detailTable tbody tr');
+
+
+            if (!line) {
+
+                e.preventDefault();
+
+                alert(
+                    'Line wajib dipilih.'
+                );
+
+                return false;
+
+            }
+
+
+            let manHours =
+                getManHours();
+
+            if (manHours <= 0) {
+
+                e.preventDefault();
+
+                alert(
+                    'Tidak ada Man Hours. Pastikan terdapat karyawan dengan absensi hadir pada tanggal, Group, dan Line tersebut.'
+                );
+
+                return false;
+
+            }
+
+
+            let productRows =
+                $('#detailTable tbody tr');
+
             if (productRows.length === 0) {
+
                 e.preventDefault();
-                alert('Minimal harus ada 1 product.');
+
+                alert(
+                    'Minimal harus ada 1 product.'
+                );
+
                 return false;
+
             }
+
+
             let validProduct = false;
+
             productRows.each(function() {
-                let productId = $(this).find('.product').val();
+
+                let productId =
+                    $(this)
+                    .find('.product')
+                    .val();
+
                 if (productId) {
+
                     validProduct = true;
+
                 }
+
             });
+
+
             if (!validProduct) {
+
                 e.preventDefault();
-                alert('Pilih minimal 1 product.');
+
+                alert(
+                    'Pilih minimal 1 product.'
+                );
+
                 return false;
+
             }
+
         });
     </script>
 @endpush

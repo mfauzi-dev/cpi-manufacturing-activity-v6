@@ -15,12 +15,8 @@ class DailyActivityFurther extends Model
         'cost_center_id',
         'ps_group_id',
         'line_id',
-        'process_type_id',
+        'employee_id',
         'input_by',
-        // 'employee_id' SUDAH TIDAK DIPAKAI, digantikan relasi many-to-many employees()
-        // jangan dihapus dari $fillable sampai migration drop kolom benar-benar dijalankan,
-        // supaya kalau ada kode lama yang masih nulis employee_id tidak error MassAssignmentException.
-        // Setelah migration drop kolom dijalankan, baris di atas boleh dihapus dari $fillable.
     ];
 
     protected $casts = [
@@ -47,6 +43,11 @@ class DailyActivityFurther extends Model
         return $this->belongsTo(Line::class);
     }
 
+    public function employee()
+    {
+        return $this->belongsTo(Employee::class);
+    }
+
     public function inputBy()
     {
         return $this->belongsTo(User::class, 'input_by');
@@ -55,15 +56,5 @@ class DailyActivityFurther extends Model
     public function details()
     {
         return $this->hasMany(DailyActivityDetailFurther::class, 'daily_activity_further_id');
-    }
-
-    public function employees()
-    {
-        return $this->belongsToMany(
-            Employee::class,
-            'daily_activity_further_employees'
-        )
-            ->withPivot('jumlah_hk')
-            ->withTimestamps();
     }
 }

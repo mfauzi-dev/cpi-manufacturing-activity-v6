@@ -5,11 +5,6 @@
         <h1>Rekap Daily Activity</h1>
     </div>
 
-    <div class="alert alert-info">
-        Department :
-        <strong>{{ auth()->user()->department->name }}</strong>
-    </div>
-
     @if (session('success'))
         <div class="alert alert-success alert-dismissible fade show">
             {{ session('success') }}
@@ -29,11 +24,14 @@
     @endif
 
     <div class="row">
+
         <div class="col-md-6">
             <div class="card">
                 <div class="card-body text-center">
                     <h6>Total KG RM</h6>
-                    <h3>{{ number_format($grandTotalKgRm, 2, ',', '.') }}</h3>
+                    <h3>
+                        {{ number_format($grandTotalKgRm, 2, ',', '.') }}
+                    </h3>
                 </div>
             </div>
         </div>
@@ -42,10 +40,13 @@
             <div class="card">
                 <div class="card-body text-center">
                     <h6>Total KG FG</h6>
-                    <h3>{{ number_format($grandTotalKgFg, 2, ',', '.') }}</h3>
+                    <h3>
+                        {{ number_format($grandTotalKgFg, 2, ',', '.') }}
+                    </h3>
                 </div>
             </div>
         </div>
+
     </div>
 
     <div class="section-body">
@@ -60,6 +61,7 @@
                         <div class="col-md-3 mb-3">
                             <div class="form-group">
                                 <label>Cost Center</label>
+
                                 <select class="form-control" id="cost_center_id" name="cost_center_id">
                                     <option value="">Semua Cost Center</option>
 
@@ -68,6 +70,7 @@
                                             {{ $costCenter->name }}
                                         </option>
                                     @endforeach
+
                                 </select>
                             </div>
                         </div>
@@ -75,15 +78,18 @@
                         <div class="col-md-3 mb-3">
                             <div class="form-group">
                                 <label>Group</label>
+
                                 <select class="form-control" id="ps_group_id" name="ps_group_id">
                                     <option value="">Semua Group</option>
                                 </select>
+
                             </div>
                         </div>
 
                         <div class="col-md-3 mb-3">
                             <div class="form-group">
                                 <label>Line</label>
+
                                 <select class="form-control" id="line_id" name="line_id">
                                     <option value="">Semua Line</option>
 
@@ -92,29 +98,36 @@
                                             {{ $line->code ? $line->code . ' - ' : '' }}{{ $line->name }}
                                         </option>
                                     @endforeach
+
                                 </select>
+
                             </div>
                         </div>
 
                         <div class="col-md-3 mb-3">
                             <div class="form-group">
                                 <label>Dari Tanggal</label>
+
                                 <input type="date" name="start_date" class="form-control"
                                     value="{{ request('start_date') }}">
+
                             </div>
                         </div>
 
                         <div class="col-md-3 mb-3">
                             <div class="form-group">
                                 <label>Sampai Tanggal</label>
+
                                 <input type="date" name="end_date" class="form-control"
                                     value="{{ request('end_date') }}">
+
                             </div>
                         </div>
 
                     </div>
 
                     <div>
+
                         <button type="submit" class="btn btn-primary">
                             Filter
                         </button>
@@ -122,6 +135,7 @@
                         <a href="{{ route('manager.daily-activity-further.index') }}" class="btn btn-secondary">
                             Reset
                         </a>
+
                     </div>
 
                 </form>
@@ -130,6 +144,7 @@
         </div>
 
         <div class="card">
+
             <div class="card-body table-responsive">
 
                 <div class="mb-2">
@@ -140,9 +155,21 @@
                         'start_date' => request('start_date'),
                         'end_date' => request('end_date'),
                     ]) }}"
-                        class="btn btn-success">
-                        <i class="fas fa-file-excel"></i>
-                        Excel
+                        class="btn btn-success mr-2">
+                        <i class="fas fa-file-excel mr-2"></i>
+                        Excel Rekap
+                    </a>
+
+                    <a href="{{ route('manager.daily-activity-further.export-excel', [
+                        'costCenterId' => request('cost_center_id'),
+                        'psGroupId' => request('ps_group_id'),
+                        'line_id' => request('line_id'),
+                        'date_from' => request('start_date'),
+                        'date_to' => request('end_date'),
+                    ]) }}"
+                        class="btn btn-primary">
+                        <i class="fas fa-file-excel mr-2"></i>
+                        Excel Detail
                     </a>
                 </div>
 
@@ -165,6 +192,7 @@
 
                         @forelse ($summaries as $key => $summary)
                             <tr>
+
                                 <td>
                                     {{ $summaries->firstItem() + $key }}
                                 </td>
@@ -194,6 +222,7 @@
                                 </td>
 
                                 <td class="text-center">
+
                                     <a href="{{ route('manager.daily-activity-further.detail', [
                                         'costCenter' => $summary->cost_center_id,
                                         'psGroup' => $summary->ps_group_id ?? '',
@@ -205,7 +234,9 @@
                                         <i class="fas fa-eye mr-2"></i>
                                         Detail
                                     </a>
+
                                 </td>
+
                             </tr>
 
                         @empty
@@ -221,11 +252,17 @@
 
                     @if ($summaries->count())
                         <tfoot>
+
                             <tr>
+
                                 <th></th>
+
                                 <th>Total</th>
+
                                 <th></th>
+
                                 <th></th>
+
                                 <th></th>
 
                                 <th class="text-right">
@@ -237,13 +274,16 @@
                                 </th>
 
                                 <th></th>
+
                             </tr>
+
                         </tfoot>
                     @endif
 
                 </table>
 
             </div>
+
         </div>
 
     </div>
@@ -252,20 +292,25 @@
 @push('scripts')
     <script>
         $(function() {
+
             loadPsGroups();
 
             $('#cost_center_id').change(function() {
                 loadPsGroups();
             });
+
         });
 
         function loadPsGroups() {
+
             let costCenterId = $('#cost_center_id').val();
 
             if (costCenterId == '') {
+
                 $('#ps_group_id').html(
                     '<option value="">Semua Group</option>'
                 );
+
                 return;
             }
 
@@ -278,15 +323,16 @@
                     $.each(res, function(i, item) {
 
                         html += `
-                            <option value="${item.id}"
-                                ${item.id == "{{ request('ps_group_id') }}" ? 'selected' : ''}>
-                                ${item.name}
-                            </option>
-                        `;
+                        <option value="${item.id}"
+                            ${item.id == "{{ request('ps_group_id') }}" ? 'selected' : ''}>
+                            ${item.name}
+                        </option>
+                    `;
 
                     });
 
                     $('#ps_group_id').html(html);
+
                 }
             );
         }

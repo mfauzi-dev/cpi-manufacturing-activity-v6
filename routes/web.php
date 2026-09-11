@@ -199,9 +199,8 @@ Route::prefix('admin-production')->middleware(['auth', 'role:Admin Production'])
 
         Route::delete('/bulk-destroy', [DailyActivityFurtherController::class, 'bulkDestroy'])->name('admin-production.daily-activity-further.bulk-destroy');
 
-        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel', [DailyActivityFurtherController::class, 'exportExcel'])->name('admin-production.daily-activity-further.export-excel');
-        
-        Route::get('export-excel', [DailyActivityFurtherController::class, 'exportIndexExcel'])->name('admin-production.daily-activity-further.all-export-excel');
+        Route::get('/export-excel', [DailyActivityFurtherController::class, 'exportExcel'])->name('admin-production.daily-activity-further.export-excel');        
+        Route::get('/index-export-excel', [DailyActivityFurtherController::class, 'exportIndexExcel'])->name('admin-production.daily-activity-further.all-export-excel');
 
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf', [DailyActivityFurtherController::class, 'exportPdf'])->name('admin-production.daily-activity-further.export-pdf');
     });
@@ -430,9 +429,9 @@ Route::prefix('general-manager')->middleware(['auth', 'role:General Manager'])->
     Route::prefix('daily-activity-further')->group(function() {
         Route::get('/',  [DailyActivityFurtherController::class,'generalManagerIndex'])->name('general-manager.daily-activity-further.index');
         Route::get('/cost-center/{costCenter}/ps-group/{psGroup}/detail/{lineId}',  [DailyActivityFurtherController::class,'generalManagerDetail'])->name('general-manager.daily-activity-further.detail');
-        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel',  [DailyActivityFurtherController::class,'exportExcelGeneralManager'])->name('general-manager.daily-activity-further.export-excel');
+        Route::get('/export-excel',  [DailyActivityFurtherController::class,'exportExcelGeneralManager'])->name('general-manager.daily-activity-further.export-excel');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf',  [DailyActivityFurtherController::class,'exportPdfGeneralManager'])->name('general-manager.daily-activity-further.export-pdf');
-        Route::get('export-excel', [DailyActivityFurtherController::class, 'exportGeneralManagerIndexExcel'])->name('general-manager.daily-activity-further.all-export-excel');    
+        Route::get('/index-export-excel', [DailyActivityFurtherController::class, 'exportGeneralManagerIndexExcel'])->name('general-manager.daily-activity-further.all-export-excel');    
     });
 
     Route::prefix('daily-activity-slaughter-house')->group(function () {
@@ -511,9 +510,9 @@ Route::prefix('manager')->middleware(['auth', 'role:Manager'])->group(function()
     Route::prefix('daily-activity-further')->group(function() {
         Route::get('/',  [DailyActivityFurtherController::class,'managerIndex'])->name('manager.daily-activity-further.index');
         Route::get('/cost-center/{costCenter}/ps-group/{psGroup}/detail/{lineId}',  [DailyActivityFurtherController::class,'managerDetail'])->name('manager.daily-activity-further.detail');
-        Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel',  [DailyActivityFurtherController::class,'exportExcelManager'])->name('manager.daily-activity-further.export-excel');
+        Route::get('/export-excel',  [DailyActivityFurtherController::class,'exportExcelManager'])->name('manager.daily-activity-further.export-excel');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf',  [DailyActivityFurtherController::class,'exportPdfManager'])->name('manager.daily-activity-further.export-pdf');
-        Route::get('export-excel', [DailyActivityFurtherController::class, 'exportManagerIndexExcel'])->name('manager.daily-activity-further.all-export-excel');    
+        Route::get('/index-export-excel', [DailyActivityFurtherController::class, 'exportManagerIndexExcel'])->name('manager.daily-activity-further.all-export-excel');    
     });
     
     Route::prefix('daily-activity-slaughter-house')->group(function () {

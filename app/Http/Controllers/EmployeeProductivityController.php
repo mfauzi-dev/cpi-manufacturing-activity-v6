@@ -462,27 +462,6 @@ class EmployeeProductivityController extends Controller
             }
         }
 
-        $dailyActivityFurthers = DailyActivityFurther::where(
-            'employee_id',
-            $employee_id
-        )
-            ->with('details.product')
-            ->when($from && $to, function ($query) use ($from, $to) {
-                $query->whereBetween('tanggal', [$from, $to]);
-            })
-            ->get();
-
-        foreach ($dailyActivityFurthers as $activity) {
-            foreach ($activity->details as $detail) {
-                $detail->activity_date = $activity->tanggal;
-                $detail->display_productivity = $detail->productivity;
-                $detail->display_productivity_actual = null;
-                $detail->display_total_harga = null;
-
-                $allDetails->push($detail);
-            }
-        }
-
         $dailyActivitySlaughterHouses = DailyActivitySlaughterHouse::where(
             'employee_id',
             $employee_id
@@ -560,27 +539,6 @@ class EmployeeProductivityController extends Controller
             }
         }
 
-        $dailyActivityFurthers = DailyActivityFurther::where(
-            'employee_id',
-            $employee_id
-        )
-            ->with('details.product')
-            ->when($from && $to, function ($query) use ($from, $to) {
-                $query->whereBetween('tanggal', [$from, $to]);
-            })
-            ->get();
-
-        foreach ($dailyActivityFurthers as $activity) {
-            foreach ($activity->details as $detail) {
-                $detail->activity_date = $activity->tanggal;
-                $detail->display_productivity = $detail->productivity;
-                $detail->display_productivity_actual = null;
-                $detail->display_total_harga = null;
-
-                $allDetails->push($detail);
-            }
-        }
-
         $dailyActivitySlaughterHouses = DailyActivitySlaughterHouse::where(
             'employee_id',
             $employee_id
@@ -643,27 +601,6 @@ class EmployeeProductivityController extends Controller
                 $detail->display_productivity = $detail->productivity;
                 $detail->display_productivity_actual = null;
                 $detail->display_total_harga = $detail->total_harga;
-
-                $allDetails->push($detail);
-            }
-        }
-
-        $dailyActivityFurthers = DailyActivityFurther::where(
-            'employee_id',
-            $employee_id
-        )
-            ->with('details.product')
-            ->when($from && $to, function ($query) use ($from, $to) {
-                $query->whereBetween('tanggal', [$from, $to]);
-            })
-            ->get();
-
-        foreach ($dailyActivityFurthers as $activity) {
-            foreach ($activity->details as $detail) {
-                $detail->activity_date = $activity->tanggal;
-                $detail->display_productivity = $detail->productivity;
-                $detail->display_productivity_actual = null;
-                $detail->display_total_harga = null;
 
                 $allDetails->push($detail);
             }
@@ -771,25 +708,6 @@ class EmployeeProductivityController extends Controller
                 }
             }
 
-            $dailyActivityFurthers = DailyActivityFurther::where('employee_id', $employee->id)
-                ->with('details.product')
-                ->when($from && $to, function ($query) use ($from, $to) {
-                    $query->whereBetween('tanggal', [$from, $to]);
-                })
-                ->get();
-
-            foreach ($dailyActivityFurthers as $activity) {
-                foreach ($activity->details as $detail) {
-                    $detail->employee = $employee;
-                    $detail->activity_date = $activity->tanggal;
-                    $detail->display_productivity = $detail->productivity;
-                    $detail->display_productivity_actual = null;
-                    $detail->display_total_harga = null;
-
-                    $allDetails->push($detail);
-                }
-            }
-
             $dailyActivitySlaughterHouses = DailyActivitySlaughterHouse::where('employee_id', $employee->id)
                 ->with('details.product')
                 ->when($from && $to, function ($query) use ($from, $to) {
@@ -886,25 +804,6 @@ class EmployeeProductivityController extends Controller
                     $detail->display_productivity = $detail->productivity;
                     $detail->display_productivity_actual = null;
                     $detail->display_total_harga = $detail->total_harga;
-
-                    $allDetails->push($detail);
-                }
-            }
-
-            $dailyActivityFurthers = DailyActivityFurther::where('employee_id', $employee->id)
-                ->with('details.product')
-                ->when($from && $to, function ($query) use ($from, $to) {
-                    $query->whereBetween('tanggal', [$from, $to]);
-                })
-                ->get();
-
-            foreach ($dailyActivityFurthers as $activity) {
-                foreach ($activity->details as $detail) {
-                    $detail->employee = $employee;
-                    $detail->activity_date = $activity->tanggal;
-                    $detail->display_productivity = $detail->productivity;
-                    $detail->display_productivity_actual = null;
-                    $detail->display_total_harga = null;
 
                     $allDetails->push($detail);
                 }
@@ -1036,26 +935,7 @@ class EmployeeProductivityController extends Controller
                 }
             }
 
-            $dailyActivityFurthers = DailyActivityFurther::where('employee_id', $employee->id)
-                ->with('details.product')
-                ->when($from && $to, function ($query) use ($from, $to) {
-                    $query->whereBetween('tanggal', [$from, $to]);
-                })
-                ->get();
-
-            foreach ($dailyActivityFurthers as $activity) {
-                foreach ($activity->details as $detail) {
-                    $detail->employee = $employee;
-                    $detail->activity_date = $activity->tanggal;
-                    $detail->display_productivity = $detail->productivity;
-                    $detail->display_productivity_actual = null;
-                    $detail->display_total_harga = null;
-
-                    $allDetails->push($detail);
-                }
-            }
-
-            $dailyActivitySlaughterHouses = DailyActivitySlaughterHouse::where('employee_id', $employee->id)
+$dailyActivitySlaughterHouses = DailyActivitySlaughterHouse::where('employee_id', $employee->id)
                 ->with('details.product')
                 ->when($from && $to, function ($query) use ($from, $to) {
                     $query->whereBetween('tanggal', [$from, $to]);
@@ -1155,26 +1035,6 @@ class EmployeeProductivityController extends Controller
                     $allDetails->push($detail);
                 }
             }
-
-            $dailyActivityFurthers = DailyActivityFurther::where('employee_id', $employee->id)
-                ->with('details.product')
-                ->when($from && $to, function ($query) use ($from, $to) {
-                    $query->whereBetween('tanggal', [$from, $to]);
-                })
-                ->get();
-
-            foreach ($dailyActivityFurthers as $activity) {
-                foreach ($activity->details as $detail) {
-                    $detail->employee = $employee;
-                    $detail->activity_date = $activity->tanggal;
-                    $detail->display_productivity = $detail->productivity;
-                    $detail->display_productivity_actual = null;
-                    $detail->display_total_harga = null;
-
-                    $allDetails->push($detail);
-                }
-            }
-
             $dailyActivitySlaughterHouses = DailyActivitySlaughterHouse::where('employee_id', $employee->id)
                 ->with('details.product')
                 ->when($from && $to, function ($query) use ($from, $to) {
@@ -1283,26 +1143,7 @@ class EmployeeProductivityController extends Controller
                 }
             }
 
-            $dailyActivityFurthers = DailyActivityFurther::where('employee_id', $employee->id)
-                ->with('details.product')
-                ->when($from && $to, function ($query) use ($from, $to) {
-                    $query->whereBetween('tanggal', [$from, $to]);
-                })
-                ->get();
-
-            foreach ($dailyActivityFurthers as $activity) {
-                foreach ($activity->details as $detail) {
-                    $detail->employee = $employee;
-                    $detail->activity_date = $activity->tanggal;
-                    $detail->display_productivity = $detail->productivity;
-                    $detail->display_productivity_actual = null;
-                    $detail->display_total_harga = null;
-
-                    $allDetails->push($detail);
-                }
-            }
-
-            $dailyActivitySlaughterHouses = DailyActivitySlaughterHouse::where('employee_id', $employee->id)
+  $dailyActivitySlaughterHouses = DailyActivitySlaughterHouse::where('employee_id', $employee->id)
                 ->with('details.product')
                 ->when($from && $to, function ($query) use ($from, $to) {
                     $query->whereBetween('tanggal', [$from, $to]);
@@ -1427,25 +1268,6 @@ class EmployeeProductivityController extends Controller
                     $detail->display_productivity = $detail->productivity;
                     $detail->display_productivity_actual = null;
                     $detail->display_total_harga = $detail->total_harga;
-
-                    $allDetails->push($detail);
-                }
-            }
-
-            $dailyActivityFurthers = DailyActivityFurther::where('employee_id', $employee->id)
-                ->with('details.product')
-                ->when($from && $to, function ($query) use ($from, $to) {
-                    $query->whereBetween('tanggal', [$from, $to]);
-                })
-                ->get();
-
-            foreach ($dailyActivityFurthers as $activity) {
-                foreach ($activity->details as $detail) {
-                    $detail->employee = $employee;
-                    $detail->activity_date = $activity->tanggal;
-                    $detail->display_productivity = $detail->productivity;
-                    $detail->display_productivity_actual = null;
-                    $detail->display_total_harga = null;
 
                     $allDetails->push($detail);
                 }

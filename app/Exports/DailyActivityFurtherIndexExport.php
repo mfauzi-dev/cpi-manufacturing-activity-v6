@@ -2,7 +2,6 @@
 
 namespace App\Exports;
 
-use App\Models\DailyActivityFurther;
 use App\Models\Line;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
@@ -29,21 +28,30 @@ class DailyActivityFurtherIndexExport implements
     protected $fromDate;
     protected $toDate;
     protected $departmentId;
+    protected $lineId;
 
     protected array $dates = [];
     protected $lines;
     protected array $manHours = [];
 
     public function __construct(
-        $costCenterId,
-        $psGroupId,
-        $fromDate,
-        $toDate,
-        $departmentId = null
+        $costCenterId = null,
+        $psGroupId = null,
+        $fromDate = null,
+        $toDate = null,
+        $departmentId = null,
+        $lineId = null
     ) {
         $this->costCenterId = $costCenterId;
         $this->psGroupId = $psGroupId;
         $this->departmentId = $departmentId;
+        $this->lineId = $lineId;
+
+        $fromDate = $fromDate
+            ?? now()->startOfMonth()->format('Y-m-d');
+
+        $toDate = $toDate
+            ?? now()->format('Y-m-d');
 
         $start = Carbon::parse($fromDate)->startOfDay();
         $end = Carbon::parse($toDate)->startOfDay();
@@ -66,31 +74,33 @@ class DailyActivityFurtherIndexExport implements
 
     public function collection()
     {
-        $authDepartmentId = auth()->user()->department_id ?? null;
+        $lineQuery = Line::query();
 
-        if ($authDepartmentId) {
-            $lineDepartmentId = $authDepartmentId;
-        } else {
-            $lineDepartmentId = $this->departmentId;
+        if ($this->departmentId) {
+            $lineQuery->where(
+                'department_id',
+                $this->departmentId
+            );
         }
 
-        if ($lineDepartmentId) {
-            $this->lines = Line::query()
-                ->where('department_id', $lineDepartmentId)
-                ->orderByRaw('CAST(name AS UNSIGNED)')
-                ->orderBy('name')
-                ->get();
-        } else {
-            $this->lines = Line::query()
-                ->orderByRaw('CAST(name AS UNSIGNED)')
-                ->orderBy('name')
-                ->get();
+        if ($this->lineId) {
+            $lineQuery->where(
+                'id',
+                $this->lineId
+            );
         }
 
-        $activities = DB::table('daily_activity_furthers as daf')
-            ->leftJoin(
-                'daily_activity_further_employees as dafe',
-                'dafe.daily_activity_further_id',
+        $this->lines = $lineQuery
+            ->orderByRaw('CAST(name AS UNSIGNED)')
+            ->orderBy('name')
+            ->get();
+
+        $activities = DB::table(
+            'daily_activity_furthers as daf'
+        )
+            ->join(
+                'daily_activity_detail_furthers as dadf',
+                'dadf.daily_activity_further_id',
                 '=',
                 'daf.id'
             )
@@ -120,32 +130,33 @@ class DailyActivityFurtherIndexExport implements
             );
         }
 
-        if ($lineDepartmentId) {
+        if ($this->lineId) {
+            $activities->where(
+                'daf.line_id',
+                $this->lineId
+            );
+        }
+
+        if ($this->departmentId) {
             $activities->where(
                 'daf.department_id',
-                $lineDepartmentId
+                $this->departmentId
             );
         }
 
         $activities = $activities
             ->select(
-                'daf.id',
-                'daf.line_id',
                 'daf.tanggal',
-                'daf.department_id',
-                'daf.cost_center_id',
-                'daf.ps_group_id',
+                'daf.line_id',
+                'daf.employee_id',
                 DB::raw(
-                    'COALESCE(SUM(dafe.jumlah_hk), 0) as total_man_hours'
+                    'MAX(dadf.man_power) as man_power'
                 )
             )
             ->groupBy(
-                'daf.id',
-                'daf.line_id',
                 'daf.tanggal',
-                'daf.department_id',
-                'daf.cost_center_id',
-                'daf.ps_group_id'
+                'daf.line_id',
+                'daf.employee_id'
             )
             ->orderBy('daf.line_id')
             ->orderBy('daf.tanggal')
@@ -154,7 +165,6 @@ class DailyActivityFurtherIndexExport implements
         $this->manHours = [];
 
         foreach ($activities as $activity) {
-
             $lineId = $activity->line_id;
 
             $dateKey = Carbon::parse(
@@ -170,13 +180,12 @@ class DailyActivityFurtherIndexExport implements
             }
 
             $this->manHours[$lineId][$dateKey] +=
-                (float) $activity->total_man_hours;
+                (float) $activity->man_power;
         }
 
         $rows = [];
 
         foreach ($this->lines as $line) {
-
             $row = [
                 '',
                 'LINE ' . $line->name,
@@ -185,9 +194,7 @@ class DailyActivityFurtherIndexExport implements
             $lineTotal = 0;
 
             foreach ($this->dates as $date) {
-
-                $dateKey = Carbon::parse($date)
-                    ->format('Y-m-d');
+                $dateKey = $date->format('Y-m-d');
 
                 $value = 0;
 
@@ -201,12 +208,10 @@ class DailyActivityFurtherIndexExport implements
                 }
 
                 $row[] = $value;
-
                 $lineTotal += $value;
             }
 
             $row[] = $lineTotal;
-
             $rows[] = $row;
         }
 
@@ -218,32 +223,26 @@ class DailyActivityFurtherIndexExport implements
         $grandTotal = 0;
 
         foreach ($this->dates as $date) {
-
-            $dateKey = Carbon::parse($date)
-                ->format('Y-m-d');
+            $dateKey = $date->format('Y-m-d');
 
             $dateTotal = 0;
 
             foreach ($this->lines as $line) {
-
                 if (
                     isset($this->manHours[$line->id]) &&
                     isset($this->manHours[$line->id][$dateKey])
                 ) {
-                    $dateTotal +=
-                        (float) $this->manHours[
-                            $line->id
-                        ][$dateKey];
+                    $dateTotal += (float) $this->manHours[
+                        $line->id
+                    ][$dateKey];
                 }
             }
 
             $grandTotalRow[] = $dateTotal;
-
             $grandTotal += $dateTotal;
         }
 
         $grandTotalRow[] = $grandTotal;
-
         $rows[] = $grandTotalRow;
 
         return new Collection($rows);
@@ -258,7 +257,6 @@ class DailyActivityFurtherIndexExport implements
     {
         return [
             AfterSheet::class => function (AfterSheet $event) {
-
                 $sheet = $event->sheet->getDelegate();
 
                 if (count($this->dates) === 0) {
@@ -272,22 +270,17 @@ class DailyActivityFurtherIndexExport implements
 
                 $lastColumnIndex = $totalColumnIndex;
 
-                $lastColumn =
-                    Coordinate::stringFromColumnIndex(
-                        $lastColumnIndex
-                    );
+                $lastColumn = Coordinate::stringFromColumnIndex(
+                    $lastColumnIndex
+                );
 
-                /*
-                 * 5 ROW supaya row pertama hasil collection
-                 * tidak tertimpa oleh header.
-                 */
                 $sheet->insertNewRowBefore(1, 5);
 
-                $periodStart =
-                    $this->dates[0]->copy();
+                $periodStart = $this->dates[0]->copy();
 
-                $periodEnd =
-                    $this->dates[count($this->dates) - 1]->copy();
+                $periodEnd = $this->dates[
+                    count($this->dates) - 1
+                ]->copy();
 
                 $title =
                     'LAPORAN REKAPITULASI MAN HOURS FURTHER '
@@ -364,11 +357,9 @@ class DailyActivityFurtherIndexExport implements
                 $column = $dateColumnStart;
 
                 foreach ($this->dates as $date) {
-
-                    $letter =
-                        Coordinate::stringFromColumnIndex(
-                            $column
-                        );
+                    $letter = Coordinate::stringFromColumnIndex(
+                        $column
+                    );
 
                     $sheet->setCellValue(
                         "{$letter}{$headerRow}",
@@ -378,10 +369,9 @@ class DailyActivityFurtherIndexExport implements
                     $column++;
                 }
 
-                $totalColumn =
-                    Coordinate::stringFromColumnIndex(
-                        $totalColumnIndex
-                    );
+                $totalColumn = Coordinate::stringFromColumnIndex(
+                    $totalColumnIndex
+                );
 
                 $sheet->setCellValue(
                     "{$totalColumn}{$headerRow}",
@@ -430,7 +420,6 @@ class DailyActivityFurtherIndexExport implements
                     $lastDataRow + 1;
 
                 if ($lastDataRow >= $firstDataRow) {
-
                     $sheet->getStyle(
                         "B{$firstDataRow}:{$lastColumn}{$lastDataRow}"
                     )->applyFromArray([
@@ -512,11 +501,9 @@ class DailyActivityFurtherIndexExport implements
                     $i < count($this->dates);
                     $i++
                 ) {
-
-                    $letter =
-                        Coordinate::stringFromColumnIndex(
-                            $dateColumnStart + $i
-                        );
+                    $letter = Coordinate::stringFromColumnIndex(
+                        $dateColumnStart + $i
+                    );
 
                     $sheet->getColumnDimension($letter)
                         ->setWidth(10);

@@ -42,8 +42,8 @@ class DailyActivityFurtherController extends Controller
             ->orderBy('name')
             ->get();
 
-        $lines = Line::orderBy('name')
-            ->where('department_id', $departmentId)
+        $lines = Line::where('department_id', $departmentId)
+            ->orderBy('name')
             ->get();
 
         return view(
@@ -59,28 +59,28 @@ class DailyActivityFurtherController extends Controller
 
     public function getManHours(Request $request)
     {
-        $request->validate([
-            'tanggal' => ['required', 'date'],
-            'employee_ids' => ['required', 'array', 'min:1'],
-            'employee_ids.*' => ['required', 'exists:employees,id'],
-        ]);
+        $tanggal = $request->tanggal;
+        $psGroupId = $request->ps_group_id;
+        $lineId = $request->line_id;
 
-        $manHours = 0;
+        $attendances = Attendance::with('employee')
+            ->whereDate('date', $tanggal)
+            ->where('line_id', $lineId)
+            ->where('status', 'hadir')
+            ->whereHas('employee', function ($query) use ($psGroupId) {
+                $query->where('ps_group_id', $psGroupId);
+            })
+            ->get();
 
-        foreach ($request->employee_ids as $employeeId) {
-
-            $attendance = Attendance::where('employee_id', $employeeId)
-                ->whereDate('date', $request->tanggal)
-                ->where('status', 'hadir')
-                ->first();
-
-            if ($attendance) {
-                $manHours += (float) $attendance->jumlah_hk;
-            }
-        }
+        $employeeHk = $attendances
+            ->groupBy('employee_id')
+            ->map(function ($group) {
+                return (float) $group->sum('jumlah_hk');
+            })
+            ->toArray();
 
         return response()->json([
-            'man_hours' => $manHours,
+            'employee_hk' => $employeeHk,
         ]);
     }
 
@@ -106,6 +106,9 @@ class DailyActivityFurtherController extends Controller
 
         $costCenter = CostCenter::where('department_id', $departmentId)
             ->findOrFail($costCenterId);
+
+        ProcessType::where('department_id', $departmentId)
+            ->findOrFail($request->process_type_id);
 
         $products = Product::where('cost_center_id', $costCenter->id)
             ->where('process_type_id', $request->process_type_id)
@@ -193,8 +196,7 @@ class DailyActivityFurtherController extends Controller
             'cost_center_id' => ['required', 'exists:cost_centers,id'],
             'ps_group_id' => ['required', 'exists:ps_groups,id'],
             'line_id' => ['required', 'exists:lines,id'],
-            'employees' => ['required', 'array', 'min:1'],
-            'employees.*.employee_id' => ['required', 'exists:employees,id'],
+            'process_type_id' => ['required', 'exists:process_types,id'],
             'details' => ['required', 'array', 'min:1'],
             'details.*.product_id' => ['required', 'exists:products,id'],
             'details.*.total_kg_rm' => ['required', 'numeric', 'min:0'],
@@ -203,57 +205,114 @@ class DailyActivityFurtherController extends Controller
 
         $departmentId = auth()->user()->department_id;
 
+        abort_unless(
+            $departmentId,
+            403,
+            'Akun Anda belum terhubung ke department manapun.'
+        );
+
         $costCenter = CostCenter::where('department_id', $departmentId)
             ->findOrFail($request->cost_center_id);
 
         $psGroup = PsGroup::where('cost_center_id', $costCenter->id)
             ->findOrFail($request->ps_group_id);
 
-        Line::where('department_id', $departmentId)
+        $line = Line::where('department_id', $departmentId)
             ->findOrFail($request->line_id);
 
         ProcessType::where('department_id', $departmentId)
+            ->where('id', $request->process_type_id)
             ->findOrFail($request->process_type_id);
 
-        $employeeHk = [];
+        $productIds = [];
 
-        foreach ($request->employees as $employeeData) {
-            $employee = Employee::where('id', $employeeData['employee_id'])
-                ->where('cost_center_id', $costCenter->id)
-                ->where('ps_group_id', $psGroup->id)
-                ->first();
+        foreach ($request->details as $detail) {
+            $productId = (int) $detail['product_id'];
 
-            if (!$employee) {
+            if (in_array($productId, $productIds)) {
                 return redirect()
                     ->back()
                     ->withInput()
                     ->with(
                         'error',
-                        'Employee tidak sesuai dengan Cost Center atau PS Group.'
+                        'Produk yang sama tidak boleh dimasukkan lebih dari satu kali dalam satu input.'
                     );
             }
 
-            if (!isset($employeeHk[$employee->id])) {
-                $attendance = Attendance::where('employee_id', $employee->id)
-                    ->whereDate('date', $request->tanggal)
-                    ->where('status', 'hadir')
-                    ->first();
+            $productIds[] = $productId;
+        }
 
-                if (!$attendance) {
-                    return redirect()
-                        ->back()
-                        ->withInput()
-                        ->with(
-                            'error',
-                            'Employee ' . $employee->name . ' belum memiliki absensi hadir pada tanggal tersebut.'
-                        );
-                }
+        $existingProduct = DailyActivityDetailFurther::whereIn(
+            'product_id',
+            $productIds
+        )
+            ->whereHas('dailyActivityFurther', function ($query) use (
+                $request,
+                $departmentId,
+                $costCenter,
+                $psGroup,
+                $line
+            ) {
+                $query->where('department_id', $departmentId)
+                    ->where('cost_center_id', $costCenter->id)
+                    ->where('ps_group_id', $psGroup->id)
+                    ->where('line_id', $line->id)
+                    ->whereDate('tanggal', $request->tanggal);
+            })
+            ->with('product')
+            ->first();
 
-                $employeeHk[$employee->id] = (float) $attendance->jumlah_hk;
+        if ($existingProduct) {
+            $productName = $existingProduct->product
+                ? $existingProduct->product->material_name
+                : 'tersebut';
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with(
+                    'error',
+                    "Produk {$productName} sudah digunakan pada tanggal, Cost Center, PS Group, dan Line tersebut. Silakan edit data yang sudah ada."
+                );
+        }
+
+        $attendances = Attendance::with('employee')
+            ->where('line_id', $line->id)
+            ->whereDate('date', $request->tanggal)
+            ->where('status', 'hadir')
+            ->whereHas('employee', function ($query) use ($psGroup) {
+                $query->where('ps_group_id', $psGroup->id);
+            })
+            ->get();
+
+        if ($attendances->isEmpty()) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with(
+                    'error',
+                    'Tidak ada karyawan dengan absensi hadir pada PS Group, Line, dan tanggal tersebut.'
+                );
+        }
+
+        $employeeHk = [];
+
+        foreach ($attendances as $attendance) {
+            $employeeId = $attendance->employee_id;
+            $jumlahHk = (float) $attendance->jumlah_hk;
+
+            if (isset($employeeHk[$employeeId])) {
+                $employeeHk[$employeeId] += $jumlahHk;
+            } else {
+                $employeeHk[$employeeId] = $jumlahHk;
             }
         }
 
-        $manHours = array_sum($employeeHk);
+        $manHours = 0;
+
+        foreach ($employeeHk as $hk) {
+            $manHours += $hk;
+        }
 
         if ($manHours <= 0) {
             return redirect()
@@ -275,24 +334,22 @@ class DailyActivityFurtherController extends Controller
             $departmentId,
             $costCenter,
             $psGroup,
+            $line,
             $employeeHk,
             $manHours,
             $productivity
         ) {
+            $firstEmployeeId = array_key_first($employeeHk);
+
             $dailyActivityFurther = DailyActivityFurther::create([
                 'tanggal' => $request->tanggal,
                 'department_id' => $departmentId,
                 'cost_center_id' => $costCenter->id,
                 'ps_group_id' => $psGroup->id,
-                'line_id' => $request->line_id,
+                'line_id' => $line->id,
+                'employee_id' => $firstEmployeeId,
                 'input_by' => auth()->user()->id,
             ]);
-
-            foreach ($employeeHk as $employeeId => $hk) {
-                $dailyActivityFurther->employees()->attach($employeeId, [
-                    'jumlah_hk' => $hk,
-                ]);
-            }
 
             foreach ($request->details as $detail) {
                 $dailyActivityFurther->details()->create([
@@ -314,107 +371,496 @@ class DailyActivityFurtherController extends Controller
     {
         $department = auth()->user()->department;
 
+        if (!$department) {
+            abort(403, 'Akun Anda belum terhubung ke department manapun.');
+        }
+
         $dateFrom = $request->input('start_date');
-        $dateTo   = $request->input('end_date');
+        $dateTo = $request->input('end_date');
 
         $query = DailyActivityDetailFurther::query()
-            ->join('daily_activity_furthers', 'daily_activity_furthers.id', '=', 'daily_activity_detail_furthers.daily_activity_further_id')
-            ->join('departments', 'departments.id', '=', 'daily_activity_furthers.department_id')
-            ->join('cost_centers', 'cost_centers.id', '=', 'daily_activity_furthers.cost_center_id')
-            ->leftJoin('ps_groups', 'ps_groups.id', '=', 'daily_activity_furthers.ps_group_id')
-            ->leftJoin('lines', 'lines.id', '=', 'daily_activity_furthers.line_id')
-            ->where('cost_centers.department_id', $department->id);
+            ->join(
+                'daily_activity_furthers',
+                'daily_activity_furthers.id',
+                '=',
+                'daily_activity_detail_furthers.daily_activity_further_id'
+            )
+            ->join(
+                'departments',
+                'departments.id',
+                '=',
+                'daily_activity_furthers.department_id'
+            )
+            ->join(
+                'cost_centers',
+                'cost_centers.id',
+                '=',
+                'daily_activity_furthers.cost_center_id'
+            )
+            ->leftJoin(
+                'ps_groups',
+                'ps_groups.id',
+                '=',
+                'daily_activity_furthers.ps_group_id'
+            )
+            ->leftJoin(
+                'lines',
+                'lines.id',
+                '=',
+                'daily_activity_furthers.line_id'
+            )
+            ->where(
+                'daily_activity_furthers.department_id',
+                $department->id
+            );
 
         if ($request->filled('cost_center_id')) {
-            $query->where('daily_activity_furthers.cost_center_id', $request->cost_center_id);
+            $query->where(
+                'daily_activity_furthers.cost_center_id',
+                $request->cost_center_id
+            );
         }
 
         if ($request->filled('ps_group_id')) {
-            $query->where('daily_activity_furthers.ps_group_id', $request->ps_group_id);
+            $query->where(
+                'daily_activity_furthers.ps_group_id',
+                $request->ps_group_id
+            );
         }
 
         if ($request->filled('line_id')) {
-            $query->where('daily_activity_furthers.line_id', $request->line_id);
+            $query->where(
+                'daily_activity_furthers.line_id',
+                $request->line_id
+            );
         }
 
         if ($dateFrom) {
-            $query->whereDate('daily_activity_furthers.tanggal', '>=', $dateFrom);
+            $query->whereDate(
+                'daily_activity_furthers.tanggal',
+                '>=',
+                $dateFrom
+            );
         }
 
         if ($dateTo) {
-            $query->whereDate('daily_activity_furthers.tanggal', '<=', $dateTo);
+            $query->whereDate(
+                'daily_activity_furthers.tanggal',
+                '<=',
+                $dateTo
+            );
         }
 
         switch ($request->quick_filter) {
             case 'today':
-                $query->whereDate('daily_activity_furthers.tanggal', today());
+                $query->whereDate(
+                    'daily_activity_furthers.tanggal',
+                    today()
+                );
                 break;
 
             case 'week':
-                $query->whereBetween('daily_activity_furthers.tanggal', [
-                    now()->startOfWeek(),
-                    now()->endOfWeek(),
-                ]);
+                $query->whereBetween(
+                    'daily_activity_furthers.tanggal',
+                    [
+                        now()->startOfWeek(),
+                        now()->endOfWeek(),
+                    ]
+                );
                 break;
 
             case 'month':
-                $query->whereMonth('daily_activity_furthers.tanggal', now()->month)
-                    ->whereYear('daily_activity_furthers.tanggal', now()->year);
+                $query->whereMonth(
+                    'daily_activity_furthers.tanggal',
+                    now()->month
+                )->whereYear(
+                    'daily_activity_furthers.tanggal',
+                    now()->year
+                );
                 break;
         }
 
-        $summaries = $query
-            ->selectRaw("
-                departments.id as department_id,
-                departments.name as department_name,
-                cost_centers.id as cost_center_id,
-                cost_centers.name as cost_center_name,
-                ps_groups.id as ps_group_id,
-                ps_groups.name as ps_group_name,
-                lines.id as line_id,
-                lines.name as line_name,
-                SUM(daily_activity_detail_furthers.total_kg_rm) as total_kg_rm,
-                SUM(daily_activity_detail_furthers.total_kg_fg) as total_kg_fg
-            ")
+        $uniqueProductions = (clone $query)
+            ->select(
+                'daily_activity_furthers.tanggal',
+                'daily_activity_furthers.cost_center_id',
+                'daily_activity_furthers.ps_group_id',
+                'daily_activity_furthers.line_id',
+                'daily_activity_detail_furthers.product_id'
+            )
+            ->selectRaw(
+                'MAX(daily_activity_detail_furthers.total_kg_rm) as total_kg_rm'
+            )
+            ->selectRaw(
+                'MAX(daily_activity_detail_furthers.total_kg_fg) as total_kg_fg'
+            )
             ->groupBy(
+                'daily_activity_furthers.tanggal',
+                'daily_activity_furthers.cost_center_id',
+                'daily_activity_furthers.ps_group_id',
+                'daily_activity_furthers.line_id',
+                'daily_activity_detail_furthers.product_id'
+            );
+
+        $grandTotalKgRm = (float) DB::query()
+            ->fromSub($uniqueProductions, 'productions')
+            ->sum('total_kg_rm');
+
+        $grandTotalKgFg = (float) DB::query()
+            ->fromSub($uniqueProductions, 'productions')
+            ->sum('total_kg_fg');
+
+        $grandTotalKg = $grandTotalKgFg;
+
+        $summaryProductions = (clone $query)
+            ->select(
+                'daily_activity_furthers.tanggal',
+                'daily_activity_furthers.cost_center_id',
+                'daily_activity_furthers.ps_group_id',
+                'daily_activity_furthers.line_id',
+                'daily_activity_detail_furthers.product_id',
+                'departments.id as department_id',
+                'departments.name as department_name',
+                'cost_centers.name as cost_center_name',
+                'ps_groups.name as ps_group_name',
+                'lines.name as line_name'
+            )
+            ->selectRaw(
+                'MAX(daily_activity_detail_furthers.total_kg_rm) as total_kg_rm'
+            )
+            ->selectRaw(
+                'MAX(daily_activity_detail_furthers.total_kg_fg) as total_kg_fg'
+            )
+            ->groupBy(
+                'daily_activity_furthers.tanggal',
+                'daily_activity_furthers.cost_center_id',
+                'daily_activity_furthers.ps_group_id',
+                'daily_activity_furthers.line_id',
+                'daily_activity_detail_furthers.product_id',
                 'departments.id',
                 'departments.name',
-                'cost_centers.id',
                 'cost_centers.name',
-                'ps_groups.id',
                 'ps_groups.name',
-                'lines.id',
                 'lines.name'
+            );
+
+        $summaries = DB::query()
+            ->fromSub($summaryProductions, 'productions')
+            ->select(
+                'department_id',
+                'department_name',
+                'cost_center_id',
+                'cost_center_name',
+                'ps_group_id',
+                'ps_group_name',
+                'line_id',
+                'line_name'
             )
-            ->orderBy('cost_centers.name')
-            ->orderBy('ps_groups.id', 'ASC')
-            ->paginate(10);
+            ->selectRaw('SUM(total_kg_rm) as total_kg_rm')
+            ->selectRaw('SUM(total_kg_fg) as total_kg_fg')
+            ->groupBy(
+                'department_id',
+                'department_name',
+                'cost_center_id',
+                'cost_center_name',
+                'ps_group_id',
+                'ps_group_name',
+                'line_id',
+                'line_name'
+            )
+            ->orderBy('cost_center_name')
+            ->orderBy('ps_group_name')
+            ->orderBy('line_name')
+            ->paginate(10)
+            ->withQueryString();
 
-        $grandTotalKg = 0;
-        $grandTotalRupiah = 0;
+        $costCenters = CostCenter::where(
+            'department_id',
+            $department->id
+        )
+            ->orderBy('name')
+            ->get();
 
-        foreach ($summaries as $summary) {
-            $grandTotalKg += $summary->total_kg;
+        $psGroups = PsGroup::whereIn(
+            'cost_center_id',
+            $costCenters->pluck('id')
+        )
+            ->orderBy('name')
+            ->get();
+
+        $lines = Line::where(
+            'department_id',
+            $department->id
+        )
+            ->orderBy('name')
+            ->get();
+
+        return view(
+            'pages.admin_production.daily_activity_further.index',
+            compact(
+                'department',
+                'costCenters',
+                'psGroups',
+                'lines',
+                'summaries',
+                'grandTotalKgRm',
+                'grandTotalKgFg',
+                'grandTotalKg',
+                'dateFrom',
+                'dateTo'
+            )
+        );
+    }
+
+    public function managerIndex(Request $request)
+    {
+        $department = auth()->user()->department;
+
+        if (!$department) {
+            abort(403, 'Akun Anda belum terhubung ke department manapun.');
         }
 
-        $costCenters = CostCenter::where('department_id', $department->id)
+        $departmentId = $department->id;
+
+        $dateFrom = $request->input('start_date');
+        $dateTo = $request->input('end_date');
+
+        $query = DailyActivityDetailFurther::query()
+            ->join(
+                'daily_activity_furthers',
+                'daily_activity_furthers.id',
+                '=',
+                'daily_activity_detail_furthers.daily_activity_further_id'
+            )
+            ->join(
+                'departments',
+                'departments.id',
+                '=',
+                'daily_activity_furthers.department_id'
+            )
+            ->join(
+                'cost_centers',
+                'cost_centers.id',
+                '=',
+                'daily_activity_furthers.cost_center_id'
+            )
+            ->leftJoin(
+                'ps_groups',
+                'ps_groups.id',
+                '=',
+                'daily_activity_furthers.ps_group_id'
+            )
+            ->leftJoin(
+                'lines',
+                'lines.id',
+                '=',
+                'daily_activity_furthers.line_id'
+            )
+            ->where(
+                'daily_activity_furthers.department_id',
+                $departmentId
+            )
+            ->where(
+                'cost_centers.department_id',
+                $departmentId
+            );
+
+        if ($request->filled('cost_center_id')) {
+            $query->where(
+                'daily_activity_furthers.cost_center_id',
+                $request->cost_center_id
+            );
+        }
+
+        if ($request->filled('ps_group_id')) {
+            $query->where(
+                'daily_activity_furthers.ps_group_id',
+                $request->ps_group_id
+            );
+        }
+
+        if ($request->filled('line_id')) {
+            $query->where(
+                'daily_activity_furthers.line_id',
+                $request->line_id
+            );
+        }
+
+        if ($dateFrom) {
+            $query->whereDate(
+                'daily_activity_furthers.tanggal',
+                '>=',
+                $dateFrom
+            );
+        }
+
+        if ($dateTo) {
+            $query->whereDate(
+                'daily_activity_furthers.tanggal',
+                '<=',
+                $dateTo
+            );
+        }
+
+        switch ($request->quick_filter) {
+            case 'today':
+                $query->whereDate(
+                    'daily_activity_furthers.tanggal',
+                    today()
+                );
+                break;
+
+            case 'week':
+                $query->whereBetween(
+                    'daily_activity_furthers.tanggal',
+                    [
+                        now()->startOfWeek(),
+                        now()->endOfWeek(),
+                    ]
+                );
+                break;
+
+            case 'month':
+                $query->whereMonth(
+                    'daily_activity_furthers.tanggal',
+                    now()->month
+                )->whereYear(
+                    'daily_activity_furthers.tanggal',
+                    now()->year
+                );
+                break;
+        }
+
+        $uniqueProductions = (clone $query)
+            ->select(
+                'daily_activity_furthers.tanggal',
+                'daily_activity_furthers.cost_center_id',
+                'daily_activity_furthers.ps_group_id',
+                'daily_activity_furthers.line_id',
+                'daily_activity_detail_furthers.product_id'
+            )
+            ->selectRaw(
+                'MAX(daily_activity_detail_furthers.total_kg_rm) as total_kg_rm'
+            )
+            ->selectRaw(
+                'MAX(daily_activity_detail_furthers.total_kg_fg) as total_kg_fg'
+            )
+            ->groupBy(
+                'daily_activity_furthers.tanggal',
+                'daily_activity_furthers.cost_center_id',
+                'daily_activity_furthers.ps_group_id',
+                'daily_activity_furthers.line_id',
+                'daily_activity_detail_furthers.product_id'
+            );
+
+        $grandTotalKgRm = (float) DB::query()
+            ->fromSub($uniqueProductions, 'productions')
+            ->sum('total_kg_rm');
+
+        $grandTotalKgFg = (float) DB::query()
+            ->fromSub($uniqueProductions, 'productions')
+            ->sum('total_kg_fg');
+
+        $grandTotalKg = $grandTotalKgFg;
+
+        $summaryProductions = (clone $query)
+            ->select(
+                'daily_activity_furthers.tanggal',
+                'daily_activity_furthers.cost_center_id',
+                'daily_activity_furthers.ps_group_id',
+                'daily_activity_furthers.line_id',
+                'daily_activity_detail_furthers.product_id',
+                'departments.id as department_id',
+                'departments.name as department_name',
+                'cost_centers.name as cost_center_name',
+                'ps_groups.name as ps_group_name',
+                'lines.name as line_name'
+            )
+            ->selectRaw(
+                'MAX(daily_activity_detail_furthers.total_kg_rm) as total_kg_rm'
+            )
+            ->selectRaw(
+                'MAX(daily_activity_detail_furthers.total_kg_fg) as total_kg_fg'
+            )
+            ->groupBy(
+                'daily_activity_furthers.tanggal',
+                'daily_activity_furthers.cost_center_id',
+                'daily_activity_furthers.ps_group_id',
+                'daily_activity_furthers.line_id',
+                'daily_activity_detail_furthers.product_id',
+                'departments.id',
+                'departments.name',
+                'cost_centers.name',
+                'ps_groups.name',
+                'lines.name'
+            );
+
+        $summaries = DB::query()
+            ->fromSub($summaryProductions, 'productions')
+            ->select(
+                'department_id',
+                'department_name',
+                'cost_center_id',
+                'cost_center_name',
+                'ps_group_id',
+                'ps_group_name',
+                'line_id',
+                'line_name'
+            )
+            ->selectRaw('SUM(total_kg_rm) as total_kg_rm')
+            ->selectRaw('SUM(total_kg_fg) as total_kg_fg')
+            ->groupBy(
+                'department_id',
+                'department_name',
+                'cost_center_id',
+                'cost_center_name',
+                'ps_group_id',
+                'ps_group_name',
+                'line_id',
+                'line_name'
+            )
+            ->orderBy('cost_center_name')
+            ->orderBy('ps_group_name')
+            ->orderBy('line_name')
+            ->paginate(10)
+            ->withQueryString();
+
+        $costCenters = CostCenter::where(
+            'department_id',
+            $departmentId
+        )
             ->orderBy('name')
             ->get();
 
-        $lines = Line::where('department_id', $department->id)
+        $psGroups = PsGroup::whereIn(
+            'cost_center_id',
+            $costCenters->pluck('id')
+        )
             ->orderBy('name')
             ->get();
 
-        return view('pages.admin_production.daily_activity_further.index', compact(
-            'department',
-            'costCenters',
-            'lines',
-            'summaries',
-            'grandTotalKg',
-            'grandTotalRupiah',
-            'dateFrom',
-            'dateTo'
-        ));
+        $lines = Line::where(
+            'department_id',
+            $departmentId
+        )
+            ->orderBy('name')
+            ->get();
+
+        return view(
+            'pages.manager.daily_activity_further.index',
+            compact(
+                'department',
+                'costCenters',
+                'psGroups',
+                'lines',
+                'summaries',
+                'grandTotalKgRm',
+                'grandTotalKgFg',
+                'grandTotalKg',
+                'dateFrom',
+                'dateTo'
+            )
+        );
     }
 
     public function generalManagerIndex(Request $request)
@@ -527,57 +973,130 @@ class DailyActivityFurtherController extends Controller
                 break;
         }
 
-        $summaries = $query
-            ->selectRaw("
-                departments.id as department_id,
-                departments.name as department_name,
-                cost_centers.id as cost_center_id,
-                cost_centers.name as cost_center_name,
-                ps_groups.id as ps_group_id,
-                ps_groups.name as ps_group_name,
-                lines.id as line_id,
-                lines.name as line_name,
-                SUM(daily_activity_detail_furthers.total_kg_rm) as total_kg_rm,
-                SUM(daily_activity_detail_furthers.total_kg_fg) as total_kg_fg
-            ")
+        $uniqueProductions = (clone $query)
+            ->select(
+                'daily_activity_furthers.tanggal',
+                'daily_activity_furthers.cost_center_id',
+                'daily_activity_furthers.ps_group_id',
+                'daily_activity_furthers.line_id',
+                'daily_activity_detail_furthers.product_id'
+            )
+            ->selectRaw(
+                'MAX(daily_activity_detail_furthers.total_kg_rm) as total_kg_rm'
+            )
+            ->selectRaw(
+                'MAX(daily_activity_detail_furthers.total_kg_fg) as total_kg_fg'
+            )
             ->groupBy(
+                'daily_activity_furthers.tanggal',
+                'daily_activity_furthers.cost_center_id',
+                'daily_activity_furthers.ps_group_id',
+                'daily_activity_furthers.line_id',
+                'daily_activity_detail_furthers.product_id'
+            );
+
+        $grandTotalKgRm = (float) DB::query()
+            ->fromSub($uniqueProductions, 'productions')
+            ->sum('total_kg_rm');
+
+        $grandTotalKgFg = (float) DB::query()
+            ->fromSub($uniqueProductions, 'productions')
+            ->sum('total_kg_fg');
+
+        $grandTotalKg = $grandTotalKgFg;
+
+        $summaryProductions = (clone $query)
+            ->select(
+                'daily_activity_furthers.tanggal',
+                'daily_activity_furthers.cost_center_id',
+                'daily_activity_furthers.ps_group_id',
+                'daily_activity_furthers.line_id',
+                'daily_activity_detail_furthers.product_id',
+                'departments.id as department_id',
+                'departments.name as department_name',
+                'cost_centers.name as cost_center_name',
+                'ps_groups.name as ps_group_name',
+                'lines.name as line_name'
+            )
+            ->selectRaw(
+                'MAX(daily_activity_detail_furthers.total_kg_rm) as total_kg_rm'
+            )
+            ->selectRaw(
+                'MAX(daily_activity_detail_furthers.total_kg_fg) as total_kg_fg'
+            )
+            ->groupBy(
+                'daily_activity_furthers.tanggal',
+                'daily_activity_furthers.cost_center_id',
+                'daily_activity_furthers.ps_group_id',
+                'daily_activity_furthers.line_id',
+                'daily_activity_detail_furthers.product_id',
                 'departments.id',
                 'departments.name',
-                'cost_centers.id',
                 'cost_centers.name',
-                'ps_groups.id',
                 'ps_groups.name',
-                'lines.id',
                 'lines.name'
+            );
+
+        $summaries = DB::query()
+            ->fromSub($summaryProductions, 'productions')
+            ->select(
+                'department_id',
+                'department_name',
+                'cost_center_id',
+                'cost_center_name',
+                'ps_group_id',
+                'ps_group_name',
+                'line_id',
+                'line_name'
             )
-            ->orderBy('departments.name')
-            ->orderBy('cost_centers.name')
-            ->orderBy('ps_groups.name')
-            ->orderBy('lines.name')
+            ->selectRaw('SUM(total_kg_rm) as total_kg_rm')
+            ->selectRaw('SUM(total_kg_fg) as total_kg_fg')
+            ->groupBy(
+                'department_id',
+                'department_name',
+                'cost_center_id',
+                'cost_center_name',
+                'ps_group_id',
+                'ps_group_name',
+                'line_id',
+                'line_name'
+            )
+            ->orderBy('department_name')
+            ->orderBy('cost_center_name')
+            ->orderBy('ps_group_name')
+            ->orderBy('line_name')
             ->paginate(10)
             ->withQueryString();
 
-        $grandTotalKgRm = 0;
-        $grandTotalKgFg = 0;
-
-        foreach ($summaries as $summary) {
-            $grandTotalKgRm += (float) $summary->total_kg_rm;
-            $grandTotalKgFg += (float) $summary->total_kg_fg;
-        }
-
-        $grandTotalKg = $grandTotalKgRm + $grandTotalKgFg;
-
         $departments = Department::orderBy('name')->get();
 
-        $costCenters = CostCenter::orderBy('name')->get();
+        if ($request->filled('department_id')) {
+            $costCenters = CostCenter::where(
+                'department_id',
+                $request->department_id
+            )
+                ->orderBy('name')
+                ->get();
 
-        $lines = Line::orderBy('name')->get();
+            $lines = Line::where(
+                'department_id',
+                $request->department_id
+            )
+                ->orderBy('name')
+                ->get();
+        } else {
+            $costCenters = CostCenter::orderBy('name')->get();
+            $lines = Line::orderBy('name')->get();
+        }
+
+        $psGroups = PsGroup::orderBy('name')->get();
 
         return view(
             'pages.general_manager.daily_activity_further.index',
             compact(
                 'departments',
                 'costCenters',
+                'psGroups',
                 'lines',
                 'summaries',
                 'grandTotalKgRm',
@@ -589,189 +1108,35 @@ class DailyActivityFurtherController extends Controller
         );
     }
 
-    public function managerIndex(Request $request)
-    {
-        $department = auth()->user()->department;
-
-        $dateFrom = $request->input('start_date');
-        $dateTo = $request->input('end_date');
-
-        $query = DailyActivityDetailFurther::query()
-            ->join(
-                'daily_activity_furthers',
-                'daily_activity_furthers.id',
-                '=',
-                'daily_activity_detail_furthers.daily_activity_further_id'
-            )
-            ->join(
-                'departments',
-                'departments.id',
-                '=',
-                'daily_activity_furthers.department_id'
-            )
-            ->join(
-                'cost_centers',
-                'cost_centers.id',
-                '=',
-                'daily_activity_furthers.cost_center_id'
-            )
-            ->leftJoin(
-                'ps_groups',
-                'ps_groups.id',
-                '=',
-                'daily_activity_furthers.ps_group_id'
-            )
-            ->leftJoin(
-                'lines',
-                'lines.id',
-                '=',
-                'daily_activity_furthers.line_id'
-            )
-            ->where('cost_centers.department_id', $department->id);
-
-        if ($request->filled('cost_center_id')) {
-            $query->where(
-                'daily_activity_furthers.cost_center_id',
-                $request->cost_center_id
-            );
-        }
-
-        if ($request->filled('ps_group_id')) {
-            $query->where(
-                'daily_activity_furthers.ps_group_id',
-                $request->ps_group_id
-            );
-        }
-
-        if ($request->filled('line_id')) {
-            $query->where(
-                'daily_activity_furthers.line_id',
-                $request->line_id
-            );
-        }
-
-        if ($dateFrom) {
-            $query->whereDate(
-                'daily_activity_furthers.tanggal',
-                '>=',
-                $dateFrom
-            );
-        }
-
-        if ($dateTo) {
-            $query->whereDate(
-                'daily_activity_furthers.tanggal',
-                '<=',
-                $dateTo
-            );
-        }
-
-        switch ($request->quick_filter) {
-            case 'today':
-                $query->whereDate(
-                    'daily_activity_furthers.tanggal',
-                    today()
-                );
-                break;
-
-            case 'week':
-                $query->whereBetween(
-                    'daily_activity_furthers.tanggal',
-                    [
-                        now()->startOfWeek(),
-                        now()->endOfWeek(),
-                    ]
-                );
-                break;
-
-            case 'month':
-                $query->whereMonth(
-                    'daily_activity_furthers.tanggal',
-                    now()->month
-                )->whereYear(
-                    'daily_activity_furthers.tanggal',
-                    now()->year
-                );
-                break;
-        }
-
-        $totalQuery = clone $query;
-
-        $grandTotalKgRm = (float) $totalQuery
-            ->selectRaw(
-                'COALESCE(SUM(daily_activity_detail_furthers.total_kg_rm), 0) as total'
-            )
-            ->value('total');
-
-        $grandTotalKgFg = (float) $totalQuery
-            ->selectRaw(
-                'COALESCE(SUM(daily_activity_detail_furthers.total_kg_fg), 0) as total'
-            )
-            ->value('total');
-
-        $summaries = $query
-            ->selectRaw("
-                departments.id as department_id,
-                departments.name as department_name,
-                cost_centers.id as cost_center_id,
-                cost_centers.name as cost_center_name,
-                ps_groups.id as ps_group_id,
-                ps_groups.name as ps_group_name,
-                lines.id as line_id,
-                lines.name as line_name,
-                SUM(daily_activity_detail_furthers.total_kg_rm) as total_kg_rm,
-                SUM(daily_activity_detail_furthers.total_kg_fg) as total_kg_fg
-            ")
-            ->groupBy(
-                'departments.id',
-                'departments.name',
-                'cost_centers.id',
-                'cost_centers.name',
-                'ps_groups.id',
-                'ps_groups.name',
-                'lines.id',
-                'lines.name'
-            )
-            ->orderBy('cost_centers.name')
-            ->orderBy('ps_groups.id', 'ASC')
-            ->paginate(10)
-            ->withQueryString();
-
-        $costCenters = CostCenter::where('department_id', $department->id)
-            ->orderBy('name')
-            ->get();
-
-        $lines = Line::where('department_id', $department->id)
-            ->orderBy('name')
-            ->get();
-
-        return view('pages.manager.daily_activity_further.index', compact(
-            'department',
-            'costCenters',
-            'lines',
-            'summaries',
-            'grandTotalKgRm',
-            'grandTotalKgFg',
-            'dateFrom',
-            'dateTo'
-        ));
-    }
-
-    public function detail(Request $request, $costCenterId, $psGroupId, $lineId = null)
-    {
+    public function detail(
+        Request $request,
+        $costCenterId,
+        $psGroupId,
+        $lineId = null
+    ) {
         $departmentId = auth()->user()->department_id;
 
-        $costCenter = CostCenter::where('department_id', $departmentId)
-            ->findOrFail($costCenterId);
+        if (!$departmentId) {
+            abort(403, 'Akun Anda belum terhubung ke department manapun.');
+        }
 
-        $psGroup = PsGroup::where('cost_center_id', $costCenter->id)
-            ->findOrFail($psGroupId);
+        $costCenter = CostCenter::where(
+            'department_id',
+            $departmentId
+        )->findOrFail($costCenterId);
+
+        $psGroup = PsGroup::where(
+            'cost_center_id',
+            $costCenter->id
+        )->findOrFail($psGroupId);
 
         $line = null;
 
         if ($lineId) {
-            $line = Line::where('department_id', $departmentId)
-                ->findOrFail($lineId);
+            $line = Line::where(
+                'department_id',
+                $departmentId
+            )->findOrFail($lineId);
         }
 
         $dateFrom = $request->input(
@@ -796,6 +1161,12 @@ class DailyActivityFurtherController extends Controller
                 'products.id',
                 '=',
                 'daily_activity_detail_furthers.product_id'
+            )
+            ->join(
+                'employees',
+                'employees.id',
+                '=',
+                'daily_activity_furthers.employee_id'
             )
             ->join(
                 'users',
@@ -841,9 +1212,12 @@ class DailyActivityFurtherController extends Controller
                 'daily_activity_furthers.line_id',
                 'users.name as user_name',
                 'lines.name as line_name',
+                'employees.id as employee_id',
+                'employees.name as employee_name',
                 'products.id as product_id',
                 'products.material_code',
                 'products.material_name',
+                'daily_activity_furthers.employee_id',
                 'daily_activity_detail_furthers.total_kg_rm',
                 'daily_activity_detail_furthers.total_kg_fg',
                 'daily_activity_detail_furthers.man_power',
@@ -855,18 +1229,6 @@ class DailyActivityFurtherController extends Controller
             ->paginate(100)
             ->withQueryString();
 
-        // Ambil nama-nama employee per header dalam 1 query (hindari N+1)
-        $furtherIds = $details->pluck('daily_activity_further_id')->unique();
-
-        $employeeNamesByFurtherId = DailyActivityFurther::whereIn('id', $furtherIds)
-            ->with('employees:id,name')
-            ->get()
-            ->mapWithKeys(function ($further) {
-                return [
-                    $further->id => $further->employees->pluck('name')->join(', '),
-                ];
-            });
-
         return view(
             'pages.admin_production.daily_activity_further.detail',
             compact(
@@ -874,25 +1236,37 @@ class DailyActivityFurtherController extends Controller
                 'psGroup',
                 'line',
                 'details',
-                'employeeNamesByFurtherId',
                 'dateFrom',
                 'dateTo'
             )
         );
     }
 
-    public function generalManagerDetail(Request $request, $costCenterId, $psGroupId, $lineId = null)
+    public function managerDetail(Request $request, $costCenterId, $psGroupId, $lineId = null)
     {
-        $costCenter = CostCenter::findOrFail($costCenterId);
+        $departmentId = auth()->user()->department_id;
 
-        $psGroup = PsGroup::where('cost_center_id', $costCenter->id)
-            ->findOrFail($psGroupId);
+        if (!$departmentId) {
+            abort(403, 'Akun Anda belum terhubung ke department manapun.');
+        }
+
+        $costCenter = CostCenter::where(
+            'department_id',
+            $departmentId
+        )->findOrFail($costCenterId);
+
+        $psGroup = PsGroup::where(
+            'cost_center_id',
+            $costCenter->id
+        )->findOrFail($psGroupId);
 
         $line = null;
 
         if ($lineId) {
-            $line = Line::where('department_id', $costCenter->department_id)
-                ->findOrFail($lineId);
+            $line = Line::where(
+                'department_id',
+                $departmentId
+            )->findOrFail($lineId);
         }
 
         $dateFrom = $request->input(
@@ -917,6 +1291,133 @@ class DailyActivityFurtherController extends Controller
                 'products.id',
                 '=',
                 'daily_activity_detail_furthers.product_id'
+            )
+            ->join(
+                'employees',
+                'employees.id',
+                '=',
+                'daily_activity_furthers.employee_id'
+            )
+            ->join(
+                'users',
+                'users.id',
+                '=',
+                'daily_activity_furthers.input_by'
+            )
+            ->leftJoin(
+                'lines',
+                'lines.id',
+                '=',
+                'daily_activity_furthers.line_id'
+            )
+            ->where(
+                'daily_activity_furthers.department_id',
+                $departmentId
+            )
+            ->where(
+                'daily_activity_furthers.cost_center_id',
+                $costCenter->id
+            )
+            ->where(
+                'daily_activity_furthers.ps_group_id',
+                $psGroup->id
+            )
+            ->whereBetween(
+                'daily_activity_furthers.tanggal',
+                [$dateFrom, $dateTo]
+            );
+
+        if ($lineId) {
+            $query->where(
+                'daily_activity_furthers.line_id',
+                $lineId
+            );
+        }
+
+        $details = $query
+            ->select(
+                'daily_activity_detail_furthers.id',
+                'daily_activity_furthers.id as daily_activity_further_id',
+                'daily_activity_furthers.tanggal',
+                'daily_activity_furthers.line_id',
+                'users.name as user_name',
+                'lines.name as line_name',
+                'employees.id as employee_id',
+                'employees.name as employee_name',
+                'products.id as product_id',
+                'products.material_code',
+                'products.material_name',
+                'daily_activity_furthers.employee_id',
+                'daily_activity_detail_furthers.total_kg_rm',
+                'daily_activity_detail_furthers.total_kg_fg',
+                'daily_activity_detail_furthers.man_power',
+                'daily_activity_detail_furthers.productivity'
+            )
+            ->orderBy('daily_activity_furthers.tanggal')
+            ->orderBy('daily_activity_furthers.line_id')
+            ->orderBy('daily_activity_detail_furthers.created_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view(
+            'pages.manager.daily_activity_further.detail',
+            compact(
+                'costCenter',
+                'psGroup',
+                'line',
+                'details',
+                'dateFrom',
+                'dateTo'
+            )
+        );
+    }
+    
+    public function generalManagerDetail(Request $request, $costCenterId, $psGroupId, $lineId = null) 
+    {
+        $costCenter = CostCenter::findOrFail($costCenterId);
+
+        $psGroup = PsGroup::where(
+            'cost_center_id',
+            $costCenter->id
+        )->findOrFail($psGroupId);
+
+        $line = null;
+
+        if ($lineId) {
+            $line = Line::where(
+                'department_id',
+                $costCenter->department_id
+            )->findOrFail($lineId);
+        }
+
+        $dateFrom = $request->input(
+            'date_from',
+            now()->startOfMonth()->format('Y-m-d')
+        );
+
+        $dateTo = $request->input(
+            'date_to',
+            now()->format('Y-m-d')
+        );
+
+        $query = DailyActivityDetailFurther::query()
+            ->join(
+                'daily_activity_furthers',
+                'daily_activity_furthers.id',
+                '=',
+                'daily_activity_detail_furthers.daily_activity_further_id'
+            )
+            ->join(
+                'products',
+                'products.id',
+                '=',
+                'daily_activity_detail_furthers.product_id'
+            )
+            ->join(
+                'employees',
+                'employees.id',
+                '=',
+                'daily_activity_furthers.employee_id'
             )
             ->join(
                 'users',
@@ -962,9 +1463,12 @@ class DailyActivityFurtherController extends Controller
                 'daily_activity_furthers.line_id',
                 'users.name as user_name',
                 'lines.name as line_name',
+                'employees.id as employee_id',
+                'employees.name as employee_name',
                 'products.id as product_id',
                 'products.material_code',
                 'products.material_name',
+                'daily_activity_furthers.employee_id',
                 'daily_activity_detail_furthers.total_kg_rm',
                 'daily_activity_detail_furthers.total_kg_fg',
                 'daily_activity_detail_furthers.man_power',
@@ -973,19 +1477,8 @@ class DailyActivityFurtherController extends Controller
             ->orderBy('daily_activity_furthers.tanggal')
             ->orderBy('daily_activity_furthers.line_id')
             ->orderBy('daily_activity_detail_furthers.created_at')
-            ->paginate(100)
+            ->paginate(10)
             ->withQueryString();
-
-        $furtherIds = $details->pluck('daily_activity_further_id')->unique();
-
-        $employeeNamesByFurtherId = DailyActivityFurther::whereIn('id', $furtherIds)
-            ->with('employees:id,name')
-            ->get()
-            ->mapWithKeys(function ($further) {
-                return [
-                    $further->id => $further->employees->pluck('name')->join(', '),
-                ];
-            });
 
         return view(
             'pages.general_manager.daily_activity_further.detail',
@@ -994,136 +1487,6 @@ class DailyActivityFurtherController extends Controller
                 'psGroup',
                 'line',
                 'details',
-                'employeeNamesByFurtherId',
-                'dateFrom',
-                'dateTo'
-            )
-        );
-    }
-
-    public function managerDetail(Request $request, $costCenterId, $psGroupId, $lineId = null)
-    {
-        $departmentId = auth()->user()->department_id;
-
-        abort_unless(
-            $departmentId,
-            403,
-            'Akun Anda belum terhubung ke department manapun.'
-        );
-
-        $costCenter = CostCenter::where('department_id', $departmentId)
-            ->findOrFail($costCenterId);
-
-        $psGroup = PsGroup::where('cost_center_id', $costCenter->id)
-            ->findOrFail($psGroupId);
-
-        $line = null;
-
-        if ($lineId) {
-            $line = Line::where('department_id', $departmentId)
-                ->findOrFail($lineId);
-        }
-
-        $dateFrom = $request->input(
-            'date_from',
-            now()->startOfMonth()->format('Y-m-d')
-        );
-
-        $dateTo = $request->input(
-            'date_to',
-            now()->format('Y-m-d')
-        );
-
-        $query = DailyActivityDetailFurther::query()
-            ->join(
-                'daily_activity_furthers',
-                'daily_activity_furthers.id',
-                '=',
-                'daily_activity_detail_furthers.daily_activity_further_id'
-            )
-            ->join(
-                'products',
-                'products.id',
-                '=',
-                'daily_activity_detail_furthers.product_id'
-            )
-            ->join(
-                'users',
-                'users.id',
-                '=',
-                'daily_activity_furthers.input_by'
-            )
-            ->leftJoin(
-                'lines',
-                'lines.id',
-                '=',
-                'daily_activity_furthers.line_id'
-            )
-            ->where(
-                'daily_activity_furthers.department_id',
-                $departmentId
-            )
-            ->where(
-                'daily_activity_furthers.cost_center_id',
-                $costCenter->id
-            )
-            ->where(
-                'daily_activity_furthers.ps_group_id',
-                $psGroup->id
-            )
-            ->whereBetween(
-                'daily_activity_furthers.tanggal',
-                [$dateFrom, $dateTo]
-            );
-
-        if ($lineId) {
-            $query->where(
-                'daily_activity_furthers.line_id',
-                $lineId
-            );
-        }
-
-        $details = $query
-            ->select(
-                'daily_activity_detail_furthers.id',
-                'daily_activity_furthers.id as daily_activity_further_id',
-                'daily_activity_furthers.tanggal',
-                'daily_activity_furthers.line_id',
-                'users.name as user_name',
-                'lines.name as line_name',
-                'products.id as product_id',
-                'products.material_code',
-                'products.material_name',
-                'daily_activity_detail_furthers.total_kg_rm',
-                'daily_activity_detail_furthers.total_kg_fg',
-                'daily_activity_detail_furthers.man_power',
-                'daily_activity_detail_furthers.productivity'
-            )
-            ->orderBy('daily_activity_furthers.tanggal')
-            ->orderBy('daily_activity_furthers.line_id')
-            ->orderBy('daily_activity_detail_furthers.created_at')
-            ->paginate(100)
-            ->withQueryString();
-
-        $furtherIds = $details->pluck('daily_activity_further_id')->unique();
-
-        $employeeNamesByFurtherId = DailyActivityFurther::whereIn('id', $furtherIds)
-            ->with('employees:id,name')
-            ->get()
-            ->mapWithKeys(function ($further) {
-                return [
-                    $further->id => $further->employees->pluck('name')->join(', '),
-                ];
-            });
-
-        return view(
-            'pages.manager.daily_activity_further.detail',
-            compact(
-                'costCenter',
-                'psGroup',
-                'line',
-                'details',
-                'employeeNamesByFurtherId',
                 'dateFrom',
                 'dateTo'
             )
@@ -1136,12 +1499,15 @@ class DailyActivityFurtherController extends Controller
 
         try {
             $detail = DailyActivityDetailFurther::findOrFail($id);
+
             $dailyActivityFurtherId = $detail->daily_activity_further_id;
 
             $detail->delete();
 
-            // kalau daily_activity_further sudah tidak punya detail lagi, hapus juga headernya
-            $remaining = DailyActivityDetailFurther::where('daily_activity_further_id', $dailyActivityFurtherId)->count();
+            $remaining = DailyActivityDetailFurther::where(
+                'daily_activity_further_id',
+                $dailyActivityFurtherId
+            )->count();
 
             if ($remaining === 0) {
                 DailyActivityFurther::destroy($dailyActivityFurtherId);
@@ -1152,14 +1518,15 @@ class DailyActivityFurtherController extends Controller
             return redirect()
                 ->back()
                 ->with('success', 'Data berhasil dihapus.');
-
         } catch (\Throwable $e) {
-
             DB::rollBack();
 
             return redirect()
                 ->back()
-                ->with('error', 'Gagal menghapus data: ' . $e->getMessage());
+                ->with(
+                    'error',
+                    'Gagal menghapus data: ' . $e->getMessage()
+                );
         }
     }
 
@@ -1175,12 +1542,16 @@ class DailyActivityFurtherController extends Controller
         try {
             $departmentId = auth()->user()->department_id;
 
-            $details = DailyActivityDetailFurther::with('dailyActivityFurther')
+            $details = DailyActivityDetailFurther::with(
+                'dailyActivityFurther'
+            )
                 ->whereIn('id', $request->ids)
                 ->get();
 
             if ($details->isEmpty()) {
-                throw new \Exception('Data yang dipilih tidak ditemukan.');
+                throw new \Exception(
+                    'Data yang dipilih tidak ditemukan.'
+                );
             }
 
             $parentIds = [];
@@ -1192,8 +1563,13 @@ class DailyActivityFurtherController extends Controller
                     continue;
                 }
 
-                if ((int) $parent->department_id !== (int) $departmentId) {
-                    throw new \Exception('Anda tidak memiliki akses untuk menghapus data tersebut.');
+                if (
+                    (int) $parent->department_id !==
+                    (int) $departmentId
+                ) {
+                    throw new \Exception(
+                        'Anda tidak memiliki akses untuk menghapus data tersebut.'
+                    );
                 }
 
                 $parentIds[] = $parent->id;
@@ -1242,22 +1618,54 @@ class DailyActivityFurtherController extends Controller
 
     public function edit($id)
     {
+        $departmentId = auth()->user()->department_id;
+
+        if (!$departmentId) {
+            abort(
+                403,
+                'Akun Anda belum terhubung ke department manapun.'
+            );
+        }
+
         $detail = DailyActivityDetailFurther::with([
-                'dailyActivityFurther.costCenter',
-                'dailyActivityFurther.psGroup',
-                'dailyActivityFurther.line',
-                'dailyActivityFurther.employees',
-            ])
-            ->findOrFail($id);
+            'dailyActivityFurther.costCenter',
+            'dailyActivityFurther.psGroup',
+            'dailyActivityFurther.line',
+            'dailyActivityFurther.employee',
+            'product',
+        ])->findOrFail($id);
 
-        $productList = Product::where('cost_center_id', $detail->dailyActivityFurther->cost_center_id)
+        $dailyActivityFurther = $detail->dailyActivityFurther;
+
+        if (!$dailyActivityFurther) {
+            abort(404, 'Daily Activity tidak ditemukan.');
+        }
+
+        if (
+            (int) $dailyActivityFurther->department_id !==
+            (int) $departmentId
+        ) {
+            abort(403);
+        }
+
+        $productList = Product::where(
+            'cost_center_id',
+            $dailyActivityFurther->cost_center_id
+        )
             ->orderBy('material_name')
-            ->get();
+            ->get([
+                'id',
+                'material_name',
+                'material_code',
+            ]);
 
-        return view('pages.admin_production.daily_activity_further.edit', compact(
-            'detail',
-            'productList'
-        ));
+        return view(
+            'pages.admin_production.daily_activity_further.edit',
+            compact(
+                'detail',
+                'productList'
+            )
+        );
     }
 
     public function update(Request $request, $id)
@@ -1270,23 +1678,126 @@ class DailyActivityFurtherController extends Controller
 
         $departmentId = auth()->user()->department_id;
 
-        $detail = DailyActivityDetailFurther::with('dailyActivityFurther.employees')
-            ->findOrFail($id);
+        if (!$departmentId) {
+            abort(
+                403,
+                'Akun Anda belum terhubung ke department manapun.'
+            );
+        }
+
+        $detail = DailyActivityDetailFurther::with(
+            'dailyActivityFurther'
+        )->findOrFail($id);
 
         $dailyActivityFurther = $detail->dailyActivityFurther;
 
         if (!$dailyActivityFurther) {
             return redirect()
                 ->back()
-                ->with('error', 'Daily Activity tidak ditemukan.');
+                ->with(
+                    'error',
+                    'Daily Activity tidak ditemukan.'
+                );
         }
 
-        if ((int) $dailyActivityFurther->department_id !== (int) $departmentId) {
+        if (
+            (int) $dailyActivityFurther->department_id !==
+            (int) $departmentId
+        ) {
             abort(403);
         }
 
-        // Total HK dihitung di sini, dari pivot employees, bukan lewat method di model
-        $manHours = (float) $dailyActivityFurther->employees->sum('pivot.jumlah_hk');
+        $existingProduct = DailyActivityDetailFurther::where(
+            'product_id',
+            $request->product_id
+        )
+            ->where('id', '!=', $detail->id)
+            ->whereHas('dailyActivityFurther', function ($query) use (
+                $dailyActivityFurther
+            ) {
+                $query->where(
+                    'department_id',
+                    $dailyActivityFurther->department_id
+                )
+                    ->where(
+                        'cost_center_id',
+                        $dailyActivityFurther->cost_center_id
+                    )
+                    ->where(
+                        'ps_group_id',
+                        $dailyActivityFurther->ps_group_id
+                    )
+                    ->where(
+                        'line_id',
+                        $dailyActivityFurther->line_id
+                    )
+                    ->whereDate(
+                        'tanggal',
+                        $dailyActivityFurther->tanggal
+                    );
+            })
+            ->with('product')
+            ->first();
+
+        if ($existingProduct) {
+            $productName = $existingProduct->product
+                ? $existingProduct->product->material_name
+                : 'tersebut';
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with(
+                    'error',
+                    "Produk {$productName} sudah digunakan pada tanggal, Cost Center, PS Group, dan Line tersebut. Silakan gunakan produk lain."
+                );
+        }
+
+        $attendances = Attendance::with('employee')
+            ->where('line_id', $dailyActivityFurther->line_id)
+            ->whereDate(
+                'date',
+                $dailyActivityFurther->tanggal
+            )
+            ->where('status', 'hadir')
+            ->whereHas('employee', function ($query) use (
+                $dailyActivityFurther
+            ) {
+                $query->where(
+                    'ps_group_id',
+                    $dailyActivityFurther->ps_group_id
+                );
+            })
+            ->get();
+
+        if ($attendances->isEmpty()) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with(
+                    'error',
+                    'Tidak ada karyawan dengan absensi hadir pada PS Group, Line, dan tanggal tersebut.'
+                );
+        }
+
+        $employeeHk = [];
+
+        foreach ($attendances as $attendance) {
+            $employeeId = $attendance->employee_id;
+            $jumlahHk = (float) $attendance->jumlah_hk;
+
+            if (isset($employeeHk[$employeeId])) {
+                $employeeHk[$employeeId] += $jumlahHk;
+            } else {
+                $employeeHk[$employeeId] = $jumlahHk;
+            }
+        }
+
+        $manHours = 0;
+
+        foreach ($employeeHk as $hk) {
+            $manHours += $hk;
+        }
 
         if ($manHours <= 0) {
             return redirect()
@@ -1294,11 +1805,16 @@ class DailyActivityFurtherController extends Controller
                 ->withInput()
                 ->with(
                     'error',
-                    'Data karyawan/HK pada aktivitas ini tidak valid.'
+                    'Total Man Hours harus lebih dari 0.'
                 );
         }
 
-        DB::transaction(function () use ($request, $detail, $dailyActivityFurther, $manHours) {
+        DB::transaction(function () use (
+            $request,
+            $detail,
+            $dailyActivityFurther,
+            $manHours
+        ) {
             $detail->update([
                 'product_id' => $request->product_id,
                 'total_kg_rm' => (float) $request->total_kg_rm,
@@ -1306,14 +1822,21 @@ class DailyActivityFurtherController extends Controller
                 'man_power' => $manHours,
             ]);
 
-            // Recalculate total FG & productivity untuk SEMUA detail di header yang sama
-            $dailyActivityFurther->load('details');
+            $details = DailyActivityDetailFurther::where(
+                'daily_activity_further_id',
+                $dailyActivityFurther->id
+            )->get();
 
-            $totalKgFg = (float) $dailyActivityFurther->details->sum('total_kg_fg');
-            $productivity = $manHours > 0 ? $totalKgFg / $manHours : 0;
+            $totalKgFg = 0;
 
-            foreach ($dailyActivityFurther->details as $d) {
-                $d->update([
+            foreach ($details as $item) {
+                $totalKgFg += (float) $item->total_kg_fg;
+            }
+
+            $productivity = $totalKgFg / $manHours;
+
+            foreach ($details as $item) {
+                $item->update([
                     'man_power' => $manHours,
                     'productivity' => $productivity,
                 ]);
@@ -1321,25 +1844,16 @@ class DailyActivityFurtherController extends Controller
         });
 
         return redirect()
-            ->route('admin-production.daily-activity-further.index')
-            ->with('success', 'Daily Activity berhasil diperbarui.');
+            ->route(
+                'admin-production.daily-activity-further.index'
+            )
+            ->with(
+                'success',
+                'Daily Activity berhasil diperbarui.'
+            );
     }
 
-    public function exportExcelGeneralManager(Request $request, $costCenterId, $psGroupId)
-    {
-        $fromDate = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
-        $toDate   = $request->date_to ?? now()->format('Y-m-d');
-        $lineId   = $request->line_id;
-
-        $fileName = "daily-activity-further-{$fromDate}-to-{$toDate}.xlsx";
-
-        return Excel::download(
-            new DailyActivityFurtherExport($costCenterId, $psGroupId, $fromDate, $toDate, null, $lineId),
-            $fileName
-        );
-    }
-
-    public function exportExcelManager(Request $request, $costCenterId, $psGroupId)
+    public function exportExcelManager(Request $request)
     {
         $managerDepartmentId = auth()->user()->department_id;
 
@@ -1349,19 +1863,15 @@ class DailyActivityFurtherController extends Controller
             'Akun Anda belum terhubung ke department manapun.'
         );
 
-        $costCenter = CostCenter::where('department_id', $managerDepartmentId)
-            ->findOrFail($costCenterId);
-
-        $psGroup = PsGroup::where('cost_center_id', $costCenter->id)
-            ->findOrFail($psGroupId);
+        $costCenterId = $request->cost_center_id;
+        $psGroupId = $request->ps_group_id;
+        $lineId = $request->line_id;
 
         $fromDate = $request->date_from
             ?? now()->startOfMonth()->format('Y-m-d');
 
         $toDate = $request->date_to
             ?? now()->format('Y-m-d');
-
-        $lineId = $request->line_id;
 
         $fileName = "daily-activity-further-{$fromDate}-to-{$toDate}.xlsx";
 
@@ -1378,7 +1888,34 @@ class DailyActivityFurtherController extends Controller
         );
     }
 
-    public function exportExcel(Request $request, $costCenterId, $psGroupId)
+    public function exportExcelGeneralManager(Request $request)
+    {
+        $costCenterId = $request->cost_center_id;
+        $psGroupId = $request->ps_group_id;
+        $lineId = $request->line_id;
+
+        $fromDate = $request->date_from
+            ?? now()->startOfMonth()->format('Y-m-d');
+
+        $toDate = $request->date_to
+            ?? now()->format('Y-m-d');
+
+        $fileName = "daily-activity-further-{$fromDate}-to-{$toDate}.xlsx";
+
+        return Excel::download(
+            new DailyActivityFurtherExport(
+                $costCenterId,
+                $psGroupId,
+                $fromDate,
+                $toDate,
+                null,
+                $lineId
+            ),
+            $fileName
+        );
+    }
+
+    public function exportExcel(Request $request)
     {
         $adminDepartmentId = auth()->user()->department_id;
 
@@ -1388,19 +1925,15 @@ class DailyActivityFurtherController extends Controller
             'Akun Anda belum terhubung ke department manapun.'
         );
 
-        $costCenter = CostCenter::where('department_id', $adminDepartmentId)
-            ->findOrFail($costCenterId);
-
-        $psGroup = PsGroup::where('cost_center_id', $costCenter->id)
-            ->findOrFail($psGroupId);
+        $costCenterId = $request->cost_center_id;
+        $psGroupId = $request->ps_group_id;
+        $lineId = $request->line_id;
 
         $fromDate = $request->date_from
             ?? now()->startOfMonth()->format('Y-m-d');
 
         $toDate = $request->date_to
             ?? now()->format('Y-m-d');
-
-        $lineId = $request->line_id;
 
         $fileName = "daily-activity-further-{$fromDate}-to-{$toDate}.xlsx";
 
@@ -1429,16 +1962,14 @@ class DailyActivityFurtherController extends Controller
 
         $costCenterId = $request->input('cost_center_id');
         $psGroupId = $request->input('ps_group_id');
-        $fromDate = $request->input('start_date');
-        $toDate = $request->input('end_date');
 
-        $fileName = 'daily-activity-further';
+        $fromDate = $request->input('start_date')
+            ?? now()->startOfMonth()->format('Y-m-d');
 
-        if ($fromDate && $toDate) {
-            $fileName .= "-{$fromDate}-to-{$toDate}";
-        }
+        $toDate = $request->input('end_date')
+            ?? now()->format('Y-m-d');
 
-        $fileName .= '.xlsx';
+        $fileName = "daily-activity-further-{$fromDate}-to-{$toDate}.xlsx";
 
         return Excel::download(
             new DailyActivityFurtherIndexExport(
@@ -1464,16 +1995,14 @@ class DailyActivityFurtherController extends Controller
 
         $costCenterId = $request->input('cost_center_id');
         $psGroupId = $request->input('ps_group_id');
-        $fromDate = $request->input('start_date');
-        $toDate = $request->input('end_date');
 
-        $fileName = 'daily-activity-further-manager';
+        $fromDate = $request->input('start_date')
+            ?? now()->startOfMonth()->format('Y-m-d');
 
-        if ($fromDate && $toDate) {
-            $fileName .= "-{$fromDate}-to-{$toDate}";
-        }
+        $toDate = $request->input('end_date')
+            ?? now()->format('Y-m-d');
 
-        $fileName .= '.xlsx';
+        $fileName = "daily-activity-further-manager-{$fromDate}-to-{$toDate}.xlsx";
 
         return Excel::download(
             new DailyActivityFurtherIndexExport(
@@ -1491,18 +2020,16 @@ class DailyActivityFurtherController extends Controller
     {
         $costCenterId = $request->input('cost_center_id');
         $psGroupId = $request->input('ps_group_id');
-        $fromDate = $request->input('start_date');
-        $toDate = $request->input('end_date');
+
+        $fromDate = $request->input('start_date')
+            ?? now()->startOfMonth()->format('Y-m-d');
+
+        $toDate = $request->input('end_date')
+            ?? now()->format('Y-m-d');
 
         $departmentId = $request->input('department_id');
 
-        $fileName = 'daily-activity-further-general-manager';
-
-        if ($fromDate && $toDate) {
-            $fileName .= "-{$fromDate}-to-{$toDate}";
-        }
-
-        $fileName .= '.xlsx';
+        $fileName = "daily-activity-further-general-manager-{$fromDate}-to-{$toDate}.xlsx";
 
         return Excel::download(
             new DailyActivityFurtherIndexExport(
@@ -1515,113 +2042,177 @@ class DailyActivityFurtherController extends Controller
             $fileName
         );
     }
-    public function exportPdf(Request $request, $costCenterId, $psGroupId)
-    {
-        $fromDate = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
-        $toDate   = $request->date_to ?? now()->format('Y-m-d');
-        $lineId   = $request->line_id;
+
+    public function exportPdf(
+        Request $request,
+        $costCenterId,
+        $psGroupId
+    ) {
+        $fromDate = $request->date_from
+            ?? now()->startOfMonth()->format('Y-m-d');
+
+        $toDate = $request->date_to
+            ?? now()->format('Y-m-d');
+
+        $lineId = $request->line_id;
 
         $costCenter = CostCenter::findOrFail($costCenterId);
-        $psGroup    = PsGroup::findOrFail($psGroupId);
+        $psGroup = PsGroup::findOrFail($psGroupId);
 
-        $data = DailyActivityDetailFurther::with([
-                'product',
-                'dailyActivityFurther.employees',
-                'dailyActivityFurther.inputBy',
-                'dailyActivityFurther.line'
-            ])
-            ->whereHas('dailyActivityFurther', function ($q) use (
-                $costCenterId,
-                $psGroupId,
-                $fromDate,
-                $toDate,
-                $lineId
-            ) {
-                $q->where('cost_center_id', $costCenterId)
-                    ->where('ps_group_id', $psGroupId)
-                    ->whereBetween('tanggal', [$fromDate, $toDate])
-                    ->when($lineId, function ($q) use ($lineId) {
-                        $q->where('line_id', $lineId);
-                    });
-            })
+        $query = DailyActivityDetailFurther::with([
+            'product',
+            'dailyActivityFurther.employee',
+            'dailyActivityFurther.inputBy',
+            'dailyActivityFurther.line'
+        ])
+            ->whereHas(
+                'dailyActivityFurther',
+                function ($q) use (
+                    $costCenterId,
+                    $psGroupId,
+                    $fromDate,
+                    $toDate,
+                    $lineId
+                ) {
+                    $q->where(
+                        'cost_center_id',
+                        $costCenterId
+                    )
+                        ->where(
+                            'ps_group_id',
+                            $psGroupId
+                        )
+                        ->whereBetween(
+                            'tanggal',
+                            [$fromDate, $toDate]
+                        );
+
+                    if ($lineId) {
+                        $q->where(
+                            'line_id',
+                            $lineId
+                        );
+                    }
+                }
+            )
             ->join(
                 'daily_activity_furthers',
                 'daily_activity_furthers.id',
                 '=',
                 'daily_activity_detail_furthers.daily_activity_further_id'
             )
-            ->orderBy('daily_activity_furthers.tanggal')
-            ->select('daily_activity_detail_furthers.*')
+            ->orderBy(
+                'daily_activity_furthers.tanggal'
+            )
+            ->select(
+                'daily_activity_detail_furthers.*'
+            )
             ->get();
 
-        $pdf = Pdf::loadView('pages.admin_production.daily_activity_further.pdf', [
-            'data'          => $data,
-            'fromDate'      => Carbon::parse($fromDate)->format('d M Y'),
-            'toDate'        => Carbon::parse($toDate)->format('d M Y'),
-            'costCenterName'=> $costCenter->name,
-            'psGroupName'   => $psGroup->name,
-            'lineId'        => $lineId,
-        ])->setPaper('a4', 'landscape');
+        $pdf = Pdf::loadView(
+            'pages.admin_production.daily_activity_further.pdf',
+            [
+                'data' => $query,
+                'fromDate' => Carbon::parse($fromDate)->format('d M Y'),
+                'toDate' => Carbon::parse($toDate)->format('d M Y'),
+                'costCenterName' => $costCenter->name,
+                'psGroupName' => $psGroup->name,
+                'lineId' => $lineId,
+            ]
+        )->setPaper('a4', 'landscape');
 
         return $pdf->download(
             "daily-activity-further-{$fromDate}-to-{$toDate}.pdf"
         );
     }
 
-    public function exportPdfGeneralManager(Request $request, $costCenterId, $psGroupId)
-    {
-        $fromDate = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
-        $toDate   = $request->date_to ?? now()->format('Y-m-d');
-        $lineId   = $request->line_id;
+    public function exportPdfGeneralManager(
+        Request $request,
+        $costCenterId,
+        $psGroupId
+    ) {
+        $fromDate = $request->date_from
+            ?? now()->startOfMonth()->format('Y-m-d');
+
+        $toDate = $request->date_to
+            ?? now()->format('Y-m-d');
+
+        $lineId = $request->line_id;
 
         $costCenter = CostCenter::findOrFail($costCenterId);
-        $psGroup    = PsGroup::findOrFail($psGroupId);
+        $psGroup = PsGroup::findOrFail($psGroupId);
 
-        $data = DailyActivityDetailFurther::with([
-                'product',
-                'dailyActivityFurther.employees',
-                'dailyActivityFurther.inputBy',
-                'dailyActivityFurther.line'
-            ])
-            ->whereHas('dailyActivityFurther', function ($q) use (
-                $costCenterId,
-                $psGroupId,
-                $fromDate,
-                $toDate,
-                $lineId
-            ) {
-                $q->where('cost_center_id', $costCenterId)
-                    ->where('ps_group_id', $psGroupId)
-                    ->whereBetween('tanggal', [$fromDate, $toDate])
-                    ->when($lineId, function ($q) use ($lineId) {
-                        $q->where('line_id', $lineId);
-                    });
-            })
+        $query = DailyActivityDetailFurther::with([
+            'product',
+            'dailyActivityFurther.employee',
+            'dailyActivityFurther.inputBy',
+            'dailyActivityFurther.line'
+        ])
+            ->whereHas(
+                'dailyActivityFurther',
+                function ($q) use (
+                    $costCenterId,
+                    $psGroupId,
+                    $fromDate,
+                    $toDate,
+                    $lineId
+                ) {
+                    $q->where(
+                        'cost_center_id',
+                        $costCenterId
+                    )
+                        ->where(
+                            'ps_group_id',
+                            $psGroupId
+                        )
+                        ->whereBetween(
+                            'tanggal',
+                            [$fromDate, $toDate]
+                        );
+
+                    if ($lineId) {
+                        $q->where(
+                            'line_id',
+                            $lineId
+                        );
+                    }
+                }
+            )
             ->join(
                 'daily_activity_furthers',
                 'daily_activity_furthers.id',
                 '=',
                 'daily_activity_detail_furthers.daily_activity_further_id'
             )
-            ->orderBy('daily_activity_furthers.tanggal')
-            ->select('daily_activity_detail_furthers.*')
+            ->orderBy(
+                'daily_activity_furthers.tanggal'
+            )
+            ->select(
+                'daily_activity_detail_furthers.*'
+            )
             ->get();
 
-        $pdf = Pdf::loadView('pages.general_manager.daily_activity_further.pdf', [
-            'data'           => $data,
-            'fromDate'       => \Carbon\Carbon::parse($fromDate)->format('d M Y'),
-            'toDate'         => \Carbon\Carbon::parse($toDate)->format('d M Y'),
-            'costCenterName' => $costCenter->name,
-            'psGroupName'    => $psGroup->name,
-        ])->setPaper('a4', 'landscape');
+        $pdf = Pdf::loadView(
+            'pages.general_manager.daily_activity_further.pdf',
+            [
+                'data' => $query,
+                'fromDate' => Carbon::parse($fromDate)->format('d M Y'),
+                'toDate' => Carbon::parse($toDate)->format('d M Y'),
+                'costCenterName' => $costCenter->name,
+                'psGroupName' => $psGroup->name,
+            ]
+        )->setPaper('a4', 'landscape');
 
         return $pdf->download(
             "daily-activity-further-{$fromDate}-to-{$toDate}.pdf"
         );
     }
 
-    public function exportPdfManager(Request $request, $costCenterId, $psGroupId)
-    {
+    public function exportPdfManager(
+        Request $request,
+        $costCenterId,
+        $psGroupId
+    ) {
         $managerDepartmentId = auth()->user()->department_id;
 
         abort_unless(
@@ -1630,55 +2221,89 @@ class DailyActivityFurtherController extends Controller
             'Akun Anda belum terhubung ke department manapun.'
         );
 
-        $fromDate = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
-        $toDate   = $request->date_to ?? now()->format('Y-m-d');
-        $lineId   = $request->line_id;
+        $fromDate = $request->date_from
+            ?? now()->startOfMonth()->format('Y-m-d');
 
-        $costCenter = CostCenter::where('department_id', $managerDepartmentId)
-            ->findOrFail($costCenterId);
+        $toDate = $request->date_to
+            ?? now()->format('Y-m-d');
 
-        $psGroup = PsGroup::where('cost_center_id', $costCenter->id)
-            ->findOrFail($psGroupId);
+        $lineId = $request->line_id;
 
-        $data = DailyActivityDetailFurther::with([
-                'product',
-                'dailyActivityFurther.employees',
-                'dailyActivityFurther.inputBy',
-                'dailyActivityFurther.line'
-            ])
-            ->whereHas('dailyActivityFurther', function ($q) use (
-                $managerDepartmentId,
-                $costCenterId,
-                $psGroupId,
-                $fromDate,
-                $toDate,
-                $lineId
-            ) {
-                $q->where('department_id', $managerDepartmentId)
-                    ->where('cost_center_id', $costCenterId)
-                    ->where('ps_group_id', $psGroupId)
-                    ->whereBetween('tanggal', [$fromDate, $toDate])
-                    ->when($lineId, function ($q) use ($lineId) {
-                        $q->where('line_id', $lineId);
-                    });
-            })
+        $costCenter = CostCenter::where(
+            'department_id',
+            $managerDepartmentId
+        )->findOrFail($costCenterId);
+
+        $psGroup = PsGroup::where(
+            'cost_center_id',
+            $costCenter->id
+        )->findOrFail($psGroupId);
+
+        $query = DailyActivityDetailFurther::with([
+            'product',
+            'dailyActivityFurther.employee',
+            'dailyActivityFurther.inputBy',
+            'dailyActivityFurther.line'
+        ])
+            ->whereHas(
+                'dailyActivityFurther',
+                function ($q) use (
+                    $managerDepartmentId,
+                    $costCenterId,
+                    $psGroupId,
+                    $fromDate,
+                    $toDate,
+                    $lineId
+                ) {
+                    $q->where(
+                        'department_id',
+                        $managerDepartmentId
+                    )
+                        ->where(
+                            'cost_center_id',
+                            $costCenterId
+                        )
+                        ->where(
+                            'ps_group_id',
+                            $psGroupId
+                        )
+                        ->whereBetween(
+                            'tanggal',
+                            [$fromDate, $toDate]
+                        );
+
+                    if ($lineId) {
+                        $q->where(
+                            'line_id',
+                            $lineId
+                        );
+                    }
+                }
+            )
             ->join(
                 'daily_activity_furthers',
                 'daily_activity_furthers.id',
                 '=',
                 'daily_activity_detail_furthers.daily_activity_further_id'
             )
-            ->orderBy('daily_activity_furthers.tanggal')
-            ->select('daily_activity_detail_furthers.*')
+            ->orderBy(
+                'daily_activity_furthers.tanggal'
+            )
+            ->select(
+                'daily_activity_detail_furthers.*'
+            )
             ->get();
 
-        $pdf = Pdf::loadView('pages.manager.daily_activity_further.pdf', [
-            'data'           => $data,
-            'fromDate'       => \Carbon\Carbon::parse($fromDate)->format('d M Y'),
-            'toDate'         => \Carbon\Carbon::parse($toDate)->format('d M Y'),
-            'costCenterName' => $costCenter->name,
-            'psGroupName'    => $psGroup->name,
-        ])->setPaper('a4', 'landscape');
+        $pdf = Pdf::loadView(
+            'pages.manager.daily_activity_further.pdf',
+            [
+                'data' => $query,
+                'fromDate' => Carbon::parse($fromDate)->format('d M Y'),
+                'toDate' => Carbon::parse($toDate)->format('d M Y'),
+                'costCenterName' => $costCenter->name,
+                'psGroupName' => $psGroup->name,
+            ]
+        )->setPaper('a4', 'landscape');
 
         return $pdf->download(
             "daily-activity-further-{$fromDate}-to-{$toDate}.pdf"

@@ -88,7 +88,8 @@
                 </ul>
             </li>
 
-            @if (strtolower(auth()->user()->department->name ?? '') !== 'personalia dan general affair')
+            @if (strtolower(auth()->user()->department->name) === 'sausage' ||
+                    strtolower(auth()->user()->department->name) === 'slaughter house')
                 <li class="{{ Request::is('manager/employee-productivity*') ? 'active' : '' }}">
                     <a class="nav-link" href="{{ route('manager.employee-productivity.list') }}">
                         <i class="fas fa-chart-line"></i>

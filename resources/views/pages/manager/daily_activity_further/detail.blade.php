@@ -3,69 +3,48 @@
 @section('content')
 
     <div class="section-header">
-
         <div>
-
             <a href="{{ route('manager.daily-activity-further.index') }}" class="text-dark mr-2">
-
                 <i class="fas fa-arrow-left"></i>
-
             </a>
-
         </div>
 
         <h1 class="d-inline">
-
             {{ $costCenter->code }} - {{ $costCenter->name }}
-
         </h1>
 
         <div>
-
             @if ($line)
                 <span class="badge badge-info ml-2">
-
                     Line: {{ $line->code ? $line->code . ' - ' : '' }}{{ $line->name }}
-
                 </span>
             @endif
-
         </div>
-
     </div>
 
     @if (session('success'))
         <div class="alert alert-success alert-dismissible fade show">
-
             {{ session('success') }}
 
             <button type="button" class="close" data-dismiss="alert">
-
                 <span>&times;</span>
-
             </button>
-
         </div>
     @endif
 
     @if (session('error'))
         <div class="alert alert-danger alert-dismissible fade show">
-
             {{ session('error') }}
 
             <button type="button" class="close" data-dismiss="alert">
-
                 <span>&times;</span>
-
             </button>
-
         </div>
     @endif
 
     <div class="section-body">
 
         <div class="card mb-3">
-
             <div class="card-body">
 
                 <form method="GET"
@@ -78,27 +57,19 @@
                     <div class="row align-items-end">
 
                         <div class="col-md-6">
-
                             <div class="form-group">
-
                                 <label>Dari Tanggal</label>
 
                                 <input type="date" name="date_from" class="form-control" value="{{ $dateFrom }}">
-
                             </div>
-
                         </div>
 
                         <div class="col-md-6">
-
                             <div class="form-group">
-
                                 <label>Sampai Tanggal</label>
 
                                 <input type="date" name="date_to" class="form-control" value="{{ $dateTo }}">
-
                             </div>
-
                         </div>
 
                     </div>
@@ -106,9 +77,7 @@
                     <div class="mt-2">
 
                         <button type="submit" class="btn btn-primary">
-
                             Filter
-
                         </button>
 
                         <a href="{{ route('manager.daily-activity-further.detail', [
@@ -117,9 +86,7 @@
                             'lineId' => $line->id ?? null,
                         ]) }}"
                             class="btn btn-secondary">
-
                             Reset
-
                         </a>
 
                     </div>
@@ -127,49 +94,13 @@
                 </form>
 
             </div>
-
         </div>
 
         <div class="card">
 
             <div class="card-body table-responsive">
 
-                <div class="mb-3 d-flex align-items-center">
-
-                    <a href="{{ route('manager.daily-activity-further.export-excel', [
-                        'costCenterId' => $costCenter->id,
-                        'psGroupId' => $psGroup->id,
-                        'line_id' => $line->id ?? null,
-                        'date_from' => request('date_from'),
-                        'date_to' => request('date_to'),
-                    ]) }}"
-                        class="btn btn-success mr-2">
-
-                        <i class="fas fa-file-excel"></i>
-
-                        Excel
-
-                    </a>
-
-                    <a href="{{ route('manager.daily-activity-further.export-pdf', [
-                        'costCenterId' => $costCenter->id,
-                        'psGroupId' => $psGroup->id,
-                        'line_id' => $line->id ?? null,
-                        'date_from' => request('date_from'),
-                        'date_to' => request('date_to'),
-                    ]) }}"
-                        class="btn btn-danger mr-2" target="_blank">
-
-                        <i class="fas fa-file-pdf"></i>
-
-                        PDF
-
-                    </a>
-
-                </div>
-
                 @php
-
                     $groupedDetails = [];
 
                     foreach ($details as $detail) {
@@ -178,23 +109,17 @@
                         if (!isset($groupedDetails[$groupKey])) {
                             $groupedDetails[$groupKey] = [
                                 'tanggal' => $detail->tanggal,
-
                                 'line_name' => $detail->line_name,
-
                                 'line_id' => $detail->line_id,
-
-                                'employees' => [],
-
+                                'man_hours' => 0,
                                 'products' => [],
                             ];
                         }
 
-                        if ($detail->dailyActivityFurther && $detail->dailyActivityFurther->employees) {
-                            foreach ($detail->dailyActivityFurther->employees as $employee) {
-                                $groupedDetails[$groupKey]['employees'][$employee->id] = [
-                                    'man_power' => (float) $employee->pivot->jumlah_hk,
-                                ];
-                            }
+                        $manPower = (float) $detail->man_power;
+
+                        if ($manPower > $groupedDetails[$groupKey]['man_hours']) {
+                            $groupedDetails[$groupKey]['man_hours'] = $manPower;
                         }
 
                         $productKey = $detail->product_id;
@@ -202,13 +127,9 @@
                         if (!isset($groupedDetails[$groupKey]['products'][$productKey])) {
                             $groupedDetails[$groupKey]['products'][$productKey] = [
                                 'product_id' => $detail->product_id,
-
                                 'material_code' => $detail->material_code,
-
                                 'material_name' => $detail->material_name,
-
                                 'total_kg_rm' => 0,
-
                                 'total_kg_fg' => 0,
                             ];
                         }
@@ -228,45 +149,31 @@
                         <tr>
 
                             <th rowspan="2" class="text-center align-middle">
-
                                 Tanggal
-
                             </th>
 
                             <th rowspan="2" class="text-center align-middle">
-
                                 Line
-
                             </th>
 
                             <th rowspan="2" class="text-center align-middle">
-
                                 Product
-
                             </th>
 
                             <th colspan="2" class="text-center">
-
                                 Production
-
                             </th>
 
                             <th rowspan="2" class="text-center align-middle">
-
                                 Total KG
-
                             </th>
 
                             <th rowspan="2" class="text-center align-middle">
-
                                 Man Hours
-
                             </th>
 
                             <th rowspan="2" class="text-center align-middle">
-
                                 Productivity
-
                             </th>
 
                         </tr>
@@ -274,15 +181,11 @@
                         <tr>
 
                             <th class="text-center">
-
                                 RM
-
                             </th>
 
                             <th class="text-center">
-
                                 FG
-
                             </th>
 
                         </tr>
@@ -293,21 +196,11 @@
 
                         @forelse ($groupedDetails as $group)
                             @php
-
-                                $manHours = 0;
-
-                                foreach ($group['employees'] as $employeeData) {
-                                    $manHours += (float) $employeeData['man_power'];
-                                }
-
                                 $productCount = count($group['products']);
 
                                 $firstProduct = true;
 
-                                /*
-                                 * TOTAL KG UNTUK PRODUCTIVITY
-                                 * MENGGUNAKAN TOTAL FG
-                                 */
+                                $manHours = (float) $group['man_hours'];
 
                                 $grandTotalKg = 0;
 
@@ -315,22 +208,10 @@
                                     $grandTotalKg += (float) $item['total_kg_fg'];
                                 }
 
-                                /*
-                                 * PRODUCTIVITY
-                                 * TOTAL FG / MAN HOURS
-                                 */
-
                                 $groupProductivity = $manHours > 0 ? $grandTotalKg / $manHours : 0;
-
                             @endphp
 
                             @foreach ($group['products'] as $product)
-                                @php
-
-                                    $totalKgFg = (float) $product['total_kg_fg'];
-
-                                @endphp
-
                                 <tr>
 
                                     @if ($firstProduct)
@@ -350,15 +231,11 @@
                                     <td>
 
                                         <div>
-
                                             {{ $product['material_name'] }}
-
                                         </div>
 
                                         <small class="text-muted">
-
                                             {{ $product['material_code'] ?? '-' }}
-
                                         </small>
 
                                     </td>
@@ -398,9 +275,7 @@
                                 </tr>
 
                                 @php
-
                                     $firstProduct = false;
-
                                 @endphp
                             @endforeach
 
@@ -409,9 +284,7 @@
                             <tr>
 
                                 <td colspan="8" class="text-center">
-
                                     Tidak ada data pada rentang tanggal ini
-
                                 </td>
 
                             </tr>

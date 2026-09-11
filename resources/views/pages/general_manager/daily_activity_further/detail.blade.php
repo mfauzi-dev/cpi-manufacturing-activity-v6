@@ -98,38 +98,6 @@
 
             <div class="card-body table-responsive">
 
-                <div class="mb-2">
-
-                    <a href="{{ route('general-manager.daily-activity-further.export-excel', [
-                        'costCenterId' => $costCenter->id,
-                        'psGroupId' => $psGroup->id,
-                        'line_id' => $line->id ?? null,
-                        'date_from' => request('date_from'),
-                        'date_to' => request('date_to'),
-                    ]) }}"
-                        class="btn btn-success">
-
-                        <i class="fas fa-file-excel"></i>
-                        Excel
-
-                    </a>
-
-                    <a href="{{ route('general-manager.daily-activity-further.export-pdf', [
-                        'costCenterId' => $costCenter->id,
-                        'psGroupId' => $psGroup->id,
-                        'line_id' => $line->id ?? null,
-                        'date_from' => request('date_from'),
-                        'date_to' => request('date_to'),
-                    ]) }}"
-                        class="btn btn-danger" target="_blank">
-
-                        <i class="fas fa-file-pdf"></i>
-                        PDF
-
-                    </a>
-
-                </div>
-
                 @php
                     $groupedDetails = [];
 

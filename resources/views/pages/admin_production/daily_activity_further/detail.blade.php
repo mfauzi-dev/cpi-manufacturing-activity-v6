@@ -71,6 +71,7 @@
                     </div>
 
                     <div class="mt-2">
+
                         <button type="submit" class="btn btn-primary">
                             Filter
                         </button>
@@ -83,6 +84,7 @@
                             class="btn btn-secondary">
                             Reset
                         </a>
+
                     </div>
 
                 </form>
@@ -91,6 +93,7 @@
         </div>
 
         <div class="card">
+
             <div class="card-body table-responsive">
 
                 <div class="mb-3 d-flex align-items-center">
@@ -143,6 +146,7 @@
                 </div>
 
                 @php
+
                     $groupedDetails = [];
 
                     foreach ($details as $detail) {
@@ -174,14 +178,25 @@
                                 'total_kg_rm' => 0,
                                 'total_kg_fg' => 0,
                                 'detail_ids' => [],
+                                'activity_ids' => [],
                             ];
                         }
 
-                        $groupedDetails[$groupKey]['products'][$productKey]['total_kg_rm'] +=
-                            (float) $detail->total_kg_rm;
+                        if (
+                            !in_array(
+                                $detail->daily_activity_further_id,
+                                $groupedDetails[$groupKey]['products'][$productKey]['activity_ids'],
+                            )
+                        ) {
+                            $groupedDetails[$groupKey]['products'][$productKey]['total_kg_rm'] +=
+                                (float) $detail->total_kg_rm;
 
-                        $groupedDetails[$groupKey]['products'][$productKey]['total_kg_fg'] +=
-                            (float) $detail->total_kg_fg;
+                            $groupedDetails[$groupKey]['products'][$productKey]['total_kg_fg'] +=
+                                (float) $detail->total_kg_fg;
+
+                            $groupedDetails[$groupKey]['products'][$productKey]['activity_ids'][] =
+                                $detail->daily_activity_further_id;
+                        }
 
                         $groupedDetails[$groupKey]['products'][$productKey]['detail_ids'][] = $detail->id;
                     }
@@ -194,57 +209,39 @@
                         <tr>
 
                             <th rowspan="2" class="text-center align-middle">
-
                                 <input type="checkbox" id="checkAll">
-
                             </th>
 
                             <th rowspan="2" class="text-center align-middle">
-
                                 Tanggal
-
                             </th>
 
                             <th rowspan="2" class="text-center align-middle">
-
                                 Line
-
                             </th>
 
                             <th rowspan="2" class="text-center align-middle">
-
                                 Product
-
                             </th>
 
                             <th colspan="2" class="text-center">
-
                                 Production
-
                             </th>
 
                             <th rowspan="2" class="text-center align-middle">
-
                                 Total KG
-
                             </th>
 
                             <th rowspan="2" class="text-center align-middle">
-
                                 Man Hours
-
                             </th>
 
                             <th rowspan="2" class="text-center align-middle">
-
                                 Productivity
-
                             </th>
 
                             <th rowspan="2" class="text-center align-middle">
-
                                 Action
-
                             </th>
 
                         </tr>
@@ -278,31 +275,25 @@
 
                                 $firstProduct = true;
 
-                                /*
-                                 * TOTAL KG UNTUK PRODUCTIVITY
-                                 * MENGGUNAKAN TOTAL FG
-                                 */
-                                $grandTotalKg = 0;
+                                $grandTotalRm = 0;
+
+                                $grandTotalFg = 0;
 
                                 foreach ($group['products'] as $item) {
-                                    $grandTotalKg += (float) $item['total_kg_fg'];
+                                    $grandTotalRm += (float) $item['total_kg_rm'];
+
+                                    $grandTotalFg += (float) $item['total_kg_fg'];
                                 }
 
-                                /*
-                                 * PRODUCTIVITY
-                                 * TOTAL FG / MAN HOURS
-                                 */
-                                $groupProductivity = $manHours > 0 ? $grandTotalKg / $manHours : 0;
+                                $grandTotalKg = $grandTotalFg;
+
+                                $groupProductivity = $manHours > 0 ? $grandTotalFg / $manHours : 0;
 
                             @endphp
 
                             @foreach ($group['products'] as $product)
                                 @php
-
-                                    $totalKgFg = (float) $product['total_kg_fg'];
-
                                     $detailId = end($product['detail_ids']);
-
                                 @endphp
 
                                 <tr>
@@ -433,10 +424,10 @@
                 </div>
 
             </div>
+
         </div>
 
     </div>
-
 
 @endsection
 

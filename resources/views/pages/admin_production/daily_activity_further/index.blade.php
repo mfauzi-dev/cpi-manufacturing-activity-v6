@@ -109,6 +109,7 @@
             <div class="card-body table-responsive">
 
                 <div class="mb-2">
+                    {{-- Excel Rekap Index --}}
                     <a href="{{ route('admin-production.daily-activity-further.all-export-excel', [
                         'cost_center_id' => request('cost_center_id'),
                         'ps_group_id' => request('ps_group_id'),
@@ -116,9 +117,22 @@
                         'start_date' => request('start_date'),
                         'end_date' => request('end_date'),
                     ]) }}"
-                        class="btn btn-success">
-                        <i class="fas fa-file-excel"></i>
-                        Excel
+                        class="btn btn-success mr-2">
+                        <i class="fas fa-file-excel mr-2"></i>
+                        Excel Rekap
+                    </a>
+
+                    {{-- Excel Detail --}}
+                    <a href="{{ route('admin-production.daily-activity-further.export-excel', [
+                        'costCenterId' => request('cost_center_id'),
+                        'psGroupId' => request('ps_group_id'),
+                        'line_id' => request('line_id'),
+                        'date_from' => request('start_date'),
+                        'date_to' => request('end_date'),
+                    ]) }}"
+                        class="btn btn-primary">
+                        <i class="fas fa-file-excel mr-2"></i>
+                        Excel Detail
                     </a>
                 </div>
 
@@ -177,7 +191,8 @@
                                 <th></th>
                                 <th></th>
                                 <th></th>
-                                <th class="text-right">{{ number_format($grandTotalKg, 2, ',', '.') }}</th>
+                                <th class="text-right">{{ number_format($grandTotalKgRm, 2, ',', '.') }}</th>
+                                <th class="text-right">{{ number_format($grandTotalKgFg, 2, ',', '.') }}</th>
                                 <th></th>
                             </tr>
                         </tfoot>
