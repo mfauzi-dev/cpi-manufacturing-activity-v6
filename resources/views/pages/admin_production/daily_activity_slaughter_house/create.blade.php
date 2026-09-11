@@ -133,7 +133,8 @@
                                         <option value="{{ $employee->id }}"
                                             {{ collect(old('employee_id', []))->contains($employee->id) ? 'selected' : '' }}>
                                             {{ $employee->name }} -
-                                            {{ $employee->outsourcing?->name ?? '-' }}
+                                            {{ $employee->outsourcing?->name ?? '-' }} -
+                                            {{ $employee->costCenter?->name ?? '-' }}
                                         </option>
                                     @endforeach
                                 </select>

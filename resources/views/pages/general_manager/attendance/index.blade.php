@@ -164,6 +164,7 @@
                             <th>Department</th>
                             <th>OS</th>
                             <th>Group</th>
+                            <th>Jumlah Jam Kerja</th>
                             <th>Line</th>
                             <th>Status</th>
                             <th>Keterangan</th>
@@ -179,6 +180,9 @@
                                 <td>{{ $employee->department?->name ?? '-' }}</td>
                                 <td>{{ $employee->outsourcing?->name ?? '-' }}</td>
                                 <td>{{ $employee->psGroup->name ?? '-' }}</td>
+                                <td>
+                                    {{ $employee->attendances?->first()?->jumlah_hk }}
+                                </td>
                                 <td>{{ $attendance->line->name ?? '-' }}</td>
                                 <td>
                                     @if (!$attendance)

@@ -145,7 +145,7 @@ class AttendanceController extends Controller
                 $q->whereDate('date', $date)
                 ->where('line_id', $lineId);
             });
-}
+        }
 
         // Search
         if ($search) {

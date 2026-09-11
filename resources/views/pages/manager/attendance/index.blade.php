@@ -303,6 +303,8 @@
 
                             <th>Group</th>
 
+                            <th>Jumlah Jam Kerja</th>
+
                             @if ($isGeneralAffair || strtolower($managerDepartment->name) === 'further processing')
                                 <th>Line</th>
                             @endif
@@ -346,6 +348,10 @@
 
                                 <td>
                                     {{ $employee->psGroup?->name ?? '-' }}
+                                </td>
+
+                                <td>
+                                    {{ $employee->attendances?->first()?->jumlah_hk }}
                                 </td>
 
                                 @if ($isGeneralAffair || strtolower($managerDepartment->name) === 'further processing')

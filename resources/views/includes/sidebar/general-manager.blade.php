@@ -85,10 +85,10 @@
                     <li class="{{ Request::is('general-manager/attendances/summary') ? 'active' : '' }}"><a
                             class="nav-link" href="{{ route('general-manager.attendance.summary') }}">Summary
                             Absensi</a></li>
-                    <li class="{{ Request::is('general-manager/attendances/create') ? 'active' : '' }}"><a
+                    {{-- <li class="{{ Request::is('general-manager/attendances/create') ? 'active' : '' }}"><a
                             class="nav-link" href="{{ route('general-manager.attendance.create') }}">Tambah
                             Absensi</a>
-                    </li>
+                    </li> --}}
 
                 </ul>
             </li>

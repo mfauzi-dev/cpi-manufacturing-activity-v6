@@ -213,6 +213,9 @@
                             <tr>
                                 <th>NIK</th>
                                 <th>Nama</th>
+                                @if (strtolower(auth()->user()->department->name) === 'further processing')
+                                    <th>Line</th>
+                                @endif
                                 {{-- <th>OS</th> --}}
                                 {{-- <th>Status Karyawan</th> --}}
                                 {{-- <th>Group</th> --}}
@@ -221,9 +224,7 @@
                                 <th>Izin</th>
                                 <th>Sakit</th>
                                 <th>Alpa</th>
-                                @if (strtolower(auth()->user()->department->name) === 'further processing')
-                                    <th>Line</th>
-                                @endif
+
                                 <th>Keterangan Izin</th>
                             </tr>
                         </thead>

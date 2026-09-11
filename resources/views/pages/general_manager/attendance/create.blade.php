@@ -206,12 +206,12 @@
                                 <tr>
                                     <th>NIK</th>
                                     <th>Nama</th>
+                                    <th>Line</th>
                                     <th>Hadir</th>
                                     <th>Cuti</th>
                                     <th>Izin</th>
                                     <th>Sakit</th>
                                     <th>Alpa</th>
-                                    <th>Line</th>
                                     <th>Keterangan Izin</th>
                                 </tr>
                             </thead>

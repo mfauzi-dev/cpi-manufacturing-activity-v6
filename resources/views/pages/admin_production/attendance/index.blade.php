@@ -239,6 +239,7 @@
                             @endif
                             <th>OS</th>
                             <th>Group</th>
+                            <th>Jumlah Jam Kerja</th>
                             @if (strtolower(auth()->user()->department->name) === 'further processing')
                                 <th>Line</th>
                             @endif
@@ -273,6 +274,10 @@
 
                                 <td>
                                     {{ $employee->psGroup->name ?? '-' }}
+                                </td>
+
+                                <td>
+                                    {{ $employee->attendances?->first()?->jumlah_hk }}
                                 </td>
 
                                 @if (strtolower(auth()->user()->department->name) === 'further processing')

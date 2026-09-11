@@ -244,6 +244,10 @@
 
                                 <th>Nama</th>
 
+                                @if (strtolower(auth()->user()->department->name) === 'further processing')
+                                    <th>Line</th>
+                                @endif
+
                                 <th>Shift</th>
 
                                 <th>Jumlah HK</th>
@@ -257,10 +261,6 @@
                                 <th>Sakit</th>
 
                                 <th>Alpa</th>
-
-                                @if (strtolower(auth()->user()->department->name) === 'further processing')
-                                    <th>Line</th>
-                                @endif
 
                                 <th>Keterangan Izin</th>
 
@@ -289,6 +289,29 @@
                                         {{ $employee->name }}
                                     </td>
 
+                                    {{-- LINE --}}
+                                    @if (strtolower(auth()->user()->department->name) === 'further processing')
+                                        <td>
+
+                                            <select name="employees[{{ $employee->id }}][line_id]" class="form-control">
+
+                                                <option value="">
+                                                    Pilih Line
+                                                </option>
+
+                                                @foreach ($lineList as $line)
+                                                    <option value="{{ $line->id }}"
+                                                        {{ optional($attendance)->line_id == $line->id ? 'selected' : '' }}>
+
+                                                        {{ $line->name }}
+
+                                                    </option>
+                                                @endforeach
+
+                                            </select>
+
+                                        </td>
+                                    @endif
 
                                     {{-- SHIFT --}}
                                     <td>
@@ -377,31 +400,6 @@
                                     </td>
 
 
-                                    {{-- LINE --}}
-                                    @if (strtolower(auth()->user()->department->name) === 'further processing')
-                                        <td>
-
-                                            <select name="employees[{{ $employee->id }}][line_id]" class="form-control">
-
-                                                <option value="">
-                                                    Pilih Line
-                                                </option>
-
-                                                @foreach ($lineList as $line)
-                                                    <option value="{{ $line->id }}"
-                                                        {{ optional($attendance)->line_id == $line->id ? 'selected' : '' }}>
-
-                                                        {{ $line->name }}
-
-                                                    </option>
-                                                @endforeach
-
-                                            </select>
-
-                                        </td>
-                                    @endif
-
-
                                     {{-- KETERANGAN --}}
                                     <td>
 
@@ -473,10 +471,10 @@
 @push('scripts')
     <script>
         /*
-                                |--------------------------------------------------------------------------
-                                | Attendance Status
-                                |--------------------------------------------------------------------------
-                                */
+                                                    |--------------------------------------------------------------------------
+                                                    | Attendance Status
+                                                    |--------------------------------------------------------------------------
+                                                    */
 
         document.querySelectorAll('tbody tr').forEach(row => {
 

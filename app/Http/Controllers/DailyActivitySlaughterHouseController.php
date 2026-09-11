@@ -46,7 +46,7 @@ class DailyActivitySlaughterHouseController extends Controller
         $employeeList = Employee::where('department_id', $departmentId)
             ->where('employee_status', 'borongan')
             ->orderBy('name')
-            ->get(['id', 'nik', 'name', 'employee_status', 'outsourcing_id']);
+            ->get(['id', 'nik', 'name', 'employee_status', 'outsourcing_id', 'cost_center_id']);
 
         $productGroupList = ProductGroup::where('department_id', $departmentId)->orderBy('name')
             ->get();
