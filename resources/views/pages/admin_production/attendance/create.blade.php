@@ -232,9 +232,9 @@
 
             <div class="card">
 
-                <div class="card-body table-responsive">
+                <div class="card-body attendance-table-wrapper">
 
-                    <table class="table table-bordered table-striped">
+                    <table class="table table-bordered table-striped attendance-table">
 
                         <thead>
 
@@ -473,10 +473,10 @@
 @push('scripts')
     <script>
         /*
-                        |--------------------------------------------------------------------------
-                        | Attendance Status
-                        |--------------------------------------------------------------------------
-                        */
+                                |--------------------------------------------------------------------------
+                                | Attendance Status
+                                |--------------------------------------------------------------------------
+                                */
 
         document.querySelectorAll('tbody tr').forEach(row => {
 

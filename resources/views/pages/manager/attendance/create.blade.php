@@ -1,5 +1,80 @@
 @extends('layouts.master')
 
+@push('addon-style')
+    <style>
+        .attendance-table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+
+        .attendance-table {
+            width: max-content;
+            min-width: 100%;
+            table-layout: auto;
+            white-space: nowrap;
+        }
+
+        .attendance-table th,
+        .attendance-table td {
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        .attendance-table th {
+            min-width: 100px;
+        }
+
+        .attendance-table th:nth-child(1),
+        .attendance-table td:nth-child(1) {
+            min-width: 120px;
+        }
+
+        .attendance-table th:nth-child(2),
+        .attendance-table td:nth-child(2) {
+            min-width: 180px;
+        }
+
+        .attendance-table th:nth-child(3),
+        .attendance-table td:nth-child(3) {
+            min-width: 180px;
+        }
+
+        .attendance-table th:nth-child(4),
+        .attendance-table td:nth-child(4) {
+            min-width: 120px;
+        }
+
+        .attendance-table th:nth-child(10),
+        .attendance-table td:nth-child(10) {
+            min-width: 150px;
+        }
+
+        .attendance-table input.form-control,
+        .attendance-table select.form-control {
+            min-width: 120px;
+        }
+
+        .attendance-table input[type="text"] {
+            min-width: 200px;
+        }
+
+        .attendance-table input[type="number"] {
+            min-width: 100px;
+        }
+
+        .attendance-table select {
+            min-width: 150px;
+        }
+
+        .attendance-table .attendance-status {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+    </style>
+@endpush
+
 @section('content')
     <div class="section-header">
         <h1>Input Attendance Manual</h1>
@@ -130,9 +205,9 @@
             <input type="hidden" name="date" value="{{ request('date', $date) }}">
 
             <div class="card">
-                <div class="card-body table-responsive">
+                <div class="card-body attendance-table-wrapper">
 
-                    <table class="table table-bordered table-striped">
+                    <table class="table table-bordered table-striped attendance-table">
 
                         <thead>
                             <tr>
