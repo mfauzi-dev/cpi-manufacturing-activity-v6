@@ -95,80 +95,91 @@ class DailyActivityFurtherIndexExport implements
             ->orderBy('name')
             ->get();
 
-        $activities = DB::table(
-            'daily_activity_furthers as daf'
-        )
+        // FIX: man hours sekarang dihitung langsung dari
+        // tabel `attendances` (jumlah_hk), bukan lagi dari
+        // `daily_activity_detail_furthers.man_power`.
+        //
+        // Alasan: man_power di detail further itu nilai yang
+        // dititipkan/diduplikasi per baris produk, jadi rawan
+        // salah hitung (baik pakai MAX maupun SUM) begitu satu
+        // employee muncul di lebih dari satu baris. Attendance
+        // adalah sumber asli jumlah hari kerja per employee per
+        // tanggal per line, jadi tinggal di-SUM langsung, tanpa
+        // agregasi tebak-tebakan.
+        //
+        // cost_center_id & ps_group_id bukan kolom di attendances,
+        // tapi atribut Employee — makanya di-join ke `employees`
+        // supaya filter itu tetap bisa dipakai.
+        $attendances = DB::table('attendances as att')
             ->join(
-                'daily_activity_detail_furthers as dadf',
-                'dadf.daily_activity_further_id',
+                'employees as emp',
+                'emp.id',
                 '=',
-                'daf.id'
+                'att.employee_id'
             )
             ->whereDate(
-                'daf.tanggal',
+                'att.date',
                 '>=',
                 $this->fromDate
             )
             ->whereDate(
-                'daf.tanggal',
+                'att.date',
                 '<=',
                 $this->toDate
             )
-            ->whereNotNull('daf.line_id');
+            ->whereNotNull('att.line_id');
 
         if ($this->costCenterId) {
-            $activities->where(
-                'daf.cost_center_id',
+            $attendances->where(
+                'emp.cost_center_id',
                 $this->costCenterId
             );
         }
 
         if ($this->psGroupId) {
-            $activities->where(
-                'daf.ps_group_id',
+            $attendances->where(
+                'emp.ps_group_id',
                 $this->psGroupId
             );
         }
 
         if ($this->lineId) {
-            $activities->where(
-                'daf.line_id',
+            $attendances->where(
+                'att.line_id',
                 $this->lineId
             );
         }
 
         if ($this->departmentId) {
-            $activities->where(
-                'daf.department_id',
+            $attendances->where(
+                'emp.department_id',
                 $this->departmentId
             );
         }
 
-        $activities = $activities
+        $attendances = $attendances
             ->select(
-                'daf.tanggal',
-                'daf.line_id',
-                'daf.employee_id',
+                'att.date',
+                'att.line_id',
                 DB::raw(
-                    'MAX(dadf.man_power) as man_power'
+                    'SUM(att.jumlah_hk) as total_hk'
                 )
             )
             ->groupBy(
-                'daf.tanggal',
-                'daf.line_id',
-                'daf.employee_id'
+                'att.date',
+                'att.line_id'
             )
-            ->orderBy('daf.line_id')
-            ->orderBy('daf.tanggal')
+            ->orderBy('att.line_id')
+            ->orderBy('att.date')
             ->get();
 
         $this->manHours = [];
 
-        foreach ($activities as $activity) {
-            $lineId = $activity->line_id;
+        foreach ($attendances as $attendance) {
+            $lineId = $attendance->line_id;
 
             $dateKey = Carbon::parse(
-                $activity->tanggal
+                $attendance->date
             )->format('Y-m-d');
 
             if (!isset($this->manHours[$lineId])) {
@@ -180,7 +191,7 @@ class DailyActivityFurtherIndexExport implements
             }
 
             $this->manHours[$lineId][$dateKey] +=
-                (float) $activity->man_power;
+                (float) $attendance->total_hk;
         }
 
         $rows = [];

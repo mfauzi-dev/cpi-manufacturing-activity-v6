@@ -109,19 +109,6 @@
             <div class="card-body table-responsive">
 
                 <div class="mb-2">
-                    {{-- Excel Rekap Index --}}
-                    <a href="{{ route('admin-production.daily-activity-further.all-export-excel', [
-                        'cost_center_id' => request('cost_center_id'),
-                        'ps_group_id' => request('ps_group_id'),
-                        'line_id' => request('line_id'),
-                        'start_date' => request('start_date'),
-                        'end_date' => request('end_date'),
-                    ]) }}"
-                        class="btn btn-success mr-2">
-                        <i class="fas fa-file-excel mr-2"></i>
-                        Excel Rekap
-                    </a>
-
                     {{-- Excel Detail --}}
                     <a href="{{ route('admin-production.daily-activity-further.export-excel', [
                         'costCenterId' => request('cost_center_id'),

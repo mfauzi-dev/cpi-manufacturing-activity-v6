@@ -27,6 +27,17 @@ class DailyActivityFurtherExport implements FromCollection, WithStyles, ShouldAu
     protected $groupedDetails = [];
     protected $lines = [];
 
+    // flattened list of (line + ps_group) sections, built in collection()
+    // and re-used identically inside registerEvents() so both stay in sync.
+    protected $sections = [];
+
+    // overall grand total row(s) across ALL lines/groups, built in
+    // collection() and re-used in registerEvents() for styling.
+    // Each entry: ['label' => ..., 'rm' => ..., 'fg' => ..., 'kg' => ...]
+    // NOTE: man_hours / productivity are intentionally NOT included here,
+    // per requirement — the overall grand total only totals RM/FG/KG.
+    protected $overallTotals = [];
+
     public function __construct(
         $costCenterId = null,
         $psGroupId = null,
@@ -43,12 +54,30 @@ class DailyActivityFurtherExport implements FromCollection, WithStyles, ShouldAu
         $this->lineId = $lineId;
     }
 
+    // builds a section label like "LINE 1 - GROUP A" without
+    // double-prefixing when the line name already contains "LINE".
+    protected function buildSectionLabel($lineName, $psGroupName)
+    {
+        $lineLabel = trim($lineName);
+
+        if (stripos($lineLabel, 'line') !== 0) {
+            $lineLabel = 'LINE ' . $lineLabel;
+        }
+
+        if (!empty($psGroupName) && $psGroupName !== '-') {
+            $lineLabel .= ' - ' . strtoupper($psGroupName);
+        }
+
+        return $lineLabel;
+    }
+
     public function collection()
     {
         $query = DailyActivityDetailFurther::query()
             ->with([
                 'product',
                 'dailyActivityFurther.line',
+                'dailyActivityFurther.psGroup',
             ])
             ->whereHas('dailyActivityFurther', function ($q) {
 
@@ -106,6 +135,9 @@ class DailyActivityFurtherExport implements FromCollection, WithStyles, ShouldAu
                 'daily_activity_furthers.line_id'
             )
             ->orderBy(
+                'daily_activity_furthers.ps_group_id'
+            )
+            ->orderBy(
                 'daily_activity_furthers.tanggal'
             )
             ->orderBy(
@@ -117,7 +149,11 @@ class DailyActivityFurtherExport implements FromCollection, WithStyles, ShouldAu
 
         $details = $query->get();
 
+        // grouped[line_id][ps_group_id][tanggal] = [...]
         $grouped = [];
+
+        // groupNames[line_id][ps_group_id] = 'Group A'
+        $groupNames = [];
 
         foreach ($details as $detail) {
 
@@ -129,6 +165,10 @@ class DailyActivityFurtherExport implements FromCollection, WithStyles, ShouldAu
 
             $lineId = $daf->line_id;
 
+            $psGroupId = $daf->ps_group_id ?? 0;
+
+            $psGroupName = $daf->psGroup->name ?? '-';
+
             $tanggal = Carbon::parse(
                 $daf->tanggal
             )->format('Y-m-d');
@@ -137,22 +177,30 @@ class DailyActivityFurtherExport implements FromCollection, WithStyles, ShouldAu
                 $grouped[$lineId] = [];
             }
 
-            if (!isset($grouped[$lineId][$tanggal])) {
+            if (!isset($grouped[$lineId][$psGroupId])) {
+                $grouped[$lineId][$psGroupId] = [];
+            }
 
-                $grouped[$lineId][$tanggal] = [
+            $groupNames[$lineId][$psGroupId] = $psGroupName;
+
+            if (!isset($grouped[$lineId][$psGroupId][$tanggal])) {
+
+                $grouped[$lineId][$psGroupId][$tanggal] = [
                     'tanggal' => $daf->tanggal,
                     'line_id' => $lineId,
                     'line_name' => $daf->line->name ?? '-',
+                    'ps_group_id' => $psGroupId,
+                    'ps_group_name' => $psGroupName,
                     'employees' => [],
                     'products' => [],
                 ];
             }
 
             if (!isset(
-                $grouped[$lineId][$tanggal]['employees'][$detail->employee_id]
+                $grouped[$lineId][$psGroupId][$tanggal]['employees'][$detail->employee_id]
             )) {
 
-                $grouped[$lineId][$tanggal]['employees'][$detail->employee_id] = [
+                $grouped[$lineId][$psGroupId][$tanggal]['employees'][$detail->employee_id] = [
                     'man_power' => (float) $detail->man_power,
                 ];
             }
@@ -160,10 +208,10 @@ class DailyActivityFurtherExport implements FromCollection, WithStyles, ShouldAu
             $productKey = $detail->product_id;
 
             if (!isset(
-                $grouped[$lineId][$tanggal]['products'][$productKey]
+                $grouped[$lineId][$psGroupId][$tanggal]['products'][$productKey]
             )) {
 
-                $grouped[$lineId][$tanggal]['products'][$productKey] = [
+                $grouped[$lineId][$psGroupId][$tanggal]['products'][$productKey] = [
                     'product_id' => $detail->product_id,
                     'material_code' =>
                         $detail->product->material_code ?? '-',
@@ -222,13 +270,59 @@ class DailyActivityFurtherExport implements FromCollection, WithStyles, ShouldAu
                 ->get();
         }
 
-        $rows = [];
+        // flatten (line, ps_group) into a single ordered list of "sections".
+        $sections = [];
 
         foreach ($this->lines as $line) {
 
+            $lineGroups = $grouped[$line->id] ?? [];
+
+            if (count($lineGroups) === 0) {
+
+                $sections[] = [
+                    'line_id' => $line->id,
+                    'line_name' => $line->name,
+                    'ps_group_id' => null,
+                    'ps_group_name' => null,
+                    'dates' => [],
+                ];
+
+                continue;
+            }
+
+            foreach ($lineGroups as $psGroupId => $dates) {
+
+                $sections[] = [
+                    'line_id' => $line->id,
+                    'line_name' => $line->name,
+                    'ps_group_id' => $psGroupId,
+                    'ps_group_name' => $groupNames[$line->id][$psGroupId] ?? '-',
+                    'dates' => $dates,
+                ];
+            }
+        }
+
+        $this->sections = $sections;
+
+        // accumulator for the overall (all lines/groups combined) totals,
+        // keyed by raw 'Y-m-d' date so we can sort and, if the date filter
+        // spans more than one day, emit one grand total row per date at
+        // the very end of the report. Only RM/FG/KG are accumulated —
+        // man hours & productivity are not part of the overall grand total.
+        $overallByDate = [];
+
+        $rows = [];
+
+        foreach ($this->sections as $section) {
+
+            $sectionLabel = $this->buildSectionLabel(
+                $section['line_name'],
+                $section['ps_group_name']
+            );
+
             $rows[] = [
                 '',
-                'LINE ' . $line->name,
+                $sectionLabel,
                 '',
                 '',
                 '',
@@ -259,34 +353,17 @@ class DailyActivityFurtherExport implements FromCollection, WithStyles, ShouldAu
                 '',
             ];
 
-            $lineTotalRm = 0;
-            $lineTotalFg = 0;
-            $lineTotalKg = 0;
-            $lineTotalManHours = 0;
-
-            $lineGroups = [];
-
-            if (isset($grouped[$line->id])) {
-                $lineGroups = $grouped[$line->id];
-            }
+            $lineGroups = $section['dates'];
 
             if (count($lineGroups) === 0) {
 
+                // NEW: only the "-" placeholder row remains for an empty
+                // line/group — the old "GRAND TOTAL" row for empty lines
+                // has been removed (no more per-line grand total at all).
                 $rows[] = [
                     '',
                     '-',
                     '-',
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                ];
-
-                $rows[] = [
-                    '',
-                    'GRAND TOTAL',
-                    '',
                     0,
                     0,
                     0,
@@ -362,9 +439,12 @@ class DailyActivityFurtherExport implements FromCollection, WithStyles, ShouldAu
                         $firstProduct = false;
                     }
 
+                    // RENAMED: was "GRAND TOTAL {date}" — now "SUB TOTAL
+                    // {date}" since this is the per-date subtotal inside a
+                    // single LINE/Group block, not an overall grand total.
                     $rows[] = [
                         '',
-                        'GRAND TOTAL ' .
+                        'SUB TOTAL ' .
                             strtoupper(
                                 Carbon::parse(
                                     $group['tanggal']
@@ -378,26 +458,27 @@ class DailyActivityFurtherExport implements FromCollection, WithStyles, ShouldAu
                         $dateProductivity,
                     ];
 
-                    $lineTotalRm += $dateTotalRm;
-                    $lineTotalFg += $dateTotalFg;
-                    $lineTotalKg += $dateTotalKg;
-                    $lineTotalManHours += $manHours;
+                    // fold this date's totals into the cross-line
+                    // accumulator, keyed by the raw Y-m-d date.
+                    $dateKey = Carbon::parse($group['tanggal'])->format('Y-m-d');
+
+                    if (!isset($overallByDate[$dateKey])) {
+                        $overallByDate[$dateKey] = [
+                            'rm' => 0,
+                            'fg' => 0,
+                            'kg' => 0,
+                        ];
+                    }
+
+                    $overallByDate[$dateKey]['rm'] += $dateTotalRm;
+                    $overallByDate[$dateKey]['fg'] += $dateTotalFg;
+                    $overallByDate[$dateKey]['kg'] += $dateTotalKg;
                 }
 
-                $lineProductivity = $lineTotalManHours > 0
-                    ? $lineTotalFg / $lineTotalManHours
-                    : 0;
-
-                $rows[] = [
-                    '',
-                    'GRAND TOTAL LINE ' . $line->name,
-                    '',
-                    $lineTotalRm,
-                    $lineTotalFg,
-                    $lineTotalKg,
-                    $lineTotalManHours,
-                    $lineProductivity,
-                ];
+                // NOTE: the old "GRAND TOTAL LINE ..." row (summing this
+                // whole section) has been removed entirely, per
+                // requirement — sections now end right after the last
+                // date's SUB TOTAL row.
 
                 $rows[] = [
                     '',
@@ -410,6 +491,73 @@ class DailyActivityFurtherExport implements FromCollection, WithStyles, ShouldAu
                     '',
                 ];
             }
+        }
+
+        // build the overall grand total row(s), across ALL lines and
+        // ps_groups combined. Only RM/FG/KG are totaled — Man Hours and
+        // Productivity are left blank, per requirement.
+        // - If the date filter is a single day (fromDate === toDate),
+        //   emit exactly ONE "GRAND TOTAL" row.
+        // - Otherwise (a date range), emit one "GRAND TOTAL <date>" row
+        //   per date in the range, sorted chronologically.
+        $overallTotals = [];
+
+        if (count($overallByDate) > 0) {
+
+            $isSingleDay = $this->fromDate === $this->toDate;
+
+            if ($isSingleDay) {
+
+                $grandRm = 0;
+                $grandFg = 0;
+                $grandKg = 0;
+
+                foreach ($overallByDate as $d) {
+                    $grandRm += $d['rm'];
+                    $grandFg += $d['fg'];
+                    $grandKg += $d['kg'];
+                }
+
+                $overallTotals[] = [
+                    'label' => 'GRAND TOTAL',
+                    'rm' => $grandRm,
+                    'fg' => $grandFg,
+                    'kg' => $grandKg,
+                ];
+
+            } else {
+
+                ksort($overallByDate);
+
+                foreach ($overallByDate as $dateKey => $d) {
+
+                    $overallTotals[] = [
+                        'label' => 'GRAND TOTAL ' .
+                            strtoupper(
+                                Carbon::parse($dateKey)->format('d M Y')
+                            ),
+                        'rm' => $d['rm'],
+                        'fg' => $d['fg'],
+                        'kg' => $d['kg'],
+                    ];
+                }
+            }
+        }
+
+        $this->overallTotals = $overallTotals;
+
+        foreach ($overallTotals as $total) {
+
+            $rows[] = [
+                '',
+                $total['label'],
+                '',
+                $total['rm'],
+                $total['fg'],
+                $total['kg'],
+                '',
+                '',
+            ];
         }
 
         return new Collection($rows);
@@ -458,12 +606,22 @@ class DailyActivityFurtherExport implements FromCollection, WithStyles, ShouldAu
 
                 $currentRow = 5;
 
-                foreach ($this->lines as $line) {
+                foreach ($this->sections as $section) {
+
+                    $sectionLabel = $this->buildSectionLabel(
+                        $section['line_name'],
+                        $section['ps_group_name']
+                    );
 
                     $lineRow = $currentRow;
 
                     $sheet->mergeCells(
                         'B' . $lineRow . ':H' . $lineRow
+                    );
+
+                    $sheet->setCellValue(
+                        'B' . $lineRow,
+                        $sectionLabel
                     );
 
                     $sheet->getStyle(
@@ -546,14 +704,7 @@ class DailyActivityFurtherExport implements FromCollection, WithStyles, ShouldAu
 
                     $currentRow += 2;
 
-                    $lineGroups = [];
-
-                    if (isset(
-                        $this->groupedDetails[$line->id]
-                    )) {
-                        $lineGroups =
-                            $this->groupedDetails[$line->id];
-                    }
+                    $lineGroups = $section['dates'];
 
                     $dataStartRow = $currentRow;
 
@@ -598,10 +749,11 @@ class DailyActivityFurtherExport implements FromCollection, WithStyles, ShouldAu
 
                         $currentRow += $productCount;
 
-                        $dateTotalRow = $currentRow;
+                        // this is now the "SUB TOTAL {date}" row.
+                        $subTotalRow = $currentRow;
 
                         $sheet->getStyle(
-                            'B' . $dateTotalRow . ':H' . $dateTotalRow
+                            'B' . $subTotalRow . ':H' . $subTotalRow
                         )->applyFromArray([
                             'font' => [
                                 'bold' => true,
@@ -619,12 +771,12 @@ class DailyActivityFurtherExport implements FromCollection, WithStyles, ShouldAu
                         ]);
 
                         $sheet->getStyle(
-                            'D' . $dateTotalRow . ':H' . $dateTotalRow
+                            'D' . $subTotalRow . ':H' . $subTotalRow
                         )->getNumberFormat()
                             ->setFormatCode('#,##0.00');
 
                         $sheet->getRowDimension(
-                            $dateTotalRow
+                            $subTotalRow
                         )->setRowHeight(30);
 
                         $currentRow++;
@@ -689,43 +841,64 @@ class DailyActivityFurtherExport implements FromCollection, WithStyles, ShouldAu
                             ->setFormatCode('#,##0.00');
                     }
 
-                    $grandTotalLineRow = $currentRow;
-
-                    $sheet->getStyle(
-                        'B' . $grandTotalLineRow . ':H' . $grandTotalLineRow
-                    )->applyFromArray([
-                        'font' => [
-                            'bold' => true,
-                            'size' => 11,
-                        ],
-                        'alignment' => [
-                            'vertical' =>
-                                Alignment::VERTICAL_CENTER,
-                        ],
-                        'borders' => [
-                            'allBorders' => [
-                                'borderStyle' =>
-                                    Border::BORDER_THIN,
-                            ],
-                        ],
-                    ]);
-
-                    $sheet->getStyle(
-                        'D' . $grandTotalLineRow . ':H' . $grandTotalLineRow
-                    )->getNumberFormat()
-                        ->setFormatCode('#,##0.00');
-
-                    $sheet->getRowDimension(
-                        $grandTotalLineRow
-                    )->setRowHeight(30);
-
-                    $currentRow++;
+                    // NOTE: the "GRAND TOTAL LINE ..." row + its styling
+                    // block has been removed entirely — sections now end
+                    // right after the data (or the "-" placeholder row).
 
                     $sheet->getRowDimension(
                         $currentRow
                     )->setRowHeight(15);
 
                     $currentRow++;
+                }
+
+                // style the overall grand total row(s) built in
+                // collection(). $currentRow already points to the correct
+                // sheet row here because the row counts produced above
+                // mirror exactly what collection() emitted. Only D:F
+                // (RM/FG/Total KG) get the number format — G/H (Man
+                // Hours/Productivity) are intentionally left blank.
+                if (count($this->overallTotals) > 0) {
+
+                    foreach ($this->overallTotals as $total) {
+
+                        $totalRow = $currentRow;
+
+                        $sheet->setCellValue(
+                            'B' . $totalRow,
+                            $total['label']
+                        );
+
+                        $sheet->getStyle(
+                            'B' . $totalRow . ':H' . $totalRow
+                        )->applyFromArray([
+                            'font' => [
+                                'bold' => true,
+                                'size' => 12,
+                            ],
+                            'alignment' => [
+                                'vertical' =>
+                                    Alignment::VERTICAL_CENTER,
+                            ],
+                            'borders' => [
+                                'allBorders' => [
+                                    'borderStyle' =>
+                                        Border::BORDER_MEDIUM,
+                                ],
+                            ],
+                        ]);
+
+                        $sheet->getStyle(
+                            'D' . $totalRow . ':F' . $totalRow
+                        )->getNumberFormat()
+                            ->setFormatCode('#,##0.00');
+
+                        $sheet->getRowDimension(
+                            $totalRow
+                        )->setRowHeight(30);
+
+                        $currentRow++;
+                    }
                 }
 
                 $highestRow =

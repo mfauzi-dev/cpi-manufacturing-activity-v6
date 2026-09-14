@@ -97,35 +97,6 @@
             <div class="card-body table-responsive">
 
                 <div class="mb-3 d-flex align-items-center">
-
-                    <a href="{{ route('admin-production.daily-activity-further.export-excel', [
-                        'costCenterId' => $costCenter->id,
-                        'psGroupId' => $psGroup->id,
-                        'line_id' => $line->id ?? null,
-                        'date_from' => request('date_from'),
-                        'date_to' => request('date_to'),
-                    ]) }}"
-                        class="btn btn-success mr-2">
-
-                        <i class="fas fa-file-excel"></i>
-                        Excel
-
-                    </a>
-
-                    <a href="{{ route('admin-production.daily-activity-further.export-pdf', [
-                        'costCenterId' => $costCenter->id,
-                        'psGroupId' => $psGroup->id,
-                        'line_id' => $line->id ?? null,
-                        'date_from' => request('date_from'),
-                        'date_to' => request('date_to'),
-                    ]) }}"
-                        class="btn btn-danger mr-2" target="_blank">
-
-                        <i class="fas fa-file-pdf"></i>
-                        PDF
-
-                    </a>
-
                     <form id="bulkDeleteForm" action="{{ route('admin-production.daily-activity-further.bulk-destroy') }}"
                         method="POST" class="d-inline">
 
