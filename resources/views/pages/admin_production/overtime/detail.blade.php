@@ -8,6 +8,11 @@
 
     <div class="section-body">
 
+        @php
+            $departmentName = strtolower(trim(auth()->user()->department?->name ?? ''));
+            $isGeneralAffair = $departmentName === 'personalia dan general affair';
+        @endphp
+
         @if (session('success'))
             <div class="alert alert-success">
                 <i class="fas fa-check-circle"></i>
@@ -158,70 +163,72 @@
                     </div>
                 </div>
 
-                <div class="card">
+                @if ($isGeneralAffair && in_array($overtime->employee->employee_status, ['harian', 'harian_kontrak']))
+                    <div class="card">
 
-                    <div class="card-header">
-                        <h4>
-                            <i class="fas fa-calculator mr-2"></i>
-                            Perhitungan Overtime
-                        </h4>
-                    </div>
+                        <div class="card-header">
+                            <h4>
+                                <i class="fas fa-calculator mr-2"></i>
+                                Perhitungan Overtime
+                            </h4>
+                        </div>
 
-                    <div class="card-body">
+                        <div class="card-body">
 
-                        <div class="row">
+                            <div class="row">
 
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="text-muted">
-                                        Rate Overtime
-                                    </label>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="text-muted">
+                                            Rate Overtime
+                                        </label>
 
-                                    <div class="h4 mb-0">
-                                        Rp {{ number_format($overtime->hourly_rate, 0, ',', '.') }}
-                                        <small class="text-muted">/ jam</small>
+                                        <div class="h4 mb-0">
+                                            Rp {{ number_format($overtime->hourly_rate, 0, ',', '.') }}
+                                            <small class="text-muted">/ jam</small>
+                                        </div>
                                     </div>
                                 </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="text-muted">
+                                            Total Overtime
+                                        </label>
+
+                                        <div class="h4 text-success mb-0">
+                                            Rp {{ number_format($overtime->overtime_amount, 0, ',', '.') }}
+                                        </div>
+                                    </div>
+                                </div>
+
                             </div>
 
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="text-muted">
-                                        Total Overtime
-                                    </label>
+                            <hr>
 
-                                    <div class="h4 text-success mb-0">
+                            <div class="text-center">
+
+                                <div class="text-muted mb-2">
+                                    Rumus Perhitungan
+                                </div>
+
+                                <div class="h5">
+                                    {{ number_format($overtime->total_hours_actual, 2, ',', '.') }}
+                                    Jam
+                                    <span class="mx-2">×</span>
+                                    Rp {{ number_format($overtime->hourly_rate, 0, ',', '.') }}
+                                    <span class="mx-2">=</span>
+                                    <strong class="text-success">
                                         Rp {{ number_format($overtime->overtime_amount, 0, ',', '.') }}
-                                    </div>
+                                    </strong>
                                 </div>
-                            </div>
 
-                        </div>
-
-                        <hr>
-
-                        <div class="text-center">
-
-                            <div class="text-muted mb-2">
-                                Rumus Perhitungan
-                            </div>
-
-                            <div class="h5">
-                                {{ number_format($overtime->total_hours_actual, 2, ',', '.') }}
-                                Jam
-                                <span class="mx-2">×</span>
-                                Rp {{ number_format($overtime->hourly_rate, 0, ',', '.') }}
-                                <span class="mx-2">=</span>
-                                <strong class="text-success">
-                                    Rp {{ number_format($overtime->overtime_amount, 0, ',', '.') }}
-                                </strong>
                             </div>
 
                         </div>
 
                     </div>
-
-                </div>
+                @endif
 
                 @if ($overtime->description)
                     <div class="card">
