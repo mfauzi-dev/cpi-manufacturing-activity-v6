@@ -233,7 +233,7 @@
 
                     <div class="row">
 
-                        <div class="col-md-4">
+                        <div class="col-md-6">
 
                             <div class="form-group">
 
@@ -263,7 +263,7 @@
                         </div>
 
 
-                        <div class="col-md-4">
+                        <div class="col-md-6">
 
                             <div class="form-group">
 
@@ -299,65 +299,12 @@
                             </div>
 
                         </div>
-
-
-                        <div class="col-md-4">
-
-                            <div class="form-group">
-
-                                <label>Rate Overtime</label>
-
-                                <div class="input-group">
-
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text">Rp</span>
-                                    </div>
-
-                                    <input type="text" id="hourly_rate_display" class="form-control"
-                                        value="{{ number_format($overtime->hourly_rate, 0, ',', '.') }}" readonly>
-
-                                </div>
-
-                                <small class="text-muted" id="rate-info">
-                                    Rate berdasarkan data karyawan.
-                                </small>
-
-                            </div>
-
-                        </div>
-
                     </div>
 
 
                     <div class="row">
 
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label>Total Overtime</label>
-
-                                <div class="input-group">
-
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text">Rp</span>
-                                    </div>
-
-                                    <input type="text" id="overtime_amount_display" class="form-control"
-                                        value="{{ number_format($overtime->overtime_amount, 0, ',', '.') }}" readonly>
-
-                                </div>
-
-                                <small class="text-muted">
-                                    Dihitung berdasarkan rate overtime dan total jam konversi.
-                                </small>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="col-md-6">
+                        <div class="col-md-12">
 
                             <div class="form-group">
 
