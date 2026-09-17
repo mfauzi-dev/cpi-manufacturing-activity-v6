@@ -2046,7 +2046,9 @@ class DashboardController extends Controller
 
         $outputTrendSosis = DailyActivityDetail::query()
             ->join('daily_activities', 'daily_activities.id', '=', 'daily_activity_details.daily_activity_id')
+            ->join('cost_centers', 'cost_centers.id', '=', 'daily_activities.cost_center_id')
             ->where('daily_activities.department_id', $departmentId)
+            ->where('cost_centers.name', 'IQF')
             ->whereBetween('daily_activities.tanggal', [$startTrend, $today])
             ->selectRaw("
                 daily_activities.tanggal as tanggal,
