@@ -520,6 +520,7 @@ Route::prefix('manager')->middleware(['auth', 'role:Manager'])->group(function()
         Route::get('/cost-center/{costCenter}/ps-group/{psGroup}/detail', [DailyActivitySlaughterHouseController::class, 'managerDetail'])->name('manager.daily-activity-slaughter-house.detail');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-excel', [DailyActivitySlaughterHouseController::class, 'exportExcelManager'])->name('manager.daily-activity-slaughter-house.export-excel');
         Route::get('/cost-center/{costCenterId}/ps-group/{psGroupId}/export-pdf', [DailyActivitySlaughterHouseController::class, 'exportPdfManager'])->name('manager.daily-activity-slaughter-house.export-pdf');
+        Route::get('/monitoring-upah-all-sh/export-excel', [DailyActivitySlaughterHouseController::class, 'exportMonitoringUpahAllSh'])->name('manager.daily-activity-slaughter-house.monitoring-upah-all-sh.export-excel');    
     });
 
     Route::prefix('penggajian-harian')->group(function () {

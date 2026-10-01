@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\DailyActivitySlaughterHouseExport;
+use App\Exports\MonitoringUpahAllSHExport;
 use App\Exports\PenggajianBoronganExport;
 use App\Models\CostCenter;
 use App\Models\DailyActivityDetailSlaughterHouse;

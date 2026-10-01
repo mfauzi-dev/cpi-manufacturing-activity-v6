@@ -1302,13 +1302,20 @@ class AttendanceController extends Controller
 
                     $bpjsKesehatan = round($ump * 0.04, 2);
 
-                    $managemenFeePerDay = 175000 / $hariKerjaStandar;
+                    $isSkn = $employee->outsourcing && $employee->outsourcing->name === 'SKN';
 
-                    $managemenFee = min(
-                        $workDays * $managemenFeePerDay,
-                        175000
-                    );
+                    if ($isSkn) {
+                        $jamsostek    = round($ump * 0.0424, 2);
+                        $managemenFee = 250716;
+                    } else {
+                        $managemenFeePerDay = 175000 / $hariKerjaStandar;
 
+                        $managemenFee = min(
+                            $workDays * $managemenFeePerDay,
+                            175000
+                        );
+                    }
+                    
                     $grandTotalUpah =
                         $upahHarian +
                         $jamsostek +
@@ -1440,12 +1447,19 @@ class AttendanceController extends Controller
 
                     $bpjsKesehatan = round($ump * 0.04, 2);
 
-                    $managemenFeePerDay = 175000 / $hariKerjaStandar;
+                    $isSkn = $employee->outsourcing && $employee->outsourcing->name === 'SKN';
 
-                    $managemenFee = min(
-                        $workDays * $managemenFeePerDay,
-                        175000
-                    );
+                    if ($isSkn) {
+                        $jamsostek    = round($ump * 0.0424, 2);
+                        $managemenFee = 250716;
+                    } else {
+                        $managemenFeePerDay = 175000 / $hariKerjaStandar;
+
+                        $managemenFee = min(
+                            $workDays * $managemenFeePerDay,
+                            175000
+                        );
+                    }
 
                     $grandTotalUpah =
                         $upahHarian +
@@ -1578,12 +1592,19 @@ class AttendanceController extends Controller
 
                     $bpjsKesehatan = round($ump * 0.04, 2);
 
-                    $managemenFeePerDay = 175000 / $hariKerjaStandar;
+                    $isSkn = $employee->outsourcing && $employee->outsourcing->name === 'SKN';
 
-                    $managemenFee = min(
-                        $workDays * $managemenFeePerDay,
-                        175000
-                    );
+                    if ($isSkn) {
+                        $jamsostek    = round($ump * 0.0424, 2);
+                        $managemenFee = 250716;
+                    } else {
+                        $managemenFeePerDay = 175000 / $hariKerjaStandar;
+
+                        $managemenFee = min(
+                            $workDays * $managemenFeePerDay,
+                            175000
+                        );
+                    }
 
                     $grandTotalUpah =
                         $upahHarian +
