@@ -1321,7 +1321,8 @@ class AttendanceController extends Controller
                         $jamsostek +
                         $bpjsKesehatan +
                         $bpjsPensiun +
-                        $managemenFee;
+                        $managemenFee +
+                        (float) ($payroll->overtime_total ?? 0);
 
                     PenggajianHarian::updateOrCreate(
                         [
@@ -1466,7 +1467,8 @@ class AttendanceController extends Controller
                         $jamsostek +
                         $bpjsKesehatan +
                         $bpjsPensiun +
-                        $managemenFee;
+                        $managemenFee +
+                        (float) ($payroll->overtime_total ?? 0);
 
                     PenggajianHarian::updateOrCreate(
                         [
@@ -1611,7 +1613,8 @@ class AttendanceController extends Controller
                         $jamsostek +
                         $bpjsKesehatan +
                         $bpjsPensiun +
-                        $managemenFee;
+                        $managemenFee +
+                        (float) ($payroll->overtime_total ?? 0);
 
                     PenggajianHarian::updateOrCreate(
                         [
