@@ -59,6 +59,9 @@ class DashboardController extends Controller
             case 'Admin Production':
                 return $this->adminProductionDashboard();
 
+            case 'Admin Absensi':
+                return $this->adminAbsensiDashboard();
+
             default:
                 abort(403);
         }
@@ -2255,4 +2258,9 @@ class DashboardController extends Controller
 
     //     return view('pages.dashboard.finance', $data);
     // }
+
+    private function adminAbsensiDashboard()
+    {
+        return view('pages.dashboard.admin-absensi');
+    }
 }

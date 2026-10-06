@@ -33,6 +33,7 @@ class PenggajianBoronganExport implements
     protected ?int $departmentId;
     protected $outsourcingId;
     protected $costCenterId;
+    protected ?int $userId = null;
     protected int $no = 0;
     protected $costCenters;
     protected array $costCenterUpah = [];
@@ -54,13 +55,15 @@ class PenggajianBoronganExport implements
         int $year,
         ?int $departmentId = null,
         $outsourcingId = null,
-        $costCenterId = null
+        $costCenterId = null,
+        ?int $userId = null
     ) {
         $this->month = $month;
         $this->year = $year;
         $this->departmentId = $departmentId;
         $this->outsourcingId = $outsourcingId;
         $this->costCenterId = $costCenterId;
+        $this->userId = $userId;
 
         if ($this->departmentId) {
             $this->costCenters = CostCenter::where(
@@ -251,7 +254,16 @@ class PenggajianBoronganExport implements
                     ->whereYear(
                         'daily_activity_slaughter_houses.tanggal',
                         $this->year
-                    )
+                    );
+
+                if ($this->userId) {
+                    $slaughterHouseUpah->where(
+                        'daily_activity_slaughter_houses.input_by',
+                        $this->userId
+                    );
+                }
+
+                $slaughterHouseUpah = $slaughterHouseUpah
                     ->selectRaw('
                         daily_activity_slaughter_houses.employee_id,
                         daily_activity_slaughter_houses.cost_center_id,

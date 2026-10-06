@@ -108,6 +108,13 @@
                 </a>
             </li>
 
+            <li class="{{ Request::is('admin/roles*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('role.index') }}">
+                    <i class="fas fa-user-shield"></i>
+                    <span>Roles</span>
+                </a>
+            </li>
+
             <li class="menu-header">Manajemen Karyawan</li>
 
             <li class="dropdown {{ Request::is('admin/employees*') ? 'active' : '' }}">

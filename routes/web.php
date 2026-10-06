@@ -25,6 +25,7 @@ use App\Http\Controllers\ProcessTypeController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductGroupController;
 use App\Http\Controllers\PsGroupController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ShiftController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WageConfigController;
@@ -249,6 +250,18 @@ Route::prefix('admin-production')->middleware(['auth', 'role:Admin Production'])
     });
 });
 
+Route::prefix('admin-absensi')->middleware(['auth', 'role:Admin Absensi'])->group(function() {
+    Route::prefix('attendances')->group(function(){
+        Route::get('/', [AttendanceController::class, 'adminAbsensiIndex'])->name('admin-absensi.attendance.index');
+        Route::get('/create', [AttendanceController::class, 'adminAbsensiCreate'])->name('admin-absensi.attendance.create');
+        Route::get('/summary', [AttendanceController::class, 'adminAbsensiSummary'])->name('admin-absensi.attendance.summary');
+        Route::get('/summary/{employee}/detail', [AttendanceController::class, 'adminAbsensiDetail'])->name('admin-absensi.attendance.summary.detail');
+        Route::post('/bulk-store', [AttendanceController::class, 'adminAbsensiBulkStore'])->name('admin-absensi.attendance.bulk.store');
+        Route::get('/summary/export-excel', [AttendanceController::class, 'adminAbsensiExportSummaryExcel'])->name('admin-absensi.attendance.summary.export-excel');
+        Route::get('/summary/export-pdf', [AttendanceController::class, 'adminAbsensiExportSummaryPdf'])->name('admin-absensi.attendance.summary.export-pdf');
+    });
+});
+
 Route::prefix('admin')->middleware(['auth', 'role:Admin'])->group(function() {
     Route::prefix('outsourcings')->group(function() {
         Route::get('/', [OutsourcingController::class, 'index'])->name('admin.outsourcing.index');
@@ -275,6 +288,15 @@ Route::prefix('admin')->middleware(['auth', 'role:Admin'])->group(function() {
         Route::get('{id}/edit', [DepartmentController::class, 'edit'])->name('department.edit');
         Route::put('{id}/update', [DepartmentController::class, 'update'])->name('department.update');
         Route::delete('{id}/delete', [DepartmentController::class, 'destroy'])->name('department.destroy');
+    });
+
+    Route::prefix('roles')->group(function() {
+        Route::get('/', [RoleController::class, 'index'])->name('role.index');
+        Route::get('/create', [RoleController::class, 'create'])->name('role.create');
+        Route::post('/store', [RoleController::class, 'store'])->name('role.store');
+        Route::get('{id}/edit', [RoleController::class, 'edit'])->name('role.edit');
+        Route::put('{id}/update', [RoleController::class, 'update'])->name('role.update');
+        Route::delete('{id}/delete', [RoleController::class, 'destroy'])->name('role.destroy');
     });
 
     Route::prefix('shifts')->group(function() {

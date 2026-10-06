@@ -41,6 +41,8 @@
                 @include('includes.sidebar.manager')
             @elseif(auth()->check() && auth()->user()->role->name == 'Admin Production')
                 @include('includes.sidebar.admin-production')
+            @elseif(auth()->check() && auth()->user()->role->name == 'Admin Absensi')
+                @include('includes.sidebar.admin-absensi')
             @endif
 
 
