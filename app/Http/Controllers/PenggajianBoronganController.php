@@ -6,11 +6,9 @@ use App\Exports\PenggajianBoronganExport;
 use App\Models\CostCenter;
 use App\Models\DailyActivityDetail;
 use App\Models\DailyActivityDetailSlaughterHouse;
-use App\Models\DailyActivitySlaughterHouse;
 use App\Models\Department;
 use App\Models\Outsourcing;
 use App\Models\PenggajianBorongan;
-use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -260,7 +258,6 @@ class PenggajianBoronganController extends Controller
         $month = (int) $request->input('month', now()->month);
         $year = (int) $request->input('year', now()->year);
         $search = trim((string) $request->input('search'));
-        $userId = $request->input('user_id');
 
         $user = Auth::user();
 
@@ -417,27 +414,19 @@ class PenggajianBoronganController extends Controller
                 ->whereYear(
                     'daily_activity_slaughter_houses.tanggal',
                     $year
-                );
-                if ($userId) {
-                    $slaughterHouseUpah->where(
-                        'daily_activity_slaughter_houses.input_by',
-                        $userId
-                    );
-                }
-
-                $slaughterHouseUpah = $slaughterHouseUpah
-                    ->selectRaw('
-                        daily_activity_slaughter_houses.employee_id,
-                        daily_activity_slaughter_houses.cost_center_id,
-                        SUM(
-                            daily_activity_detail_slaughter_houses.total_harga
-                        ) AS total_upah
-                    ')
-                    ->groupBy(
-                        'daily_activity_slaughter_houses.employee_id',
-                        'daily_activity_slaughter_houses.cost_center_id'
-                    )
-                    ->get();
+                )
+                ->selectRaw('
+                    daily_activity_slaughter_houses.employee_id,
+                    daily_activity_slaughter_houses.cost_center_id,
+                    SUM(
+                        daily_activity_detail_slaughter_houses.total_harga
+                    ) AS total_upah
+                ')
+                ->groupBy(
+                    'daily_activity_slaughter_houses.employee_id',
+                    'daily_activity_slaughter_houses.cost_center_id'
+                )
+                ->get();
 
             foreach ($sausageUpah as $row) {
                 if (!isset($costCenterUpah[$row->employee_id])) {
@@ -485,18 +474,6 @@ class PenggajianBoronganController extends Controller
 
         $departmentName = $department?->name;
 
-        $users = User::whereIn(
-                    'id',
-                    DailyActivitySlaughterHouse::whereNotNull('input_by')
-                        ->when($departmentId, function ($q) use ($departmentId) {
-                            $q->where('department_id', $departmentId);
-                        })
-                        ->distinct()
-                        ->pluck('input_by')
-                )
-                    ->orderBy('name')
-                    ->get(['id', 'name']);
-
         return view(
             'pages.admin_production.penggajian-borongan.index',
             compact(
@@ -515,9 +492,7 @@ class PenggajianBoronganController extends Controller
                 'isHrDepartment',
                 'departments',
                 'departmentId',
-                'search',
-                'userId',
-                'users'
+                'search'
             )
         );
     }
@@ -1106,7 +1081,6 @@ class PenggajianBoronganController extends Controller
         $outsourcingId = $request->input('outsourcing_id');
         $costCenterId = $request->input('cost_center_id');
         $search = trim((string) $request->input('search'));
-        $userId = $request->input('user_id');
 
         $user = Auth::user();
 
@@ -1149,8 +1123,7 @@ class PenggajianBoronganController extends Controller
                     : null,
                 $search !== ''
                     ? $search
-                    : null,
-                    $userId
+                    : null
             ),
             'Penggajian-Borongan-' . $periodLabel . '.xlsx'
         );

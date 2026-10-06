@@ -195,25 +195,6 @@
                         </div>
                     </div>
 
-                    @if ($departmentName === 'Slaughter House')
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label>User</label>
-                                <select name="user_id" id="user_id" class="form-control">
-                                    <option value="">
-                                        Semua User
-                                    </option>
-                                    @foreach ($users as $user)
-                                        <option value="{{ $user->id }}"
-                                            {{ (string) $userId === (string) $user->id ? 'selected' : '' }}>
-                                            {{ $user->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-                    @endif
-
                     <div class="col-md-3">
                         <div class="form-group">
                             <label>Search</label>
