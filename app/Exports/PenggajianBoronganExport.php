@@ -5,6 +5,7 @@ namespace App\Exports;
 use App\Models\CostCenter;
 use App\Models\DailyActivityDetail;
 use App\Models\DailyActivityDetailSlaughterHouse;
+use App\Models\DailyActivitySlaughterHouse;
 use App\Models\Department;
 use App\Models\PenggajianBorongan;
 use Carbon\Carbon;
@@ -33,6 +34,7 @@ class PenggajianBoronganExport implements
     protected ?int $departmentId;
     protected $outsourcingId;
     protected $costCenterId;
+    protected ?int $inputById;
     protected int $no = 0;
     protected $costCenters;
     protected array $costCenterUpah = [];
@@ -46,6 +48,7 @@ class PenggajianBoronganExport implements
 
     protected bool $showDateColumns = true;
     protected bool $showCostCenterColumns = true;
+    protected bool $isSlaughterHouseDepartment = false;
 
     protected const TITLE_ROWS = 8;
 
@@ -54,7 +57,8 @@ class PenggajianBoronganExport implements
         int $year,
         ?int $departmentId = null,
         $outsourcingId = null,
-        $costCenterId = null
+        $costCenterId = null,
+        ?int $inputById = null
     ) {
         $this->month = $month;
         $this->year = $year;
@@ -80,10 +84,14 @@ class PenggajianBoronganExport implements
             } elseif ($normalizedName === 'slaughter house') {
                 $this->showDateColumns = false;
                 $this->showCostCenterColumns = true;
+                $this->isSlaughterHouseDepartment = true;
             }
         } else {
             $this->costCenters = CostCenter::orderBy('name')->get();
         }
+
+        // Filter input_by_id hanya berlaku untuk department Slaughter House
+        $this->inputById = $this->isSlaughterHouseDepartment ? $inputById : null;
 
         $start = Carbon::create($year, $month, 1)->startOfMonth();
         $end = (clone $start)->endOfMonth();
@@ -131,6 +139,20 @@ class PenggajianBoronganExport implements
                     $this->costCenterId
                 );
             });
+        }
+
+        if ($this->inputById) {
+            $employeeIdsByInput = DailyActivitySlaughterHouse::where(
+                'input_by',
+                $this->inputById
+            )
+                ->whereMonth('tanggal', $this->month)
+                ->whereYear('tanggal', $this->year)
+                ->pluck('employee_id')
+                ->unique()
+                ->values();
+
+            $query->whereIn('employee_id', $employeeIdsByInput);
         }
 
         $payrolls = $query

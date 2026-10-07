@@ -204,6 +204,27 @@
                         </div>
                     </div>
 
+                    @if ($isSlaughterHouseDepartment)
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>User Input</label>
+
+                                <select name="input_by_id" class="form-control">
+                                    <option value="">
+                                        Semua User
+                                    </option>
+
+                                    @foreach ($inputUsers as $inputUser)
+                                        <option value="{{ $inputUser->id }}"
+                                            {{ (string) $inputById === (string) $inputUser->id ? 'selected' : '' }}>
+                                            {{ $inputUser->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    @endif
+
                 </div>
 
                 <div class="mt-3">
@@ -235,6 +256,7 @@
                     'outsourcing_id' => $outsourcingId,
                     'cost_center_id' => $costCenterId,
                     'search' => $search,
+                    'input_by_id' => $isSlaughterHouseDepartment ? $inputById : null,
                 ]) }}"
                     class="btn btn-success">
                     <i class="fas fa-file-excel"></i>

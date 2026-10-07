@@ -6,9 +6,11 @@ use App\Exports\PenggajianBoronganExport;
 use App\Models\CostCenter;
 use App\Models\DailyActivityDetail;
 use App\Models\DailyActivityDetailSlaughterHouse;
+use App\Models\DailyActivitySlaughterHouse;
 use App\Models\Department;
 use App\Models\Outsourcing;
 use App\Models\PenggajianBorongan;
+use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -315,6 +317,27 @@ class PenggajianBoronganController extends Controller
                 ->get();
         }
 
+        $isSlaughterHouseDepartment =
+            strtolower(trim($department->name ?? '')) === 'slaughter house';
+
+        $inputById = $request->input('input_by_id');
+        $inputUsers = collect();
+
+        if ($isSlaughterHouseDepartment) {
+            $inputUsers = User::whereIn(
+                'id',
+                DailyActivitySlaughterHouse::whereMonth('tanggal', $month)
+                    ->whereYear('tanggal', $year)
+                    ->whereNotNull('input_by')
+                    ->pluck('input_by')
+                    ->unique()
+            )
+                ->orderBy('name')
+                ->get();
+        } else {
+            $inputById = null;
+        }
+
         $query = PenggajianBorongan::with([
             'employee.department',
             'employee.outsourcing',
@@ -350,6 +373,20 @@ class PenggajianBoronganController extends Controller
                 }
             })
             ->orderBy('employee_id');
+
+        if ($isSlaughterHouseDepartment && $inputById) {
+            $employeeIdsByInput = DailyActivitySlaughterHouse::where(
+                'input_by',
+                $inputById
+            )
+                ->whereMonth('tanggal', $month)
+                ->whereYear('tanggal', $year)
+                ->pluck('employee_id')
+                ->unique()
+                ->values();
+
+            $query->whereIn('employee_id', $employeeIdsByInput);
+        }
 
         $grandTotalKg = (clone $query)->sum('total_kg');
         $grandTotalUpah = (clone $query)->sum('total_upah');
@@ -492,7 +529,10 @@ class PenggajianBoronganController extends Controller
                 'isHrDepartment',
                 'departments',
                 'departmentId',
-                'search'
+                'search',
+                'isSlaughterHouseDepartment',
+                'inputById',
+                'inputUsers'
             )
         );
     }
@@ -1102,6 +1142,17 @@ class PenggajianBoronganController extends Controller
             $departmentId = $ownDepartment->id;
         }
 
+        $departmentName = $departmentId
+            ? (Department::find($departmentId)->name ?? '')
+            : '';
+
+        $isSlaughterHouseDepartment =
+            strtolower(trim($departmentName)) === 'slaughter house';
+
+        $inputById = $isSlaughterHouseDepartment
+            ? $request->input('input_by_id')
+            : null;
+
         $periodLabel = Carbon::create(
             $year,
             $month,
@@ -1121,8 +1172,8 @@ class PenggajianBoronganController extends Controller
                 $costCenterId
                     ? (int) $costCenterId
                     : null,
-                $search !== ''
-                    ? $search
+                $inputById
+                    ? (int) $inputById
                     : null
             ),
             'Penggajian-Borongan-' . $periodLabel . '.xlsx'
