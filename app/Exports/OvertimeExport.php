@@ -123,13 +123,13 @@ class OvertimeExport implements
             'NAMA',
             'DEPARTMENT',
             'COST CENTER',
-            'JENIS OVERTIME',
             'TANGGAL',
             'TANGGAL FORMAT',
-            'JAM MULAI',
-            'JAM SELESAI',
+            'JENIS OVERTIME',
             'TOTAL JAM AKTUAL',
             'TOTAL JAM KONVERSI',
+            'JAM MULAI',
+            'JAM SELESAI',
         ];
 
         if ($this->canSeeAmount()) {
@@ -149,31 +149,23 @@ class OvertimeExport implements
     {
         $this->no++;
 
-        $jenisOvertime = match ($overtime->overtime_type) {
-            'OTL1' => 'OTL1 - Hari Biasa Bulan Lalu',
-            'OTL2' => 'OTL2 - Hari Libur Bulan Lalu',
-            'OT01' => 'OT01 - Hari Biasa Bulan Ini',
-            'OT02' => 'OT02 - Hari Libur Bulan Ini',
-            default => $overtime->overtime_type ?? '-',
-        };
-
         $data = [
             $this->no,
             $overtime->employee->nik ?? '-',
             $overtime->employee->name ?? '-',
             $overtime->employee->department->name ?? '-',
             $overtime->employee->costCenter->name ?? '-',
-            $jenisOvertime,
             $overtime->date
                 ? Carbon::parse($overtime->date)->format('d/m/Y')
                 : '-',
             $overtime->date
                 ? Carbon::parse($overtime->date)->format('dmY')
                 : '-',
-            $overtime->start_time ?? '-',
-            $overtime->end_time ?? '-',
+            $overtime->overtime_type ?? '-',
             (string) ($overtime->total_hours_actual ?? 0),
             (string) ($overtime->total_hours_konversi ?? 0),
+            $overtime->start_time ?? '-',
+            $overtime->end_time ?? '-',
         ];
 
         if ($this->canSeeAmount()) {
@@ -199,13 +191,13 @@ class OvertimeExport implements
             'C' => 25,
             'D' => 20,
             'E' => 20,
-            'F' => 32,
-            'G' => 14,
-            'H' => 18,
-            'I' => 12,
-            'J' => 12,
-            'K' => 16,
-            'L' => 18,
+            'F' => 14,
+            'G' => 18,
+            'H' => 32,
+            'I' => 16,
+            'J' => 18,
+            'K' => 12,
+            'L' => 12,
         ];
 
         if ($this->canSeeAmount()) {
@@ -258,7 +250,8 @@ class OvertimeExport implements
                     ->getAlignment()
                     ->setVertical(Alignment::VERTICAL_CENTER);
 
-                $sheet->getStyle("K2:L{$lastRow}")
+                // TOTAL JAM AKTUAL & TOTAL JAM KONVERSI
+                $sheet->getStyle("I2:J{$lastRow}")
                     ->getNumberFormat()
                     ->setFormatCode('#,##0');
 
@@ -266,11 +259,17 @@ class OvertimeExport implements
                     ->getAlignment()
                     ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-                $sheet->getStyle("G2:J{$lastRow}")
+                // TANGGAL, TANGGAL FORMAT
+                $sheet->getStyle("F2:G{$lastRow}")
                     ->getAlignment()
                     ->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-                $sheet->getStyle("H2:H{$lastRow}")
+                // TOTAL JAM AKTUAL, TOTAL JAM KONVERSI, JAM MULAI, JAM SELESAI
+                $sheet->getStyle("I2:L{$lastRow}")
+                    ->getAlignment()
+                    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+                $sheet->getStyle("G2:G{$lastRow}")
                     ->getNumberFormat()
                     ->setFormatCode('@');
 

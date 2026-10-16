@@ -463,7 +463,7 @@ class OvertimeController extends Controller
             'end_time' => ['required'],
             'total_hours_actual' => ['required', 'numeric', 'min:0'],
             'total_hours_konversi' => ['required', 'numeric', 'min:0'],
-            'description' => ['nullable', 'string'],
+            'description' => ['required', 'string'],
         ]);
 
         $user = auth()->user();
