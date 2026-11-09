@@ -34,6 +34,7 @@ class OvertimeController extends Controller
 
         $departmentId = $request->department_id;
         $costCenterId = $request->cost_center_id;
+        $employeeStatus = $request->employee_status;
 
         $departments = collect();
         $costCenters = collect();
@@ -67,6 +68,12 @@ class OvertimeController extends Controller
                         ->where('cost_center_id', $costCenterId);
                 });
             }
+        }
+
+        if ($employeeStatus && in_array($employeeStatus, ['cpi', 'borongan', 'harian', 'harian_kontrak'], true)) {
+            $query->whereHas('employee', function ($q) use ($employeeStatus) {
+                $q->where('employee_status', $employeeStatus);
+            });
         }
 
         if ($request->filled('date_from')) {
@@ -151,6 +158,7 @@ class OvertimeController extends Controller
 
         $departmentId = $request->department_id;
         $costCenterId = $request->cost_center_id;
+        $employeeStatus = $request->employee_status;
 
         if ($departmentName === 'personalia dan general affair') {
             if ($departmentId) {
@@ -179,6 +187,12 @@ class OvertimeController extends Controller
             }
 
             $departments = collect();
+        }
+
+        if ($employeeStatus && in_array($employeeStatus, ['cpi', 'borongan', 'harian', 'harian_kontrak'], true)) {
+            $query->whereHas('employee', function ($q) use ($employeeStatus) {
+                $q->where('employee_status', $employeeStatus);
+            });
         }
 
         if ($request->filled('status')) {
@@ -251,6 +265,7 @@ class OvertimeController extends Controller
     {
         $departmentId = $request->department_id;
         $costCenterId = $request->cost_center_id;
+        $employeeStatus = $request->employee_status; 
 
         $query = Overtime::with([
             'employee.department',
@@ -269,6 +284,12 @@ class OvertimeController extends Controller
         if ($costCenterId) {
             $query->whereHas('employee', function ($q) use ($costCenterId) {
                 $q->where('cost_center_id', $costCenterId);
+            });
+        }
+
+        if ($employeeStatus && in_array($employeeStatus, ['cpi', 'borongan', 'harian', 'harian_kontrak'], true)) {
+            $query->whereHas('employee', function ($q) use ($employeeStatus) {
+                $q->where('employee_status', $employeeStatus);
             });
         }
 
@@ -983,7 +1004,9 @@ class OvertimeController extends Controller
                 $request->overtime_type,
                 $request->date_from,
                 $request->date_to,
-                $request->search
+                $request->search,
+                '',
+                $request->employee_status
             ),
             'overtime_export_' . now()->format('Ymd_His') . '.xlsx'
         );
@@ -1006,7 +1029,9 @@ class OvertimeController extends Controller
                 $request->overtime_type,
                 $request->date_from,
                 $request->date_to,
-                $request->search
+                $request->search,
+                '',
+                $request->employee_status
             ),
             'overtime_manager_export_' . now()->format('Ymd_His') . '.xlsx'
         );
@@ -1022,7 +1047,9 @@ class OvertimeController extends Controller
                 $request->overtime_type,
                 $request->date_from,
                 $request->date_to,
-                $request->search
+                $request->search,
+                '',
+                $request->employee_status
             ),
             'overtime_general_manager_export_' . now()->format('Ymd_His') . '.xlsx'
         );

@@ -32,6 +32,7 @@ class OvertimeExport implements
     protected ?string $search;
     protected string $departmentName;
     protected string $roleName;
+    protected ?string $employeeStatus;
     protected int $no = 0;
 
     public function __construct(
@@ -43,6 +44,7 @@ class OvertimeExport implements
         ?string $dateTo = null,
         ?string $search = null,
         string $departmentName = '',
+        ?string $employeeStatus = null,
     ) {
         $this->departmentId = $departmentId;
         $this->costCenterId = $costCenterId;
@@ -51,6 +53,7 @@ class OvertimeExport implements
         $this->dateFrom = $dateFrom;
         $this->dateTo = $dateTo;
         $this->search = $search;
+        $this->employeeStatus = $employeeStatus;
 
         $user = auth()->user();
         $this->departmentName = strtolower(trim($user->department?->name ?? ''));
@@ -81,6 +84,12 @@ class OvertimeExport implements
         if ($this->costCenterId) {
             $query->whereHas('employee', function ($q) {
                 $q->where('cost_center_id', $this->costCenterId);
+            });
+        }
+
+        if ($this->employeeStatus && in_array($this->employeeStatus, ['cpi', 'borongan', 'harian', 'harian_kontrak'], true)) {
+            $query->whereHas('employee', function ($q) {
+                $q->where('employee_status', $this->employeeStatus);
             });
         }
 

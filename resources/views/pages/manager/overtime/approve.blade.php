@@ -107,6 +107,31 @@
                         </div>
 
                         <div class="form-group col-md-3">
+                            <label>Status Karyawan</label>
+
+                            <select name="employee_status" class="form-control">
+                                <option value="">Semua Status Karyawan</option>
+
+                                <option value="cpi" {{ request('employee_status') === 'cpi' ? 'selected' : '' }}>
+                                    CPI
+                                </option>
+
+                                <option value="borongan" {{ request('employee_status') === 'borongan' ? 'selected' : '' }}>
+                                    Borongan
+                                </option>
+
+                                <option value="harian" {{ request('employee_status') === 'harian' ? 'selected' : '' }}>
+                                    Harian
+                                </option>
+
+                                <option value="harian_kontrak"
+                                    {{ request('employee_status') === 'harian_kontrak' ? 'selected' : '' }}>
+                                    Harian Kontrak
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="form-group col-md-3">
                             <label>Jenis Overtime</label>
 
                             <select name="overtime_type" class="form-control">
